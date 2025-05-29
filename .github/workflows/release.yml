@@ -3,7 +3,21 @@ name: Release
 on:
   push:
     tags:
-      - "@stratosphere/*"
+      - "stratosphere-*-v*"
+  workflow_dispatch:
+    inputs:
+      package:
+        description: "Package to release (wallet, core, shared)"
+        required: true
+        type: choice
+        options:
+          - wallet
+          - core
+          - shared
+      version:
+        description: "Version to release"
+        required: true
+        default: "1.0.0"
 
 jobs:
   release:
@@ -22,11 +36,19 @@ jobs:
       - name: Extract package info from tag
         id: extract
         run: |
-          TAG="${{ github.ref_name }}"
-          # Extract package name and version from tag like @stratosphere/wallet@1.0.1
-          PACKAGE_FULL=$(echo $TAG | cut -d'@' -f1-2)
-          VERSION=$(echo $TAG | cut -d'@' -f3)
-          PACKAGE_NAME=$(echo $PACKAGE_FULL | cut -d'/' -f2)
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            # Manual trigger - use inputs
+            PACKAGE_NAME="${{ github.event.inputs.package }}"
+            VERSION="${{ github.event.inputs.version }}"
+            PACKAGE_FULL="@stratosphere/$PACKAGE_NAME"
+          else
+            # Tag trigger - extract from tag name
+            TAG="${{ github.ref_name }}"
+            # Extract package name and version from tag like stratosphere-wallet-v1.0.1
+            PACKAGE_NAME=$(echo $TAG | sed 's/stratosphere-\(.*\)-v.*/\1/')
+            VERSION=$(echo $TAG | sed 's/.*-v\(.*\)/\1/')
+            PACKAGE_FULL="@stratosphere/$PACKAGE_NAME"
+          fi
           echo "package_full=$PACKAGE_FULL" >> $GITHUB_OUTPUT
           echo "package_name=$PACKAGE_NAME" >> $GITHUB_OUTPUT
           echo "version=$VERSION" >> $GITHUB_OUTPUT
