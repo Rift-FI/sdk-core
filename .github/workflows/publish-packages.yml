@@ -84,7 +84,3 @@ jobs:
         run: npm publish -w @stratosphere-network/${{ github.event.inputs.package }} --access public --tag ${{ github.event.inputs.tag }}
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
-
-      - name: Push version changes
-        run: |
-          git push origin master
