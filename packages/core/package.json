@@ -28,6 +28,6 @@
     "access": "public"
   },
   "dependencies": {
-    "@stratosphere-network/wallet": "^1.0.0"
+    "@stratosphere-network/wallet": "^1.0.1"
   }
 }
