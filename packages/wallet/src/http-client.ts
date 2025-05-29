@@ -151,7 +151,7 @@ export class SphereHttpClient implements HttpClient {
     }
 
     // For non-JSON responses, return as text
-    return (await response.text()) as unknown as T;
+    return (await response.text()) as T;
   }
 
   private handleError(error: any): ApiError {

@@ -21,9 +21,6 @@
     "dist/**/*",
     "README.md"
   ],
-  "dependencies": {
-    "@stratosphere/wallet": "^1.0.0"
-  },
   "devDependencies": {
     "@stratosphere/shared": "^1.0.0"
   },

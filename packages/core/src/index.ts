@@ -1,4 +1,4 @@
-import Sphere, { SphereConfig } from "@stratosphere/wallet";
+import Sphere, { SphereConfig } from "../../wallet/src/index";
 
 class StratoSphere {
   public Sphere: Sphere | null = null;
