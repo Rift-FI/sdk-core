@@ -24,7 +24,5 @@
   "engines": {
     "node": ">=16.0.0"
   },
-  "dependencies": {
-    "@stratosphere-network/wallet": "^1.0.0"
-  }
+  "dependencies": {}
 }
