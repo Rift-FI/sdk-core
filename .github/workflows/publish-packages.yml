@@ -35,9 +35,6 @@ on:
 jobs:
   publish:
     runs-on: ubuntu-latest
-    defaults:
-      run:
-        working-directory: sdk
 
     steps:
       - name: Checkout code
