@@ -54,16 +54,13 @@ jobs:
           registry-url: "https://registry.npmjs.org"
 
       - name: Install dependencies
-        working-directory: ./sdk
         run: npm ci
 
       - name: Build all packages
-        working-directory: ./sdk
         run: npm run build
 
       - name: Version bump - All packages
         if: github.event.inputs.package == 'all'
-        working-directory: ./sdk
         run: |
           npm version ${{ github.event.inputs.version }} --workspaces --no-git-tag-version
           git add .
@@ -71,7 +68,6 @@ jobs:
 
       - name: Version bump - Specific package
         if: github.event.inputs.package != 'all'
-        working-directory: ./sdk
         run: |
           npm version ${{ github.event.inputs.version }} -w @stratosphere/${{ github.event.inputs.package }} --no-git-tag-version
           git add .
@@ -79,14 +75,12 @@ jobs:
 
       - name: Publish all packages
         if: github.event.inputs.package == 'all'
-        working-directory: ./sdk
         run: npm publish --workspaces --access public --tag ${{ github.event.inputs.tag }}
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
 
       - name: Publish specific package
         if: github.event.inputs.package != 'all'
-        working-directory: ./sdk
         run: npm publish -w @stratosphere/${{ github.event.inputs.package }} --access public --tag ${{ github.event.inputs.tag }}
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}

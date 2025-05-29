@@ -2,7 +2,7 @@ name: CI
 
 on:
   push:
-    branches: [master, preview]
+    branches: [main, preview]
   pull_request:
     branches: [preview]
 
@@ -24,15 +24,12 @@ jobs:
           node-version: ${{ matrix.node-version }}
 
       - name: Install dependencies
-        working-directory: ./sdk
         run: npm ci
 
       - name: Build all packages
-        working-directory: ./sdk
         run: npm run build
 
       - name: Run tests (when available)
-        working-directory: ./sdk
         run: npm test || echo "No tests configured yet"
 
   lint-and-format:
@@ -48,11 +45,9 @@ jobs:
           node-version: "18"
 
       - name: Install dependencies
-        working-directory: ./sdk
         run: npm ci
 
       - name: Check TypeScript compilation for all packages
-        working-directory: ./sdk
         run: |
           echo "Checking shared package..."
           npx tsc --noEmit -p packages/shared/tsconfig.json

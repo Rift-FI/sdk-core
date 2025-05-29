@@ -54,15 +54,12 @@ jobs:
           echo "version=$VERSION" >> $GITHUB_OUTPUT
 
       - name: Install dependencies
-        working-directory: ./sdk
         run: npm ci
 
       - name: Build all packages
-        working-directory: ./sdk
         run: npm run build
 
       - name: Publish package
-        working-directory: ./sdk
         run: npm publish -w ${{ steps.extract.outputs.package_full }} --access public
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
