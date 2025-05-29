@@ -1,9 +1,5 @@
 # @stratosphere-network/wallet
 
-[![npm version](https://badge.fury.io/js/@stratosphere/sphere-sdk.svg)](https://badge.fury.io/js/@stratosphere/sphere-sdk)
-[![CI](https://github.com/stratosphere-network/sphere-sdk/actions/workflows/ci.yml/badge.svg)](https://github.com/stratosphere-network/sphere-sdk/actions/workflows/ci.yml)
-[![Downloads](https://img.shields.io/npm/dm/@stratosphere/sphere-sdk.svg)](https://www.npmjs.com/package/@stratosphere/sphere-sdk)
-
 Official TypeScript SDK for **Stratosphere network wallet module** - A comprehensive multi-chain wallet and DeFi platform that enables seamless crypto transactions, AI-powered features, and cross-chain operations.
 
 ## 🌟 Features
