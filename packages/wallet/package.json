@@ -1,5 +1,5 @@
 {
-  "name": "@stratosphere/wallet",
+  "name": "@stratosphere-network/wallet",
   "version": "1.0.0",
   "description": "Wallet module for StratoSphere SDK",
   "main": "dist/index.js",

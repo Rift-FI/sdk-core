@@ -1,5 +1,5 @@
 {
-  "name": "@stratosphere/shared",
+  "name": "@stratosphere-network/shared",
   "version": "1.0.0",
   "description": "Shared utilities and types for StratoSphere SDK",
   "main": "dist/index.js",

@@ -1,8 +1,8 @@
 {
-  "name": "@stratosphere/monorepo",
+  "name": "@stratosphere-network/monorepo",
   "version": "1.0.0",
   "private": true,
-  "description": "StratoSphere SDK Monorepo",
+  "description": "StratoSphere  network Monorepo",
   "workspaces": [
     "packages/*"
   ],
