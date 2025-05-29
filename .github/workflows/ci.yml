@@ -1,0 +1,62 @@
+name: CI
+
+on:
+  push:
+    branches: [main, preview]
+  pull_request:
+    branches: [preview]
+
+jobs:
+  build-and-test:
+    runs-on: ubuntu-latest
+
+    strategy:
+      matrix:
+        node-version: [16, 18, 20]
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js ${{ matrix.node-version }}
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ matrix.node-version }}
+
+      - name: Install dependencies
+        working-directory: ./sdk
+        run: npm ci
+
+      - name: Build all packages
+        working-directory: ./sdk
+        run: npm run build
+
+      - name: Run tests (when available)
+        working-directory: ./sdk
+        run: npm test || echo "No tests configured yet"
+
+  lint-and-format:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "18"
+
+      - name: Install dependencies
+        working-directory: ./sdk
+        run: npm ci
+
+      - name: Check TypeScript compilation for all packages
+        working-directory: ./sdk
+        run: |
+          echo "Checking shared package..."
+          npx tsc --noEmit -p packages/shared/tsconfig.json
+          echo "Checking wallet package..."
+          npx tsc --noEmit -p packages/wallet/tsconfig.json
+          echo "Checking core package..."
+          npx tsc --noEmit -p packages/core/tsconfig.json

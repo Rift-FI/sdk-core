@@ -1,0 +1,27 @@
+{
+  "name": "@stratosphere/shared",
+  "version": "1.0.0",
+  "description": "Shared utilities and types for StratoSphere SDK",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "scripts": {
+    "build": "tsc",
+    "dev": "tsc --watch",
+    "clean": "rm -rf dist",
+    "prepublishOnly": "npm run clean && npm run build"
+  },
+  "keywords": [
+    "stratosphere",
+    "shared",
+    "utilities"
+  ],
+  "author": "StratoSphere",
+  "license": "MIT",
+  "files": [
+    "dist/**/*",
+    "README.md"
+  ],
+  "publishConfig": {
+    "access": "public"
+  }
+}

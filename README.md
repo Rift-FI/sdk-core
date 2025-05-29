@@ -1,0 +1,175 @@
+# StratoSphere SDK Monorepo
+
+This is a monorepo structure for the StratoSphere SDK, allowing different modules to be published as separate npm packages.
+
+## 📦 Packages
+
+- **[@stratosphere/core](./packages/core)** - Core SDK orchestrator
+- **[@stratosphere/wallet](./packages/wallet)** - Wallet functionality
+- **[@stratosphere/shared](./packages/shared)** - Shared utilities
+- **[@stratosphere/token](./packages/token)** - Token module (coming soon)
+- **[@stratosphere/staking](./packages/staking)** - Staking module (coming soon)
+- **[@stratosphere/dividends](./packages/dividends)** - Dividends module (coming soon)
+- **[@stratosphere/dex](./packages/dex)** - DEX module (coming soon)
+
+## 🚀 Getting Started
+
+### 1. Run the migration script
+
+```bash
+node migrate-to-monorepo.js
+```
+
+### 2. Install dependencies
+
+```bash
+npm install
+```
+
+### 3. Build all packages
+
+```bash
+npm run build
+```
+
+### 4. Run development mode
+
+```bash
+npm run dev
+```
+
+## 📝 Development
+
+### Adding a new module
+
+1. Create a new directory in `packages/`:
+
+```bash
+mkdir -p packages/new-module/src
+```
+
+2. Create `package.json`:
+
+```json
+{
+  "name": "@stratosphere/new-module",
+  "version": "1.0.0",
+  "description": "Description of your module",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "scripts": {
+    "build": "tsc",
+    "dev": "tsc --watch",
+    "clean": "rm -rf dist",
+    "prepublishOnly": "npm run clean && npm run build"
+  },
+  "dependencies": {
+    "@stratosphere/shared": "^1.0.0"
+  },
+  "publishConfig": {
+    "access": "public"
+  }
+}
+```
+
+3. Create `tsconfig.json`:
+
+```json
+{
+  "extends": "../../tsconfig.json",
+  "compilerOptions": {
+    "outDir": "./dist",
+    "rootDir": "./src",
+    "composite": true
+  },
+  "include": ["src/**/*"],
+  "exclude": ["node_modules", "dist"],
+  "references": [{ "path": "../shared" }]
+}
+```
+
+4. Add to root `tsconfig.json` references:
+
+```json
+{
+  "references": [
+    { "path": "./packages/shared" },
+    { "path": "./packages/new-module" }
+  ]
+}
+```
+
+5. Update the core package to include your module
+
+## 🚢 Publishing
+
+### Publish all packages:
+
+```bash
+npm run publish:all
+```
+
+### Publish individual package:
+
+```bash
+cd packages/wallet
+npm publish --access public
+```
+
+### Version management:
+
+```bash
+# Bump patch version for all packages
+npm run version:patch
+
+# Bump minor version for all packages
+npm run version:minor
+
+# Bump major version for all packages
+npm run version:major
+```
+
+## 🔧 Scripts
+
+- `npm run build` - Build all packages
+- `npm run clean` - Clean all build outputs
+- `npm run dev` - Run all packages in watch mode
+- `npm run test` - Run tests for all packages
+- `npm run publish:all` - Publish all packages to npm
+
+## 📂 Structure
+
+```
+sdk/
+├── packages/
+│   ├── core/
+│   │   ├── src/
+│   │   ├── package.json
+│   │   └── tsconfig.json
+│   ├── wallet/
+│   │   ├── src/
+│   │   │   ├── services/
+│   │   │   ├── index.ts
+│   │   │   ├── types.ts
+│   │   │   └── ...
+│   │   ├── package.json
+│   │   └── tsconfig.json
+│   └── shared/
+│       ├── src/
+│       ├── package.json
+│       └── tsconfig.json
+├── package.json
+├── tsconfig.json
+└── README.md
+```
+
+## 🤝 Contributing
+
+1. Create a feature branch
+2. Make your changes
+3. Run `npm run build` to ensure everything builds
+4. Submit a pull request
+
+## 📄 License
+
+MIT

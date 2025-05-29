@@ -1,0 +1,33 @@
+{
+  "name": "@stratosphere/core",
+  "version": "1.0.0",
+  "description": "Core StratoSphere SDK functionality",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "scripts": {
+    "build": "tsc",
+    "dev": "tsc --watch",
+    "clean": "rm -rf dist",
+    "prepublishOnly": "npm run clean && npm run build"
+  },
+  "keywords": [
+    "stratosphere",
+    "sdk",
+    "core"
+  ],
+  "author": "StratoSphere",
+  "license": "MIT",
+  "files": [
+    "dist/**/*",
+    "README.md"
+  ],
+  "dependencies": {
+    "@stratosphere/wallet": "^1.0.0"
+  },
+  "devDependencies": {
+    "@stratosphere/shared": "^1.0.0"
+  },
+  "publishConfig": {
+    "access": "public"
+  }
+}

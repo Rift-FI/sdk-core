@@ -1,0 +1,32 @@
+{
+  "name": "@stratosphere/wallet",
+  "version": "1.0.0",
+  "description": "Wallet module for StratoSphere SDK",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "scripts": {
+    "build": "tsc",
+    "dev": "tsc --watch",
+    "clean": "rm -rf dist",
+    "prepublishOnly": "npm run clean && npm run build"
+  },
+  "keywords": [
+    "stratosphere",
+    "wallet",
+    "blockchain",
+    "defi"
+  ],
+  "author": "StratoSphere",
+  "license": "MIT",
+  "files": [
+    "dist/**/*",
+    "README.md"
+  ],
+  "dependencies": {
+    "@stratosphere/shared": "^1.0.0",
+    "socket.io-client": "^4.7.5"
+  },
+  "publishConfig": {
+    "access": "public"
+  }
+}

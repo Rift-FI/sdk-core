@@ -1,0 +1,96 @@
+name: Publish Packages
+
+on:
+  workflow_dispatch:
+    inputs:
+      package:
+        description: "Package to publish (core, wallet, shared, or all)"
+        required: true
+        default: "all"
+        type: choice
+        options:
+          - all
+          - core
+          - wallet
+          - shared
+      version:
+        description: "Version bump type"
+        required: true
+        default: "patch"
+        type: choice
+        options:
+          - patch
+          - minor
+          - major
+      tag:
+        description: "NPM tag (latest, beta, next)"
+        required: true
+        default: "latest"
+        type: choice
+        options:
+          - latest
+          - beta
+          - next
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Setup Git
+        run: |
+          git config --global user.name "GitHub Actions"
+          git config --global user.email "actions@github.com"
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          registry-url: "https://registry.npmjs.org"
+
+      - name: Install dependencies
+        working-directory: ./sdk
+        run: npm ci
+
+      - name: Build all packages
+        working-directory: ./sdk
+        run: npm run build
+
+      - name: Version bump - All packages
+        if: github.event.inputs.package == 'all'
+        working-directory: ./sdk
+        run: |
+          npm version ${{ github.event.inputs.version }} --workspaces --no-git-tag-version
+          git add .
+          git commit -m "chore: bump all packages to ${{ github.event.inputs.version }}"
+
+      - name: Version bump - Specific package
+        if: github.event.inputs.package != 'all'
+        working-directory: ./sdk
+        run: |
+          npm version ${{ github.event.inputs.version }} -w @stratosphere/${{ github.event.inputs.package }} --no-git-tag-version
+          git add .
+          git commit -m "chore: bump @stratosphere/${{ github.event.inputs.package }} to ${{ github.event.inputs.version }}"
+
+      - name: Publish all packages
+        if: github.event.inputs.package == 'all'
+        working-directory: ./sdk
+        run: npm publish --workspaces --access public --tag ${{ github.event.inputs.tag }}
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+
+      - name: Publish specific package
+        if: github.event.inputs.package != 'all'
+        working-directory: ./sdk
+        run: npm publish -w @stratosphere/${{ github.event.inputs.package }} --access public --tag ${{ github.event.inputs.tag }}
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+
+      - name: Push version changes
+        run: |
+          git push origin main

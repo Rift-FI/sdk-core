@@ -1,0 +1,67 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - "@stratosphere/*"
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          registry-url: "https://registry.npmjs.org"
+
+      - name: Extract package info from tag
+        id: extract
+        run: |
+          TAG="${{ github.ref_name }}"
+          # Extract package name and version from tag like @stratosphere/wallet@1.0.1
+          PACKAGE_FULL=$(echo $TAG | cut -d'@' -f1-2)
+          VERSION=$(echo $TAG | cut -d'@' -f3)
+          PACKAGE_NAME=$(echo $PACKAGE_FULL | cut -d'/' -f2)
+          echo "package_full=$PACKAGE_FULL" >> $GITHUB_OUTPUT
+          echo "package_name=$PACKAGE_NAME" >> $GITHUB_OUTPUT
+          echo "version=$VERSION" >> $GITHUB_OUTPUT
+
+      - name: Install dependencies
+        working-directory: ./sdk
+        run: npm ci
+
+      - name: Build all packages
+        working-directory: ./sdk
+        run: npm run build
+
+      - name: Publish package
+        working-directory: ./sdk
+        run: npm publish -w ${{ steps.extract.outputs.package_full }} --access public
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+
+      - name: Create GitHub Release
+        uses: actions/create-release@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          tag_name: ${{ github.ref }}
+          release_name: ${{ steps.extract.outputs.package_full }} v${{ steps.extract.outputs.version }}
+          body: |
+            ## Released Package
+            - **Package**: ${{ steps.extract.outputs.package_full }}
+            - **Version**: ${{ steps.extract.outputs.version }}
+
+            ## Installation
+            ```bash
+            npm install ${{ steps.extract.outputs.package_full }}@${{ steps.extract.outputs.version }}
+            ```
+
+            See commit history for detailed changes.
+          draft: false
+          prerelease: false
