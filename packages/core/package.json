@@ -1,5 +1,5 @@
 {
-  "name": "@stratosphere/core",
+  "name": "@stratosphere-network/core",
   "version": "1.0.0",
   "description": "Core StratoSphere SDK functionality",
   "main": "dist/index.js",
@@ -22,7 +22,7 @@
     "README.md"
   ],
   "devDependencies": {
-    "@stratosphere/shared": "^1.0.0"
+    "@stratosphere-network/shared": "^1.0.0"
   },
   "publishConfig": {
     "access": "public"

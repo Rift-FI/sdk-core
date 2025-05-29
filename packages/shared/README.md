@@ -7,13 +7,13 @@ Shared utilities, types, and common functionality used across all StratoSphere S
 This package is automatically installed as a dependency when you install other StratoSphere modules.
 
 ```bash
-npm install @stratosphere/shared
+npm install @stratosphere-network/shared
 ```
 
 ## Usage
 
 ```typescript
-import /* shared utilities */ "@stratosphere/shared";
+import /* shared utilities */ "@stratosphere-network/shared";
 ```
 
 ## Contents
