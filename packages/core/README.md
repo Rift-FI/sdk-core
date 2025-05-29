@@ -5,28 +5,15 @@ The core StratoSphere SDK that orchestrates all modules and provides a unified i
 ## Installation
 
 ```bash
-npm install @stratosphere/core
+npm install @stratosphere-network/core
 ```
 
 ## Usage
 
 ```typescript
-import StratoSphere from "@stratosphere/core";
+import StratoSphere from "@stratosphere-network/core";
 
 const stratoSphere = new StratoSphere();
-
-// Setup wallet module
-stratoSphere.setupWallet({
-  environment: "production",
-  apiKey: "your-api-key",
-});
-
-// Access wallet functionality
-const wallet = stratoSphere.getWallet();
-if (wallet) {
-  // Use wallet services
-  await wallet.auth.login({ email: "user@example.com", password: "password" });
-}
 ```
 
 ## Modules
