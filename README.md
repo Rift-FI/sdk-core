@@ -1,16 +1,16 @@
-# StratoSphere SDK Monorepo
+# StratoSphere SDK
 
 This is a monorepo structure for the StratoSphere SDK, allowing different modules to be published as separate npm packages.
 
 ## 📦 Packages
 
-- **[@stratosphere/core](./packages/core)** - Core SDK orchestrator
-- **[@stratosphere/wallet](./packages/wallet)** - Wallet functionality
-- **[@stratosphere/shared](./packages/shared)** - Shared utilities
-- **[@stratosphere/token](./packages/token)** - Token module (coming soon)
-- **[@stratosphere/staking](./packages/staking)** - Staking module (coming soon)
-- **[@stratosphere/dividends](./packages/dividends)** - Dividends module (coming soon)
-- **[@stratosphere/dex](./packages/dex)** - DEX module (coming soon)
+- **[@stratosphere-network/core](./packages/core)** - Core SDK orchestrator
+- **[@stratosphere-network/wallet](./packages/wallet)** - Wallet functionality
+- **[@stratosphere-network/shared](./packages/shared)** - Shared utilities
+- **[@stratosphere-network/token](./packages/token)** - Token module (coming soon)
+- **[@stratosphere-network/staking](./packages/staking)** - Staking module (coming soon)
+- **[@stratosphere-network/dividends](./packages/dividends)** - Dividends module (coming soon)
+- **[@stratosphere-network/dex](./packages/dex)** - DEX module (coming soon)
 
 ## 🚀 Getting Started
 
@@ -52,7 +52,7 @@ mkdir -p packages/new-module/src
 
 ```json
 {
-  "name": "@stratosphere/new-module",
+  "name": "@stratosphere-network/new-module",
   "version": "1.0.0",
   "description": "Description of your module",
   "main": "dist/index.js",
@@ -64,7 +64,7 @@ mkdir -p packages/new-module/src
     "prepublishOnly": "npm run clean && npm run build"
   },
   "dependencies": {
-    "@stratosphere/shared": "^1.0.0"
+    "@stratosphere-network/shared": "^1.0.0"
   },
   "publishConfig": {
     "access": "public"
