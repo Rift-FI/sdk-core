@@ -35,6 +35,9 @@ on:
 jobs:
   publish:
     runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: sdk
 
     steps:
       - name: Checkout code
@@ -58,6 +61,31 @@ jobs:
 
       - name: Build all packages
         run: npm run build
+
+      - name: Debug - List workspace structure
+        run: |
+          echo "=== Root directory ==="
+          ls -la
+          echo "=== Packages directory ==="
+          ls -la packages/
+          echo "=== Wallet package directory ==="
+          ls -la packages/wallet/
+          echo "=== Wallet dist directory (if exists) ==="
+          if [ -d "packages/wallet/dist" ]; then
+            ls -la packages/wallet/dist/
+            echo "=== Dist subdirectories ==="
+            find packages/wallet/dist -type f -name "*.js" -o -name "*.d.ts" | head -10
+          else
+            echo "dist directory does not exist!"
+          fi
+
+      - name: Debug - Check what files would be published
+        run: |
+          echo "=== Checking wallet package files ==="
+          cd packages/wallet
+          npm pack --dry-run
+          echo "=== Package.json files configuration ==="
+          cat package.json | grep -A 10 '"files"'
 
       - name: Version bump - All packages
         if: github.event.inputs.package == 'all'
