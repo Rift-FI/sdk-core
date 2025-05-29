@@ -1,13 +1,13 @@
 {
   "name": "@stratosphere-network/wallet",
-  "version": "1.0.0",
+  "version": "2.1.0",
   "description": "Wallet module for StratoSphere SDK",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
   "scripts": {
     "build": "tsc",
     "dev": "tsc --watch",
-    "clean": "rm -rf dist",
+    "clean": "echo 'No cleanup needed for wallet package'",
     "prepublishOnly": "npm run clean && npm run build"
   },
   "keywords": [
@@ -16,7 +16,7 @@
     "blockchain",
     "defi"
   ],
-  "author": "StratoSphere",
+  "author": "StratoSphere team",
   "license": "MIT",
   "files": [
     "dist/**/*",
