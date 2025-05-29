@@ -26,5 +26,8 @@
   },
   "publishConfig": {
     "access": "public"
+  },
+  "dependencies": {
+    "@stratosphere-network/wallet": "^1.0.0"
   }
 }
