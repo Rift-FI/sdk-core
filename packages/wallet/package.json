@@ -1,6 +1,6 @@
 {
   "name": "@stratosphere-network/wallet",
-  "version": "4.0.0",
+  "version": "5.0.0",
   "description": "Wallet module for StratoSphere SDK",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
@@ -23,7 +23,6 @@
     "README.md"
   ],
   "dependencies": {
-    "@stratosphere-network/shared": "^1.0.0",
     "socket.io-client": "^4.7.5"
   },
   "publishConfig": {

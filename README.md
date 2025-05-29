@@ -14,12 +14,6 @@ This is a monorepo structure for the StratoSphere SDK, allowing different module
 
 ## 🚀 Getting Started
 
-### 1. Run the migration script
-
-```bash
-node migrate-to-monorepo.js
-```
-
 ### 2. Install dependencies
 
 ```bash
@@ -99,7 +93,27 @@ mkdir -p packages/new-module/src
 }
 ```
 
-5. Update the core package to include your module
+5. Update the core package to include your module, only do this after your package is published to npm. Like shown below.
+```typescript
+import Sphere, { SphereConfig } from "@stratosphere-network/wallet";
+
+export class StratoSphere {
+  public Wallet: Sphere | null = null;
+
+  setupWallet(config: SphereConfig) {
+    this.Wallet = new Sphere(config);
+  }
+
+  getWallet() {
+    return this.Wallet;
+  }
+  hasWallet() {
+    return this.Wallet !== null;
+  }
+}
+
+export default StratoSphere;
+```
 
 ## 🚢 Publishing
 
