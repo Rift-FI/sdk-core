@@ -167,14 +167,19 @@ export interface TransactionResponse {
 export interface TransactionHistoryRequest {
   limit?: number;
   page?: number;
-  currency?: string;
+  token?: string;
+  chain?: string;
 }
+
+
 
 export interface Transaction {
   transaction_hash: string;
+  user_email: string;
   amount: string;
-  currency: string;
-  recipient_addres: string;
+  chain: string;
+  token: string;
+  recipient_address: string;
   created_at: string;
 }
 
@@ -454,3 +459,7 @@ export interface AccountCreationFailedEvent {
   message: string;
   error: string;
 }
+
+
+//transaction history
+
