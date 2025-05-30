@@ -179,10 +179,13 @@ sdk/
 
 ## 🤝 Contributing
 
-1. Create a feature branch
+1. Create a feature branch with naming `module-name/feature` e.g `wallet/getBalances`  
 2. Make your changes
-3. Run `npm run build` to ensure everything builds
-4. Submit a pull request
+3. When done, merge the changes with `module-name/preview` e.g `wallet/preview`
+4. Deploy to npm manually through  github actions
+5. If everything works, create a pull request against `preview`
+6. The  pull request  will be merged to master after review.
+
 
 ## 📄 License
 
