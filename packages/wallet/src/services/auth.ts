@@ -9,26 +9,29 @@ import {
   UserResponse,
   DeleteUserRequest,
   ApiResponse,
+  LoginResponse,
+  SignupResponse,
+  DeleteUserResponse,
 } from "../types";
 
 export class AuthService extends BaseService {
-  async signup(request: SignupRequest): Promise<ApiResponse> {
-    return this.publicRequest<ApiResponse>({
+  async signup(request: SignupRequest): Promise<SignupResponse> {
+    return this.publicRequest<SignupResponse>({
       method: "POST",
       url: "/auth/signup",
       data: request,
     });
   }
 
-  async login(request: LoginRequest): Promise<AuthResponse> {
-    const response = await this.publicRequest<AuthResponse>({
+  async login(request: LoginRequest): Promise<LoginResponse> {
+    const response = await this.publicRequest<LoginResponse>({
       method: "POST",
       url: "/auth/login",
       data: request,
     });
 
-    if (response.token) {
-      this.setBearerToken(response.token);
+    if (response.accessToken) {
+      this.setBearerToken(response.accessToken);
     }
 
     return response;
@@ -59,9 +62,9 @@ export class AuthService extends BaseService {
 
   async deleteUser(
     request: DeleteUserRequest
-  ): Promise<ApiResponse<{ deletedUser: any }>> {
+  ): Promise<ApiResponse<DeleteUserResponse>> {
     const response = await this.authenticatedRequest<
-      ApiResponse<{ deletedUser: any }>
+      ApiResponse<DeleteUserResponse>
     >({
       method: "DELETE",
       url: "/user/delete",
