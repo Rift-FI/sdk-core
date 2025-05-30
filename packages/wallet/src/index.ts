@@ -5,6 +5,7 @@ import { WalletService } from "./services/wallet";
 import { TransactionService } from "./services/transactions";
 import { PaymentLinksService } from "./services/payment-links";
 import { DeFiService } from "./services/defi";
+import { AssetsService } from "./services/assets";
 
 export class Sphere {
   public readonly config: SphereConfig;
@@ -16,6 +17,7 @@ export class Sphere {
   public readonly transactions: TransactionService;
   public readonly paymentLinks: PaymentLinksService;
   public readonly defi: DeFiService;
+  public readonly assets: AssetsService;
 
   constructor(config: SphereConfig) {
     this.config = config;
@@ -27,6 +29,7 @@ export class Sphere {
     this.transactions = new TransactionService(this.httpClient);
     this.paymentLinks = new PaymentLinksService(this.httpClient);
     this.defi = new DeFiService(this.httpClient);
+    this.assets = new AssetsService(this.httpClient);
   }
 
   /**
@@ -45,6 +48,7 @@ export class Sphere {
     this.transactions.setBearerToken(token);
     this.paymentLinks.setBearerToken(token);
     this.defi.setBearerToken(token);
+    this.assets.setBearerToken(token);
   }
 
   /**
@@ -56,6 +60,7 @@ export class Sphere {
     this.transactions.clearBearerToken();
     this.paymentLinks.clearBearerToken();
     this.defi.clearBearerToken();
+    this.assets.clearBearerToken();
   }
 
   /**

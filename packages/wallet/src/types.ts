@@ -171,8 +171,6 @@ export interface TransactionHistoryRequest {
   chain?: string;
 }
 
-
-
 export interface Transaction {
   transaction_hash: string;
   user_email: string;
@@ -273,6 +271,25 @@ export interface Token {
 export interface TokensResponse {
   message: string;
   data: Token[];
+}
+
+// Wallet Asset Types
+export interface WalletChain {
+  id: string;
+  name: string;
+  description?: string;
+  icon?: string;
+  enabled: boolean;
+}
+
+export interface WalletToken {
+  id: string;
+  name: string;
+  description?: string;
+  enabled: boolean;
+  contract_address?: string | null;
+  chain_id: string;
+  icon?: string;
 }
 
 // Burn Incentives Types
@@ -460,6 +477,4 @@ export interface AccountCreationFailedEvent {
   error: string;
 }
 
-
 //transaction history
-
