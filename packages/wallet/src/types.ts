@@ -17,18 +17,28 @@ export interface ApiResponse<T = any> {
   data?: T;
   error?: string;
 }
+export interface LoginResponse {
+  user: string;
+  address: string;
+  btcAddress: string;
+  accessToken: string;
+}
 
 // Authentication Types
 export interface LoginRequest {
   phoneNumber: string;
-  telegramId?: string;
+  externalId: string;
   otpCode: string;
 }
 
 export interface SignupRequest {
-  email: string;
-  telegramId?: string;
+  externalId: string;
   phoneNumber: string;
+  email?: string;
+}
+export interface SignupResponse {
+  message: string;
+  userId: string;
 }
 
 export interface AuthResponse {
@@ -38,6 +48,10 @@ export interface AuthResponse {
 
 export interface OtpRequest {
   phone: string;
+}
+export interface OtpResponse {
+  status: string;
+  message?: string;
 }
 
 export interface OtpVerifyRequest {
@@ -53,7 +67,11 @@ export interface OtpResponse {
 // User Types
 export interface User {
   id: string;
-  email: string;
+  externalId: string;
+  referrer?: string;
+  createdAt?: string;
+  updatedAt?: string;
+  email?: string;
   telegramId?: string;
   phoneNumber?: string;
 }
@@ -63,11 +81,12 @@ export interface UserResponse {
 }
 
 export interface DeleteUserRequest {
-  telegramId?: string;
-  email?: string;
-  otpCode?: string;
+  externalId: string;
+  otpCode: string;
 }
-
+export interface DeleteUserResponse {
+  message: string;
+}
 // Project Types
 export interface Project {
   id: string;
@@ -141,23 +160,25 @@ export interface TransactionRequest {
 }
 
 export interface TransactionResponse {
-  tokenType: string;
-  chain: string;
+  message: string;
+  transactionHash: string;
 }
 
 export interface TransactionHistoryRequest {
   limit?: number;
   page?: number;
-  currency?: string;
+  token?: string;
+  chain?: string;
 }
 
 export interface Transaction {
-  id: string;
-  amount: number;
-  currency: string;
-  to: string;
-  transactionHash: string;
-  timestamp: string;
+  transaction_hash: string;
+  user_email: string;
+  amount: string;
+  chain: string;
+  token: string;
+  recipient_address: string;
+  created_at: string;
 }
 
 // DeFi Types
@@ -250,6 +271,25 @@ export interface Token {
 export interface TokensResponse {
   message: string;
   data: Token[];
+}
+
+// Wallet Asset Types
+export interface WalletChain {
+  id: string;
+  name: string;
+  description?: string;
+  icon?: string;
+  enabled: boolean;
+}
+
+export interface WalletToken {
+  id: string;
+  name: string;
+  description?: string;
+  enabled: boolean;
+  contract_address?: string | null;
+  chain_id: string;
+  icon?: string;
 }
 
 // Burn Incentives Types
@@ -436,3 +476,5 @@ export interface AccountCreationFailedEvent {
   message: string;
   error: string;
 }
+
+//transaction history
