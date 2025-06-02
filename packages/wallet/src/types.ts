@@ -35,6 +35,7 @@ export interface SignupRequest {
   externalId: string;
   phoneNumber: string;
   email?: string;
+  
 }
 export interface SignupResponse {
   message: string;
