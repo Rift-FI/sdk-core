@@ -1,7 +1,9 @@
-import { Provider, Signer } from 'ethers';
+import { Provider, Signer, ethers, Contract } from 'ethers';
+import { createWallet, SupportedChain } from '@stratosphere-network/shared';
 import { TokenService } from './services/TokenService';
 import {
   TokenConfig,
+  DeployTokenParams,
   MintRequest,
   BurnRequest,
   TokenFactoryConfig,
@@ -17,6 +19,30 @@ export interface TokenModuleConfig {
   signer?: Signer;
   contractAddresses: ContractAddresses;
 }
+
+// Default Token Factory addresses for different chains
+const DEFAULT_TOKEN_FACTORY_ADDRESSES: Partial<Record<SupportedChain, string>> = {
+  // These would be the actual deployed addresses for each chain
+  [SupportedChain.ETHEREUM_SEPOLIA]: '0x...',  // Replace with actual address
+  [SupportedChain.POLYGON_MUMBAI]: '0x...',    // Replace with actual address
+  [SupportedChain.BSC_TESTNET]: '0x...',       // Replace with actual address
+  // Add more chains as needed
+};
+
+const TOKEN_FACTORY_ABI = [
+  "function deployToken(string name, string symbol, uint256 maxSupply, uint256 initialSupply) payable returns (address)",
+  "function deploymentFee() view returns (uint256)",
+  "event TokenDeployed(address indexed tokenAddress, address indexed owner, string name, string symbol, uint256 maxSupply, uint256 initialSupply)"
+];
+
+const MINTABLE_TOKEN_ABI = [
+  "function hasRole(bytes32 role, address account) view returns (bool)",
+  "function grantRole(bytes32 role, address account)",
+  "function revokeRole(bytes32 role, address account)",
+  "function MINTER_ROLE() view returns (bytes32)",
+  "function BURNER_ROLE() view returns (bytes32)",
+  "function DEFAULT_ADMIN_ROLE() view returns (bytes32)"
+];
 
 /**
  * Token Module for StratoSphere SDK
@@ -39,6 +65,123 @@ export class Token {
       config.contractAddresses,
       config.signer
     );
+  }
+
+  /**
+   * Static method to deploy a token with the specified parameters
+   * Creates a provider and wallet from the private key and chain, then deploys the token
+   * 
+   * @param params Deploy token parameters
+   * @returns Promise<string> The address of the deployed token
+   * 
+   * @example
+   * ```typescript
+   * import { Token, SupportedChain } from "@stratosphere-network/token";
+   * 
+   * const tokenAddress = await Token.deployToken({
+   *   name: "My Token",
+   *   symbol: "MTK", 
+   *   totalSupply: "1000000",
+   *   minterAddress: "0x...",
+   *   burnerAddress: "0x...",
+   *   adminAddress: "0x...",
+   *   deployerPrivateKey: "your-private-key",
+   *   chain: SupportedChain.ETHEREUM_SEPOLIA
+   * });
+   * ```
+   */
+  static async deployToken(params: DeployTokenParams): Promise<string> {
+    const {
+      name,
+      symbol,
+      totalSupply,
+      minterAddress,
+      burnerAddress,
+      adminAddress,
+      deployerPrivateKey,
+      chain
+    } = params;
+
+    // Create wallet from private key and chain
+    const wallet = createWallet(deployerPrivateKey, chain);
+    const deployerAddress = await wallet.getAddress();
+    
+    // Get factory address for the chain
+    const factoryAddress = DEFAULT_TOKEN_FACTORY_ADDRESSES[chain];
+    if (!factoryAddress) {
+      throw new Error(`Token factory not deployed on chain: ${chain}`);
+    }
+
+    // Create factory contract instance
+    const factory = new Contract(factoryAddress, TOKEN_FACTORY_ABI, wallet);
+    
+    // Convert totalSupply to wei (assuming 18 decimals)
+    const totalSupplyWei = ethers.parseEther(totalSupply);
+    
+    // Get deployment fee
+    const deploymentFee = await factory.deploymentFee();
+    
+    // Deploy the token
+    const tx = await factory.deployToken(
+      name,
+      symbol,
+      totalSupplyWei, // maxSupply
+      totalSupplyWei, // initialSupply (same as total supply)
+      { value: deploymentFee }
+    );
+
+    const receipt = await tx.wait();
+    
+    // Find the TokenDeployed event to get the token address
+    const deployEvent = receipt.logs.find((log: any) => {
+      try {
+        const parsed = factory.interface.parseLog(log);
+        return parsed?.name === 'TokenDeployed';
+      } catch {
+        return false;
+      }
+    });
+
+    if (!deployEvent) {
+      throw new Error('Token deployment event not found');
+    }
+
+    const parsedEvent = factory.interface.parseLog(deployEvent);
+    const tokenAddress = parsedEvent?.args[0];
+
+    // Set up roles if addresses are provided
+    const token = new Contract(tokenAddress, MINTABLE_TOKEN_ABI, wallet);
+    
+    // Get role hashes
+    const [minterRole, burnerRole, adminRole] = await Promise.all([
+      token.MINTER_ROLE(),
+      token.BURNER_ROLE(), 
+      token.DEFAULT_ADMIN_ROLE()
+    ]);
+
+    // Grant roles to specified addresses
+    const rolePromises: Promise<any>[] = [];
+    
+    if (minterAddress && minterAddress !== deployerAddress) {
+      rolePromises.push(token.grantRole(minterRole, minterAddress));
+    }
+    
+    if (burnerAddress && burnerAddress !== deployerAddress) {
+      rolePromises.push(token.grantRole(burnerRole, burnerAddress));
+    }
+    
+    if (adminAddress && adminAddress !== deployerAddress) {
+      rolePromises.push(token.grantRole(adminRole, adminAddress));
+      // Transfer admin role from deployer to specified admin
+      rolePromises.push(token.revokeRole(adminRole, deployerAddress));
+    }
+    
+    // Wait for all role transactions to complete
+    if (rolePromises.length > 0) {
+      await Promise.all(rolePromises);
+    }
+
+    return tokenAddress;
   }
 
   // --- Configuration Methods ---

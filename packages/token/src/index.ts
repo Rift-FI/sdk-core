@@ -7,6 +7,7 @@ export { TokenService } from './services/TokenService';
 // Types and interfaces
 export {
   TokenConfig,
+  DeployTokenParams,
   MintRequest,
   BurnRequest,
   TokenFactoryConfig,
@@ -27,4 +28,7 @@ export type {
   BurnRequest as TokenBurnRequest,
   TokenInfo as TokenDetails,
   TokenBalance as TokenBalanceInfo
-} from './types'; 
+} from './types';
+
+// Re-export from shared package
+export { SupportedChain } from '@stratosphere-network/shared'; 

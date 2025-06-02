@@ -1,3 +1,5 @@
+import { SupportedChain } from '@stratosphere-network/shared';
+
 export interface TokenConfig {
   name: string;
   symbol: string;
@@ -8,6 +10,20 @@ export interface TokenConfig {
   burnable?: boolean;
   pausable?: boolean;
   upgradeable?: boolean;
+}
+
+/**
+ * Parameters for the static deployToken method
+ */
+export interface DeployTokenParams {
+  name: string;
+  symbol: string;
+  totalSupply: string;
+  minterAddress?: string;
+  burnerAddress?: string;
+  adminAddress?: string;
+  deployerPrivateKey: string;
+  chain: SupportedChain;
 }
 
 export interface MintRequest {

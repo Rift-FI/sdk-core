@@ -15,23 +15,80 @@ Token module for StratoSphere SDK providing ERC20 token minting, burning, and fa
 ## Installation
 
 ```bash
-npm install @stratosphere-network/token
+npm install @stratosphere-network/token @stratosphere-network/shared
 ```
 
 ## Quick Start
 
-```typescript
-import Token from '@stratosphere-network/token';
-import { ethers } from 'ethers';
+### Static Token Deployment (Recommended)
 
-// Initialize with provider and contract addresses
-const token = new Token({
-  provider: new ethers.JsonRpcProvider('YOUR_RPC_URL'),
-  signer: wallet, // Optional ethers Signer
+The easiest way to deploy a token is using the static `deployToken` method:
+
+```typescript
+import { Token, SupportedChain } from "@stratosphere-network/token";
+
+const tokenAddress = await Token.deployToken({
+  name: "My Awesome Token",
+  symbol: "MAT",
+  totalSupply: "1000000", // 1 million tokens
+  minterAddress: "0x1234...", // Optional: Address that can mint new tokens
+  burnerAddress: "0x5678...", // Optional: Address that can burn tokens
+  adminAddress: "0x9abc...",  // Optional: Address that becomes the admin
+  deployerPrivateKey: "your-private-key-here",
+  chain: SupportedChain.ETHEREUM_SEPOLIA
+});
+
+console.log(`Token deployed at: ${tokenAddress}`);
+```
+
+### Supported Chains
+
+- `ETHEREUM_MAINNET`
+- `ETHEREUM_SEPOLIA`
+- `POLYGON_MAINNET`
+- `POLYGON_MUMBAI`
+- `BSC_MAINNET`
+- `BSC_TESTNET`
+- `ARBITRUM_MAINNET`
+- `ARBITRUM_SEPOLIA`
+- `OPTIMISM_MAINNET`
+- `OPTIMISM_SEPOLIA`
+- `BASE_MAINNET`
+- `BASE_SEPOLIA`
+
+### Advanced Usage
+
+For more advanced use cases, you can also create a Token instance:
+
+```typescript
+import { Token, TokenModuleConfig } from "@stratosphere-network/token";
+import { createProvider, createWallet, SupportedChain } from "@stratosphere-network/shared";
+
+// Create provider and wallet
+const provider = createProvider(SupportedChain.ETHEREUM_SEPOLIA);
+const signer = createWallet("your-private-key", SupportedChain.ETHEREUM_SEPOLIA);
+
+// Configure token module
+const config: TokenModuleConfig = {
+  provider,
+  signer,
   contractAddresses: {
-    tokenFactory: '0x...', // Token Factory contract address
-    sphrToken: '0x...'     // SPHR token contract address (optional)
+    tokenFactory: "0x...", // Factory contract address
+    sphrToken: "0x..."     // SPHR token address (optional)
   }
+};
+
+// Create token instance
+const token = new Token(config);
+
+// Deploy token using instance method
+const deployedToken = await token.deployToken({
+  name: "My Token",
+  symbol: "MTK",
+  maxSupply: "1000000",
+  initialSupply: "100000",
+  mintable: true,
+  burnable: true
 });
 ```
 
