@@ -1,34 +1,49 @@
-// Main Token class
-export { Token as default, Token, TokenModuleConfig } from './Token';
+import { TokenConfig, RPC_URLS, Chain } from "./types";
+export { TokenConfig, Chain } from "./types";
+import { TokenFactoryAbi } from "./utils/tokenFactory";
+import { factoryAddress } from "./types";
+import { ethers } from "ethers";
 
-// Services
-export { TokenService } from './services/TokenService';
+class Token {
+  async deployToken(config: TokenConfig, deployerPrivateKey: string) {
+    if (!config.chain) {
+      throw new Error("Chain is required");
+    }
 
-// Types and interfaces
-export {
-  TokenConfig,
-  DeployTokenParams,
-  MintRequest,
-  BurnRequest,
-  TokenFactoryConfig,
-  DeployedToken,
-  TokenInfo,
-  TokenBalance,
-  TokenTransfer,
-  RoleConfig,
-  TokenEvents,
-  TokenStandard,
-  ContractAddresses
-} from './types';
+    if (config.chain !== Chain.BERACHAIN_MAINNET) {
+      throw new Error(
+        "Unsupported chain: This function only supports Berachain Mainnet."
+      );
+    }
 
-// Re-export for convenience
-export type {
-  TokenConfig as TokenDeploymentConfig,
-  MintRequest as TokenMintRequest,
-  BurnRequest as TokenBurnRequest,
-  TokenInfo as TokenDetails,
-  TokenBalance as TokenBalanceInfo
-} from './types';
+    // Now that we've confirmed the chain is Berachain, we can directly use its string value.
+    const rpcUrl = RPC_URLS[Chain.BERACHAIN_MAINNET];
+    const provider = new ethers.JsonRpcProvider(rpcUrl);
+    const wallet = new ethers.Wallet(deployerPrivateKey, provider);
+    const tokenFactoryAddress = factoryAddress[Chain.BERACHAIN_MAINNET];
+    const tokenFactory = new ethers.Contract(
+      tokenFactoryAddress,
+      TokenFactoryAbi,
+      wallet
+    );
+    try {
+      const tx = await tokenFactory.createToken(
+        config.name,
+        config.symbol,
+        config.totalSupply,
+        config.decimals,
+        config.isMintable || false,
+        config.isBurnable || false,
+        config.isPausable || false
+      );
+      const receipt = await tx.wait();
+      console.log("Token deployed successfully:", receipt);
+      return receipt?.hash;
+    } catch (error) {
+      console.error("Error deploying token:", error);
+      throw error;
+    }
+  }
+}
 
-// Re-export from shared package
-export { SupportedChain } from '@stratosphere-network/shared'; 
+export default Token;

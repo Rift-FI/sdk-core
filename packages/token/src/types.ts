@@ -1,121 +1,29 @@
-import { SupportedChain } from '@stratosphere-network/shared';
-
 export interface TokenConfig {
   name: string;
   symbol: string;
-  decimals?: number;
-  initialSupply?: string;
-  maxSupply?: string;
-  mintable?: boolean;
-  burnable?: boolean;
-  pausable?: boolean;
-  upgradeable?: boolean;
-}
-
-/**
- * Parameters for the static deployToken method
- */
-export interface DeployTokenParams {
-  name: string;
-  symbol: string;
   totalSupply: string;
-  minterAddress?: string;
-  burnerAddress?: string;
-  adminAddress?: string;
-  deployerPrivateKey: string;
-  chain: SupportedChain;
-}
-
-export interface MintRequest {
-  to: string;
-  amount: string;
-  tokenAddress?: string;
-}
-
-export interface BurnRequest {
-  from: string;
-  amount: string;
-  tokenAddress?: string;
-}
-
-export interface TokenFactoryConfig {
-  owner: string;
-  feeRecipient?: string;
-  deploymentFee?: string;
-}
-
-export interface DeployedToken {
-  address: string;
-  name: string;
-  symbol: string;
   decimals: number;
-  totalSupply: string;
-  maxSupply?: string;
-  owner: string;
-  deploymentTx: string;
-  deployedAt: Date;
+  chain: Chain;
+  isMintable?: boolean;
+  isBurnable?: boolean;
+  isPausable?: boolean;
+}
+export enum Chain {
+  ETHEREUM_MAINNET = "ethereum-mainnet",
+  POLYGON_MAINNET = "polygon-mainnet",
+  BERACHAIN_MAINNET = "berachain-mainnet",
+
+  BASE_MAINNET = "base-mainnet",
+
+  ARBITRUM_MAINNET = "arbitrum-mainnet",
+
+  OPTIMISM_MAINNET = "optimism-mainnet",
 }
 
-export interface TokenInfo {
-  address: string;
-  name: string;
-  symbol: string;
-  decimals: number;
-  totalSupply: string;
-  maxSupply?: string;
-  owner: string;
-  mintable: boolean;
-  burnable: boolean;
-  pausable: boolean;
-  paused: boolean;
+export enum RPC_URLS {
+  "berachain-mainnet" = "https://rpc.berachain.com",
 }
 
-export interface TokenBalance {
-  address: string;
-  balance: string;
-  decimals: number;
-  symbol: string;
+export enum factoryAddress {
+  "berachain-mainnet" = "0x52c76E937766FdEeC07a0256E80d8515958c1ae6",
 }
-
-export interface TokenTransfer {
-  from: string;
-  to: string;
-  amount: string;
-  tokenAddress: string;
-  txHash: string;
-  blockNumber: number;
-  timestamp: Date;
-}
-
-export interface RoleConfig {
-  minter?: string[];
-  burner?: string[];
-  pauser?: string[];
-  upgrader?: string[];
-  admin?: string[];
-}
-
-export interface TokenEvents {
-  Transfer: (from: string, to: string, value: string) => void;
-  Mint: (to: string, value: string) => void;
-  Burn: (from: string, value: string) => void;
-  Pause: () => void;
-  Unpause: () => void;
-  RoleGranted: (role: string, account: string, sender: string) => void;
-  RoleRevoked: (role: string, account: string, sender: string) => void;
-}
-
-export enum TokenStandard {
-  ERC20 = "ERC20",
-  ERC20_MINTABLE = "ERC20_MINTABLE",
-  ERC20_BURNABLE = "ERC20_BURNABLE",
-  ERC20_PAUSABLE = "ERC20_PAUSABLE",
-  ERC20_UPGRADEABLE = "ERC20_UPGRADEABLE",
-  SPHR = "SPHR"
-}
-
-export interface ContractAddresses {
-  tokenFactory?: string;
-  sphrToken?: string;
-  [key: string]: string | undefined;
-} 
