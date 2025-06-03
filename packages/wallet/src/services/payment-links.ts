@@ -7,6 +7,12 @@ import {
   ClaimPaymentRequest,
   ClaimPaymentResponse,
   ApiResponse,
+  GetPaymentLinksRequest,
+  GetPaymentLinksResponse,
+  GetPaymentSpendRequestsRequest,
+  GetPaymentSpendRequestsResponse,
+  CancelPaymentLinkResponse,
+  RevokeAuthorizationResponse,
 } from "../types";
 
 export class PaymentLinksService extends BaseService {
@@ -71,6 +77,42 @@ export class PaymentLinksService extends BaseService {
       url: "/payment-links/claim-anonymous-payment",
       params: { id: request.id },
       data: { to: request.to },
+    });
+  }
+
+  async getPaymentLinks(
+    request?: GetPaymentLinksRequest
+  ): Promise<GetPaymentLinksResponse> {
+    return this.authenticatedRequest<GetPaymentLinksResponse>({
+      method: "GET",
+      url: "/payment-links",
+      params: request,
+    });
+  }
+
+  async getPaymentSpendRequests(
+    request?: GetPaymentSpendRequestsRequest
+  ): Promise<GetPaymentSpendRequestsResponse> {
+    return this.authenticatedRequest<GetPaymentSpendRequestsResponse>({
+      method: "GET",
+      url: "/payment-spend-requests",
+      params: request,
+    });
+  }
+
+  async cancelPaymentLink(nonce: string): Promise<CancelPaymentLinkResponse> {
+    return this.authenticatedRequest<CancelPaymentLinkResponse>({
+      method: "DELETE",
+      url: `/payment-links/${nonce}`,
+    });
+  }
+
+  async revokeAuthorization(
+    urlId: string
+  ): Promise<RevokeAuthorizationResponse> {
+    return this.authenticatedRequest<RevokeAuthorizationResponse>({
+      method: "DELETE",
+      url: `/payment-spend-requests/${urlId}`,
     });
   }
 }

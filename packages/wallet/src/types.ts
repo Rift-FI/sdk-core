@@ -35,7 +35,6 @@ export interface SignupRequest {
   externalId: string;
   phoneNumber: string;
   email?: string;
-  
 }
 export interface SignupResponse {
   message: string;
@@ -180,6 +179,19 @@ export interface Transaction {
   token: string;
   recipient_address: string;
   created_at: string;
+}
+
+// Transaction Fee Types
+export interface TransactionFeeRequest {
+  recipient: string;
+  amount: string;
+  chain: string;
+  token: string;
+}
+
+export interface TransactionFeeResponse {
+  amount: number;
+  token: string;
 }
 
 // DeFi Types
@@ -478,4 +490,93 @@ export interface AccountCreationFailedEvent {
   error: string;
 }
 
-//transaction history
+// Payment Links Management Types
+export interface GetPaymentLinksRequest {
+  expired?: "true" | "false";
+  limit?: string;
+  page?: string;
+}
+
+export interface PaymentLinkItem {
+  id: string;
+  nonce: string;
+  amount: string;
+  token: string;
+  chain: string;
+  creatorAddress: string;
+  status: string;
+  createdAt: string;
+  updatedAt: string;
+  paidByAddress?: string;
+  paidByUser?: string;
+  paidAt?: string;
+}
+
+export interface GetPaymentLinksResponse {
+  data: PaymentLinkItem[];
+  pagination: {
+    currentPage: number;
+    totalPages: number;
+    totalCount: number;
+    limit: number;
+    hasNextPage: boolean;
+    hasPreviousPage: boolean;
+  };
+}
+
+export interface GetPaymentSpendRequestsRequest {
+  fulfilled?: "true" | "false";
+  limit?: string;
+  page?: string;
+}
+
+export interface PaymentSpendRequestItem {
+  id: string;
+  urlId: string;
+  value: string;
+  receiver?: string;
+  expiresAt: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface GetPaymentSpendRequestsResponse {
+  data: PaymentSpendRequestItem[];
+  fulfilled: boolean;
+  pagination: {
+    currentPage: number;
+    totalPages: number;
+    totalCount: number;
+    limit: number;
+    hasNextPage: boolean;
+    hasPreviousPage: boolean;
+  };
+}
+
+export interface CancelPaymentLinkRequest {
+  nonce: string;
+}
+
+export interface CancelPaymentLinkResponse {
+  message: string;
+  data: {
+    nonce: string;
+    amount: string;
+    token: string;
+    chain: string;
+  };
+}
+
+export interface RevokeAuthorizationRequest {
+  urlId: string;
+}
+
+export interface RevokeAuthorizationResponse {
+  message: string;
+  data: {
+    urlId: string;
+    value: string;
+    receiver?: string;
+    expiresAt: string;
+  };
+}
