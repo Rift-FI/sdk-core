@@ -23,5 +23,8 @@
   ],
   "publishConfig": {
     "access": "public"
+  },
+  "dependencies": {
+    "ethers": "^6.8.0"
   }
 }

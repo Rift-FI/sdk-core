@@ -43,7 +43,7 @@ const sphere = new Sphere({
 const authResponse = await sphere.auth.login({
   phoneNumber: "+1234567890",
   otpCode: "123456",
-externalId:"user@example.com"// use email,phone e.t.c as external ID
+  externalId: "user@example.com", // use email,phone e.t.c as external ID
 });
 
 //internally, the sphere instance is gonna be authenticated
@@ -66,20 +66,90 @@ console.log("✅ Transaction sent:", transaction);
 
 ## 💳 Payment Links
 
+### Payment Requests (Request money from others)
+
 Create payment requests that anyone can pay:
 
 ```typescript
-// Create a payment link
-const paymentLink = await sphere.paymentLinks.createPaymentLink({
+// Create a payment request
+const paymentRequest = await sphere.paymentLinks.requestPayment({
   amount: 100,
   chain: "BASE",
   token: "USDC",
 });
 
-console.log("💳 Payment link:", paymentLink.data);
+console.log("💳 Payment request:", paymentRequest.data);
 
 // Share the link - users can pay without having your app
-const paymentUrl = sphere.paymentLinks.getPaymentRedirectUrl(paymentLink.data);
+const paymentUrl = sphere.paymentLinks.getPaymentRedirectUrl(
+  paymentRequest.data
+);
+
+// Someone pays your payment request
+await sphere.paymentLinks.payPaymentRequest(paymentRequest.data);
+
+// Get all your payment requests
+const paymentRequests = await sphere.paymentLinks.listPaymentRequests({
+  expired: "false",
+  limit: "10",
+  page: "1",
+});
+
+console.log("📋 Your payment requests:", paymentRequests);
+
+// Cancel a payment request if needed
+const cancelResult = await sphere.paymentLinks.cancelPaymentRequest(
+  paymentRequest.data
+);
+console.log("❌ Payment request cancelled:", cancelResult);
+```
+
+### Send Links (Send money to others)
+
+Create links to send money to specific or open recipients:
+
+```typescript
+// Create a specific send link (for a particular recipient)
+const specificSendLink = await sphere.paymentLinks.createSpecificSendLink({
+  time: "1h", // Expiration time 1s,1m,1d,
+  receiver: "0x742d35Cc6634C0532925a3b8D4C9db96C4b4Db45", // Specific recipient
+  value: "50",
+  token: "USDC",
+  chain: "ARBITRUM",
+});
+
+// Create an open send link (anyone can claim)
+const openSendLink = await sphere.paymentLinks.createOpenSendLink({
+  time: "1h", // Expiration time 1s,1m,1d,
+  value: "25",
+  token: "USDC",
+  chain: "BASE",
+});
+
+// Claim a specific send link
+const claimSpecific = await sphere.paymentLinks.claimSpecificSendLink({
+  id: "send-link-id",
+  to: "0x742d35Cc6634C0532925a3b8D4C9db96C4b4Db45",
+});
+
+// Claim an open send link
+const claimOpen = await sphere.paymentLinks.claimOpenSendLink({
+  id: "send-link-id",
+  to: "0x742d35Cc6634C0532925a3b8D4C9db96C4b4Db45",
+});
+
+// Get all your send links
+const sendLinks = await sphere.paymentLinks.listSendLinks({
+  fulfilled: "false",
+  limit: "10",
+  page: "1",
+});
+
+console.log("💸 Your send links:", sendLinks);
+
+// Cancel a send link
+await sphere.paymentLinks.cancelSendLink("send-link-url-id");
+console.log("🔒 Send link cancelled");
 ```
 
 ## 🔄 DeFi Swaps
@@ -180,12 +250,20 @@ sphere.transactions.getHistory(request); // Get transaction history
 ### 💳 Payment Links
 
 ```typescript
-sphere.paymentLinks.createPaymentLink(request); // Create payment request
-sphere.paymentLinks.payPaymentLink(nonce); // Pay a payment link
-sphere.paymentLinks.createSpecificAuthorization(req); // Create specific auth
-sphere.paymentLinks.createAnonymousAuthorization(req); // Create anonymous auth
-sphere.paymentLinks.claimSpecificPayment(request); // Claim specific payment
-sphere.paymentLinks.claimAnonymousPayment(request); // Claim anonymous payment
+// Payment Requests (requesting money from others)
+sphere.paymentLinks.requestPayment(request); // Create payment request
+sphere.paymentLinks.payPaymentRequest(nonce); // Pay a payment request
+sphere.paymentLinks.getPaymentRedirectUrl(nonce); // Get payment redirect URL
+sphere.paymentLinks.listPaymentRequests(request?); // Get list of payment requests
+sphere.paymentLinks.cancelPaymentRequest(nonce); // Cancel a payment request
+
+// Send Links (sending money to others)
+sphere.paymentLinks.createSpecificSendLink(request); // Create specific send link
+sphere.paymentLinks.createOpenSendLink(request); // Create open send link
+sphere.paymentLinks.claimSpecificSendLink(request); // Claim specific send link
+sphere.paymentLinks.claimOpenSendLink(request); // Claim open send link
+sphere.paymentLinks.listSendLinks(request?); // Get list of send links
+sphere.paymentLinks.cancelSendLink(urlId); // Cancel a send link
 ```
 
 ### 🔄 DeFi Operations

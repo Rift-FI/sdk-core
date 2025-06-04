@@ -74,6 +74,7 @@ export interface User {
   email?: string;
   telegramId?: string;
   phoneNumber?: string;
+  address?: string;
 }
 
 export interface UserResponse {
@@ -386,21 +387,30 @@ export interface ShareSecretResponse {
 }
 
 // Payment Links Types
-export interface CreatePaymentLinkRequest {
+export interface CreatePaymentRequestInput {
   amount: number;
   chain: ChainName;
   token: "USDC" | "USDT" | "WBERA" | "USDC.e";
 }
 
-export interface PaymentLinkResponse {
+export interface PaymentRequestResult {
   data: string;
 }
 
-export interface PayPaymentLinkRequest {
+export interface PayPaymentRequestInput {
   nonce: string;
 }
 
-export interface CreateAuthorizationRequest {
+export interface CreateSendLinkInput {
+  /**
+   * Expiration time for the send link
+   * Format: number followed by time unit (s, m, h, d)
+   * Examples: "1s", "5m", "2h", "30d"
+   * - s: seconds
+   * - m: minutes
+   * - h: hours
+   * - d: days
+   */
   time: string;
   receiver?: string;
   value: string;
@@ -408,14 +418,105 @@ export interface CreateAuthorizationRequest {
   chain: ChainName;
 }
 
-export interface ClaimPaymentRequest {
+export interface ClaimSendLinkInput {
   id: string;
   to: string;
 }
 
-export interface ClaimPaymentResponse {
+export interface ClaimSendLinkResult {
   message?: string;
   data?: string;
+}
+
+// Payment Links Management Types
+export interface GetPaymentRequestsInput {
+  expired?: "true" | "false";
+  limit?: string;
+  page?: string;
+}
+
+export interface PaymentRequestItem {
+  id: string;
+  nonce: string;
+  amount: string;
+  token: string;
+  chain: string;
+  creatorAddress: string;
+  status: string;
+  createdAt: string;
+  updatedAt: string;
+  paidByAddress?: string;
+  paidByUser?: string;
+  paidAt?: string;
+}
+
+export interface GetPaymentRequestsResult {
+  data: PaymentRequestItem[];
+  pagination: {
+    currentPage: number;
+    totalPages: number;
+    totalCount: number;
+    limit: number;
+    hasNextPage: boolean;
+    hasPreviousPage: boolean;
+  };
+}
+
+export interface GetSendLinksInput {
+  fulfilled?: "true" | "false";
+  limit?: string;
+  page?: string;
+}
+
+export interface SendLinkItem {
+  id: string;
+  urlId: string;
+  value: string;
+  receiver?: string;
+  expiresAt: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface GetSendLinksResult {
+  data: SendLinkItem[];
+  fulfilled: boolean;
+  pagination: {
+    currentPage: number;
+    totalPages: number;
+    totalCount: number;
+    limit: number;
+    hasNextPage: boolean;
+    hasPreviousPage: boolean;
+  };
+}
+
+export interface CancelPaymentRequestInput {
+  nonce: string;
+}
+
+export interface CancelPaymentRequestResult {
+  message: string;
+  data: {
+    nonce: string;
+    amount: string;
+    token: string;
+    chain: string;
+  };
+}
+
+export interface CancelSendLinkInput {
+  urlId: string;
+}
+
+export interface CancelSendLinkResult {
+  message: string;
+  data: {
+    urlId: string;
+    value: string;
+    receiver?: string;
+    expiresAt: string;
+  };
 }
 
 // Error Types
@@ -488,95 +589,4 @@ export interface AccountCreationFailedEvent {
   email: string;
   message: string;
   error: string;
-}
-
-// Payment Links Management Types
-export interface GetPaymentLinksRequest {
-  expired?: "true" | "false";
-  limit?: string;
-  page?: string;
-}
-
-export interface PaymentLinkItem {
-  id: string;
-  nonce: string;
-  amount: string;
-  token: string;
-  chain: string;
-  creatorAddress: string;
-  status: string;
-  createdAt: string;
-  updatedAt: string;
-  paidByAddress?: string;
-  paidByUser?: string;
-  paidAt?: string;
-}
-
-export interface GetPaymentLinksResponse {
-  data: PaymentLinkItem[];
-  pagination: {
-    currentPage: number;
-    totalPages: number;
-    totalCount: number;
-    limit: number;
-    hasNextPage: boolean;
-    hasPreviousPage: boolean;
-  };
-}
-
-export interface GetPaymentSpendRequestsRequest {
-  fulfilled?: "true" | "false";
-  limit?: string;
-  page?: string;
-}
-
-export interface PaymentSpendRequestItem {
-  id: string;
-  urlId: string;
-  value: string;
-  receiver?: string;
-  expiresAt: string;
-  createdAt: string;
-  updatedAt: string;
-}
-
-export interface GetPaymentSpendRequestsResponse {
-  data: PaymentSpendRequestItem[];
-  fulfilled: boolean;
-  pagination: {
-    currentPage: number;
-    totalPages: number;
-    totalCount: number;
-    limit: number;
-    hasNextPage: boolean;
-    hasPreviousPage: boolean;
-  };
-}
-
-export interface CancelPaymentLinkRequest {
-  nonce: string;
-}
-
-export interface CancelPaymentLinkResponse {
-  message: string;
-  data: {
-    nonce: string;
-    amount: string;
-    token: string;
-    chain: string;
-  };
-}
-
-export interface RevokeAuthorizationRequest {
-  urlId: string;
-}
-
-export interface RevokeAuthorizationResponse {
-  message: string;
-  data: {
-    urlId: string;
-    value: string;
-    receiver?: string;
-    expiresAt: string;
-  };
 }
