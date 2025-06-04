@@ -74,6 +74,7 @@ export interface User {
   email?: string;
   telegramId?: string;
   phoneNumber?: string;
+  address?: string;
 }
 
 export interface UserResponse {
