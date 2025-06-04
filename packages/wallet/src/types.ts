@@ -17,18 +17,28 @@ export interface ApiResponse<T = any> {
   data?: T;
   error?: string;
 }
+export interface LoginResponse {
+  user: string;
+  address: string;
+  btcAddress: string;
+  accessToken: string;
+}
 
 // Authentication Types
 export interface LoginRequest {
   phoneNumber: string;
-  telegramId?: string;
+  externalId: string;
   otpCode: string;
 }
 
 export interface SignupRequest {
-  email: string;
-  telegramId?: string;
+  externalId: string;
   phoneNumber: string;
+  email?: string;
+}
+export interface SignupResponse {
+  message: string;
+  userId: string;
 }
 
 export interface AuthResponse {
@@ -38,6 +48,10 @@ export interface AuthResponse {
 
 export interface OtpRequest {
   phone: string;
+}
+export interface OtpResponse {
+  status: string;
+  message?: string;
 }
 
 export interface OtpVerifyRequest {
@@ -53,7 +67,11 @@ export interface OtpResponse {
 // User Types
 export interface User {
   id: string;
-  email: string;
+  externalId: string;
+  referrer?: string;
+  createdAt?: string;
+  updatedAt?: string;
+  email?: string;
   telegramId?: string;
   phoneNumber?: string;
 }
@@ -63,11 +81,12 @@ export interface UserResponse {
 }
 
 export interface DeleteUserRequest {
-  telegramId?: string;
-  email?: string;
-  otpCode?: string;
+  externalId: string;
+  otpCode: string;
 }
-
+export interface DeleteUserResponse {
+  message: string;
+}
 // Project Types
 export interface Project {
   id: string;
@@ -141,23 +160,38 @@ export interface TransactionRequest {
 }
 
 export interface TransactionResponse {
-  tokenType: string;
-  chain: string;
+  message: string;
+  transactionHash: string;
 }
 
 export interface TransactionHistoryRequest {
   limit?: number;
   page?: number;
-  currency?: string;
+  token?: string;
+  chain?: string;
 }
 
 export interface Transaction {
-  id: string;
+  transaction_hash: string;
+  user_email: string;
+  amount: string;
+  chain: string;
+  token: string;
+  recipient_address: string;
+  created_at: string;
+}
+
+// Transaction Fee Types
+export interface TransactionFeeRequest {
+  recipient: string;
+  amount: string;
+  chain: string;
+  token: string;
+}
+
+export interface TransactionFeeResponse {
   amount: number;
-  currency: string;
-  to: string;
-  transactionHash: string;
-  timestamp: string;
+  token: string;
 }
 
 // DeFi Types
@@ -250,6 +284,25 @@ export interface Token {
 export interface TokensResponse {
   message: string;
   data: Token[];
+}
+
+// Wallet Asset Types
+export interface WalletChain {
+  id: string;
+  name: string;
+  description?: string;
+  icon?: string;
+  enabled: boolean;
+}
+
+export interface WalletToken {
+  id: string;
+  name: string;
+  description?: string;
+  enabled: boolean;
+  contract_address?: string | null;
+  chain_id: string;
+  icon?: string;
 }
 
 // Burn Incentives Types
@@ -435,4 +488,95 @@ export interface AccountCreationFailedEvent {
   email: string;
   message: string;
   error: string;
+}
+
+// Payment Links Management Types
+export interface GetPaymentLinksRequest {
+  expired?: "true" | "false";
+  limit?: string;
+  page?: string;
+}
+
+export interface PaymentLinkItem {
+  id: string;
+  nonce: string;
+  amount: string;
+  token: string;
+  chain: string;
+  creatorAddress: string;
+  status: string;
+  createdAt: string;
+  updatedAt: string;
+  paidByAddress?: string;
+  paidByUser?: string;
+  paidAt?: string;
+}
+
+export interface GetPaymentLinksResponse {
+  data: PaymentLinkItem[];
+  pagination: {
+    currentPage: number;
+    totalPages: number;
+    totalCount: number;
+    limit: number;
+    hasNextPage: boolean;
+    hasPreviousPage: boolean;
+  };
+}
+
+export interface GetPaymentSpendRequestsRequest {
+  fulfilled?: "true" | "false";
+  limit?: string;
+  page?: string;
+}
+
+export interface PaymentSpendRequestItem {
+  id: string;
+  urlId: string;
+  value: string;
+  receiver?: string;
+  expiresAt: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface GetPaymentSpendRequestsResponse {
+  data: PaymentSpendRequestItem[];
+  fulfilled: boolean;
+  pagination: {
+    currentPage: number;
+    totalPages: number;
+    totalCount: number;
+    limit: number;
+    hasNextPage: boolean;
+    hasPreviousPage: boolean;
+  };
+}
+
+export interface CancelPaymentLinkRequest {
+  nonce: string;
+}
+
+export interface CancelPaymentLinkResponse {
+  message: string;
+  data: {
+    nonce: string;
+    amount: string;
+    token: string;
+    chain: string;
+  };
+}
+
+export interface RevokeAuthorizationRequest {
+  urlId: string;
+}
+
+export interface RevokeAuthorizationResponse {
+  message: string;
+  data: {
+    urlId: string;
+    value: string;
+    receiver?: string;
+    expiresAt: string;
+  };
 }

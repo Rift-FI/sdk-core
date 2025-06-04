@@ -17,14 +17,14 @@
     "version:major": "npm version major --workspaces"
   },
   "devDependencies": {
-    "@types/node": "^20.10.0",
+    "@types/node": "20.10.0",
     "ts-node": "^10.9.0",
     "typescript": "^5.7.3"
   },
   "engines": {
-    "node": ">=16.0.0"
+    "node": ">=18.0.0"
   },
   "dependencies": {
-    "@stratosphere-network/wallet": "^5.0.0"
+    "@stratosphere-network/wallet": "^6.0.0"
   }
 }
