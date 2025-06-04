@@ -5,7 +5,12 @@ import { factoryAddress } from "./types";
 import { ethers } from "ethers";
 
 class Token {
-  async deployToken(config: TokenConfig, deployerPrivateKey: string) {
+  //support provider from metamask too
+  async deployToken(
+    config: TokenConfig,
+    deployerPrivateKey?: string,
+    walletInstance?: ethers.Wallet
+  ) {
     if (!config.chain) {
       throw new Error("Chain is required");
     }
@@ -15,11 +20,19 @@ class Token {
         "Unsupported chain: This function only supports Berachain Mainnet."
       );
     }
+    let wallet = walletInstance;
+    if (!wallet && !deployerPrivateKey) {
+      throw new Error("Deployer private key or wallet instance is required");
+    }
+    if (wallet && deployerPrivateKey) {
+      wallet = new ethers.Wallet(deployerPrivateKey, wallet.provider);
+    } else if (!wallet && deployerPrivateKey) {
+      // Now that we've confirmed the chain is Berachain, we can directly use its string value.
+      const rpcUrl = RPC_URLS[Chain.BERACHAIN_MAINNET];
+      const provider = new ethers.JsonRpcProvider(rpcUrl);
+      wallet = new ethers.Wallet(deployerPrivateKey, provider);
+    }
 
-    // Now that we've confirmed the chain is Berachain, we can directly use its string value.
-    const rpcUrl = RPC_URLS[Chain.BERACHAIN_MAINNET];
-    const provider = new ethers.JsonRpcProvider(rpcUrl);
-    const wallet = new ethers.Wallet(deployerPrivateKey, provider);
     const tokenFactoryAddress = factoryAddress[Chain.BERACHAIN_MAINNET];
     const tokenFactory = new ethers.Contract(
       tokenFactoryAddress,
