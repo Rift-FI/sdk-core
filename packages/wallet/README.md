@@ -8,7 +8,6 @@ Official TypeScript SDK for **Stratosphere network wallet module** - A comprehen
 - 💸 **Gasless Transactions**: Execute transactions without paying gas fees
 - 🔄 **DeFi Swaps**: Built-in token swapping across chains with best rates
 - 💳 **Payment Links**: Create and manage crypto payment requests
-- 🎯 **Real-time Events**: WebSocket support for live transaction updates
 - 🤖 **AI Integration**: Built-in AI conversation and chat capabilities
 - 🔐 **Secret Sharing**: Secure API key sharing marketplace
 - 📊 **Portfolio Tracking**: Multi-chain balance and transaction history
@@ -44,15 +43,16 @@ const sphere = new Sphere({
 const authResponse = await sphere.auth.login({
   phoneNumber: "+1234567890",
   otpCode: "123456",
+externalId:"user@example.com"// use email,phone e.t.c as external ID
 });
 
-sphere.setBearerToken(authResponse.token);
+//internally, the sphere instance is gonna be authenticated
 
 // Get wallet balance across all chains
 const balances = await sphere.wallet.getChainBalance();
 console.log("💰 Wallet balances:", balances);
 
-// Send gasless transaction (no gas fees!)
+// Send  a transaction
 const transaction = await sphere.transactions.send({
   to: "0x742d35Cc6634C0532925a3b8D4C9db96C4b4Db45",
   value: "10",
@@ -97,32 +97,6 @@ const swapResult = await sphere.defi.swap({
 });
 
 console.log("🔄 Swap completed:", swapResult);
-```
-
-## 🎯 Real-time Events
-
-Listen to transaction events in real-time:
-
-```typescript
-// Connect to real-time events
-await sphere.events.connect();
-
-// Listen for transaction confirmations
-sphere.events.onTXConfirmed((event) => {
-  console.log("✅ Transaction confirmed:", event.transactionHash);
-  // Update your UI, send notifications, etc.
-});
-
-// Listen for failed transactions
-sphere.events.onTXFailed((event) => {
-  console.log("❌ Transaction failed:", event.error);
-  // Handle errors gracefully
-});
-
-// Listen for new account creations
-sphere.events.onAccountCreationSuccess((event) => {
-  console.log("🎉 New account created:", event.address);
-});
 ```
 
 ## 🤖 AI Features
@@ -173,17 +147,6 @@ const conversation = await sphere.ai.conversation({
 const sphere = new Sphere({
   apiKey: "your-api-key",
   environment: Environment.PRODUCTION,
-  baseUrl: "https://custom-api-url.com", // Optional custom endpoint
-  timeout: 30000, // Request timeout (default: 20s)
-  retries: 3, // Retry attempts (default: 3)
-});
-
-// Configure WebSocket events
-await sphere.events.connect({
-  reconnection: true,
-  reconnectionAttempts: 5,
-  reconnectionDelay: 1000,
-  timeout: 20000,
 });
 ```
 
@@ -229,31 +192,6 @@ sphere.paymentLinks.claimAnonymousPayment(request); // Claim anonymous payment
 
 ```typescript
 sphere.defi.swap(request); // Swap tokens across chains
-```
-
-### 🎯 Real-time Events
-
-```typescript
-sphere.events.connect(config); // Connect to WebSocket
-sphere.events.disconnect(); // Disconnect
-sphere.events.subscribe(eventName, handler); // Subscribe to events
-sphere.events.unsubscribe(subscriptionId); // Unsubscribe
-sphere.events.onTXConfirmed(handler); // Transaction confirmed
-sphere.events.onTXFailed(handler); // Transaction failed
-sphere.events.onAccountCreationSuccess(handler); // Account created
-sphere.events.onConnect(handler); // Connected to server
-sphere.events.onDisconnect(handler); // Disconnected
-sphere.events.onError(handler); // Connection error
-```
-
-### 🏗️ Project Management
-
-```typescript
-sphere.projects.create(request); // Create new project
-sphere.projects.getAll(page, limit); // Get all projects
-sphere.projects.getById(id); // Get project by ID
-sphere.projects.delete(id); // Delete project
-sphere.projects.regenerateKey(id); // Regenerate API key
 ```
 
 ## 🚨 Error Handling

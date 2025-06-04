@@ -21,9 +21,7 @@
     "dist/**/*",
     "README.md"
   ],
-  "devDependencies": {
-    "@stratosphere-network/shared": "^1.0.0"
-  },
+  "devDependencies": {},
   "publishConfig": {
     "access": "public"
   },
