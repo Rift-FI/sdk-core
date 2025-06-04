@@ -20,13 +20,16 @@ export class WalletService extends BaseService {
     });
   }
 
-  async getChainBalance(
-    request?: ChainBalanceRequest
-  ): Promise<ApiResponse<Balance[]>> {
-    return this.authenticatedRequest<ApiResponse<Balance[]>>({
+  async getChainBalance(request?: ChainBalanceRequest): Promise<ApiResponse<Balance[]>> {
+    const options: any = {
       method: "GET",
       url: "/wallet/chain-balance",
-      params: request?.chain ? { chain: request.chain } : undefined,
-    });
+    };
+  
+    if (request?.chain) {
+      options.params = { chain: request.chain };
+    }
+  
+    return this.authenticatedRequest<ApiResponse<Balance[]>>(options);
   }
 }
