@@ -15,12 +15,6 @@ export interface TokenInfo {
   totalSupply: string;
 }
 
-export enum IndexerType {
-  Infura = "infura",
-  TheGraph = "thegraph",
-  Custom = "custom",
-}
-
 /** Represents a blockchain chain */
 export interface Chain {
   id: number;
@@ -38,16 +32,6 @@ interface BusinessLogicParams {
   chain: Chain;
 }
 
-export interface IndexerParams {
-  type: IndexerType;
-  uri: string;
-  apiKey?: string;
-  customLogic?: (
-    tokenAddress: string,
-    chain: Chain
-  ) => Promise<AddressAmount[]>;
-}
-
 /** Input for distributing dividends */
 export interface DistributeDividendIn {
   tokenAddress: string;
@@ -55,7 +39,7 @@ export interface DistributeDividendIn {
   amount: number;
   chain: Chain;
   businessLogic: (params: BusinessLogicParams) => Promise<AddressAmount[]>;
-  indexer: IndexerParams;
+  indexer: (tokenAddress: string, chain: Chain) => Promise<AddressAmount[]>;
   privateKey: string;
 }
 

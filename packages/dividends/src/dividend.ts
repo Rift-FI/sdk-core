@@ -4,8 +4,6 @@ import {
   Chain,
   DistributeDividendIn,
   DistributeDividendOut,
-  IndexerParams,
-  IndexerType,
   TokenInfo,
 } from "./types";
 import {
@@ -35,7 +33,6 @@ import {
 } from "viem/chains";
 
 export class Dividends {
-  private indexer: IndexerParams;
   private chain: Chain;
   private tokenAddress: string;
   private publicClient: PublicClient;
@@ -45,7 +42,6 @@ export class Dividends {
   private stableCoinInfo: TokenInfo;
 
   constructor() {
-    this.indexer = {} as IndexerParams;
     this.chain = {} as Chain;
     this.publicClient = {} as PublicClient;
     this.walletClient = {} as WalletClient;
@@ -58,13 +54,11 @@ export class Dividends {
   async distributeDividend(
     params: DistributeDividendIn
   ): Promise<DistributeDividendOut> {
-    await this.checkIndexer(params.indexer);
-    this.indexer = params.indexer;
     await this.setupChain(params.chain, params.privateKey);
     this.tokenAddress = params.tokenAddress;
     await this.setupToken(params.tokenAddress, params.stableCoinAddress);
 
-    const holders = await this.getTokenHolders();
+    const holders = await params.indexer(this.tokenAddress, this.chain);
 
     // proceed it to dividend logic
     const dividendPreResult = await params.businessLogic({
@@ -107,24 +101,6 @@ export class Dividends {
     }
 
     return dividendResult;
-  }
-
-  private async getTokenHolders(): Promise<AddressAmount[]> {
-    if (this.indexer.type === IndexerType.Infura) {
-    }
-
-    if (this.indexer.type === IndexerType.TheGraph) {
-    }
-
-    if (this.indexer.type === IndexerType.Custom) {
-      if (!this.indexer.customLogic) {
-        throw new DividendsError("Custom logic is required");
-      }
-
-      return this.indexer.customLogic(this.tokenAddress, this.chain);
-    }
-
-    return [];
   }
 
   private async setupToken(tokenAddress: string, stableCoinAddress: string) {
@@ -219,26 +195,6 @@ export class Dividends {
     };
   }
 
-  private async checkIndexer(indexer: IndexerParams) {
-    if (indexer.type === "custom") {
-      if (!indexer.customLogic) {
-        throw new DividendsError("Custom logic is required");
-      }
-    }
-
-    if (indexer.type === "infura") {
-      if (!indexer.uri) {
-        throw new DividendsError("URI for infure is required");
-      }
-    }
-
-    if (indexer.type === "thegraph") {
-      if (!indexer.uri) {
-        throw new DividendsError("URI for thegraph is required");
-      }
-    }
-  }
-
   private getChain(chain: Chain) {
     switch (chain.id) {
       case 1:
@@ -257,6 +213,8 @@ export class Dividends {
         return berachain;
       case 289:
         return berachainBepolia;
+      case 1313161554:
+        return sepolia;
       default:
         if (!chain.rpcUrl) {
           throw new DividendsError(
