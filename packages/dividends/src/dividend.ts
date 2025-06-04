@@ -2,9 +2,9 @@ import { DividendsError } from "./error";
 import {
   AddressAmount,
   Chain,
+  DistibuteDividendOutOnChain,
   DistributeDividendIn,
   DistributeDividendOut,
-  TokenInfo,
 } from "./types";
 import {
   Account,
@@ -31,44 +31,62 @@ import {
   berachain,
   berachainBepolia,
 } from "viem/chains";
+import { DividendABI } from "./abi/dividend.abi";
+import moment from "moment";
 
 export class Dividends {
   private chain: Chain;
-  private tokenAddress: string;
   private publicClient: PublicClient;
-  private walletClient: WalletClient;
-  private account: Account;
-  private tokenInfo: TokenInfo;
-  private stableCoinInfo: TokenInfo;
+  private walletClient: WalletClient | null;
+  private account: Account | null;
 
-  constructor() {
-    this.chain = {} as Chain;
+  constructor(chain: Chain, privateKey?: string) {
+    this.chain = chain;
     this.publicClient = {} as PublicClient;
     this.walletClient = {} as WalletClient;
-    this.account = {} as Account;
-    this.tokenAddress = "";
-    this.tokenInfo = {} as TokenInfo;
-    this.stableCoinInfo = {} as TokenInfo;
+
+    const chainForUse = this.getChain(chain);
+    if (privateKey && privateKey.length > 0) {
+      if (!isHex(privateKey)) {
+        throw new DividendsError("Invalid private key");
+      }
+
+      this.account = privateKeyToAccount(privateKey as `0x${string}`);
+      this.walletClient = createWalletClient({
+        account: this.account,
+        chain: chainForUse,
+        transport: http(chainForUse.rpcUrls.default.http[0]),
+      });
+    } else {
+      this.account = null;
+      this.walletClient = null;
+    }
+
+    this.publicClient = createPublicClient({
+      transport: http(chainForUse.rpcUrls.default.http[0]),
+    });
   }
 
-  async distributeDividend(
+  async distributeDividendManual(
     params: DistributeDividendIn
   ): Promise<DistributeDividendOut> {
-    await this.setupChain(params.chain, params.privateKey);
-    this.tokenAddress = params.tokenAddress;
-    await this.setupToken(params.tokenAddress, params.stableCoinAddress);
+    const tokenAddress = params.tokenAddress;
+    const { tokenInfo, stableCoinInfo } = await this.setupToken(
+      params.tokenAddress,
+      params.stableCoinAddress
+    );
 
-    const holders = await params.indexer(this.tokenAddress, this.chain);
+    const holders = await params.indexer(tokenAddress, this.chain);
 
     // proceed it to dividend logic
     const dividendPreResult = await params.businessLogic({
       holders,
-      totalSupply: this.tokenInfo.totalSupply,
+      totalSupply: tokenInfo.totalSupply,
       dividendAmount: parseUnits(
         params.amount.toString(),
-        this.stableCoinInfo.decimals
+        stableCoinInfo.decimals
       ).toString(),
-      tokenAddress: this.tokenAddress,
+      tokenAddress: tokenAddress,
       chain: this.chain,
     });
 
@@ -88,19 +106,81 @@ export class Dividends {
       });
 
       // send tx
-      const tx = await this.walletClient.writeContract({
-        ...request,
-        account: this.account,
-      });
+      let tx: string | undefined = undefined;
+      if (this.account && this.walletClient) {
+        tx = await this.walletClient.writeContract({
+          ...request,
+          account: this.account,
+        });
+      }
 
       dividendResult.push({
         address: divPortion.address,
         amount: divPortion.amount,
         txHash: tx,
+        type: "signed",
+        txUnsigned: request,
       });
     }
 
     return dividendResult;
+  }
+
+  async distributeDividend(
+    params: DistributeDividendIn,
+    dividendContractAddress: string,
+    dividendName?: string
+  ): Promise<DistibuteDividendOutOnChain> {
+    const tokenAddress = params.tokenAddress;
+    const { tokenInfo, stableCoinInfo } = await this.setupToken(
+      params.tokenAddress,
+      params.stableCoinAddress
+    );
+
+    const holders = await params.indexer(tokenAddress, this.chain);
+
+    // proceed it to dividend logic
+    const dividendPreResult = await params.businessLogic({
+      holders,
+      totalSupply: tokenInfo.totalSupply,
+      dividendAmount: parseUnits(
+        params.amount.toString(),
+        stableCoinInfo.decimals
+      ).toString(),
+      tokenAddress: tokenAddress,
+      chain: this.chain,
+    });
+
+    // distribute divident through smart contract
+    const now = moment().unix();
+    const title = dividendName ?? `dividend-${now}`;
+    const { request } = await this.publicClient.simulateContract({
+      abi: DividendABI,
+      address: dividendContractAddress as `0x${string}`,
+      functionName: "distributeDividend",
+      args: [
+        title,
+        params.stableCoinAddress,
+        dividendPreResult.map((dpr) => dpr.address),
+        dividendPreResult.map((dpr) => parseUnits(dpr.amount, 1)), // we parse amount to 1 decimals, we assume that service will return amount in adjusted decimals
+      ],
+    });
+
+    // send tx
+    let tx: string | undefined = undefined;
+    if (this.account && this.walletClient) {
+      tx = await this.walletClient.writeContract({
+        ...request,
+        account: this.account,
+      });
+    }
+
+    return {
+      txHash: tx,
+      txUnsigned: request,
+      type: tx ? "signed" : "unsigned",
+      dividendPortion: dividendPreResult,
+    };
   }
 
   private async setupToken(tokenAddress: string, stableCoinAddress: string) {
@@ -145,7 +225,7 @@ export class Dividends {
     }
 
     const tokenDecimals = tokenInfoResponse[2].result;
-    this.tokenInfo = {
+    const tokenInfo = {
       name: tokenInfoResponse[0].result as string,
       symbol: tokenInfoResponse[1].result as string,
       decimals: tokenDecimals,
@@ -184,7 +264,7 @@ export class Dividends {
     }
 
     const stableCoinDecimals = stableCoinInfoResponse[2].result;
-    this.stableCoinInfo = {
+    const stableCoinInfo = {
       name: stableCoinInfoResponse[0].result as string,
       symbol: stableCoinInfoResponse[1].result as string,
       decimals: stableCoinDecimals,
@@ -192,6 +272,11 @@ export class Dividends {
         stableCoinInfoResponse[3].result,
         stableCoinDecimals
       ),
+    };
+
+    return {
+      tokenInfo,
+      stableCoinInfo,
     };
   }
 
@@ -237,27 +322,5 @@ export class Dividends {
           },
         });
     }
-  }
-
-  private async setupChain(chain: Chain, pk: string) {
-    // check if pk is valid
-    if (!isHex(pk)) {
-      throw new DividendsError("Invalid private key");
-    }
-
-    this.account = privateKeyToAccount(pk as `0x${string}`);
-
-    const chainForUse = this.getChain(chain);
-    this.publicClient = createPublicClient({
-      transport: http(chainForUse.rpcUrls.default.http[0]),
-    });
-
-    this.walletClient = createWalletClient({
-      account: this.account,
-      chain: chainForUse,
-      transport: http(chainForUse.rpcUrls.default.http[0]),
-    });
-
-    this.chain = chain;
   }
 }

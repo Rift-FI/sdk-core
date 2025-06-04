@@ -5,7 +5,9 @@ export interface AddressAmount {
 }
 
 export interface FinishTransferAddressAmount extends AddressAmount {
-  txHash: string;
+  type: "signed" | "unsigned";
+  txHash?: string;
+  txUnsigned?: any;
 }
 
 export interface TokenInfo {
@@ -37,7 +39,6 @@ export interface DistributeDividendIn {
   tokenAddress: string;
   stableCoinAddress: string;
   amount: number;
-  chain: Chain;
   businessLogic: (params: BusinessLogicParams) => Promise<AddressAmount[]>;
   indexer: (tokenAddress: string, chain: Chain) => Promise<AddressAmount[]>;
   privateKey: string;
@@ -45,3 +46,10 @@ export interface DistributeDividendIn {
 
 /** Output for distributing dividends */
 export type DistributeDividendOut = FinishTransferAddressAmount[];
+
+export interface DistibuteDividendOutOnChain {
+  type: "signed" | "unsigned";
+  txHash?: string;
+  txUnsigned?: any;
+  dividendPortion: AddressAmount[];
+}
