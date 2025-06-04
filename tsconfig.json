@@ -18,6 +18,7 @@
   "references": [
     { "path": "./packages/shared" },
     { "path": "./packages/wallet" },
-    { "path": "./packages/core" }
+    { "path": "./packages/core" },
+    { "path": "./packages/token" }
   ]
 }
