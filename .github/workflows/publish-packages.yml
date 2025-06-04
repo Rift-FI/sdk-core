@@ -13,6 +13,7 @@ on:
           - core
           - wallet
           - shared
+          - token
       version:
         description: "Version bump type"
         required: true

@@ -1,18 +1,61 @@
 # StratoSphere SDK
 
-This is a monorepo structure for the StratoSphere SDK, allowing different modules to be published as separate npm packages.
+A comprehensive multi-chain SDK for token deployment, staking, dividends, and DeFi operations.
 
 ## 📦 Packages
 
 - **[@stratosphere-network/core](./packages/core)** - Core SDK orchestrator
 - **[@stratosphere-network/wallet](./packages/wallet)** - Wallet functionality
-- **[@stratosphere-network/shared](./packages/shared)** - Shared utilities
-- **[@stratosphere-network/token](./packages/token)** - Token module (coming soon)
+- **[@stratosphere-network/shared](./packages/shared)** - Shared utilities and chain configurations
+- **[@stratosphere-network/token](./packages/token)** - ✅ **Token deployment and management**
 - **[@stratosphere-network/staking](./packages/staking)** - Staking module (coming soon)
 - **[@stratosphere-network/dividends](./packages/dividends)** - Dividends module (coming soon)
 - **[@stratosphere-network/dex](./packages/dex)** - DEX module (coming soon)
 
-## 🚀 Getting Started
+## 🚀 Quick Start
+
+### Install the Token Module
+
+```bash
+npm install @stratosphere-network/token @stratosphere-network/shared
+```
+
+### Deploy Your First Token
+
+```typescript
+import { Token, SupportedChain } from "@stratosphere-network/token";
+
+const tokenAddress = await Token.deployToken({
+  name: "My Awesome Token",
+  symbol: "MAT",
+  totalSupply: "1000000", // 1 million tokens
+  minterAddress: "0x1234...", // Optional: Address that can mint new tokens
+  burnerAddress: "0x5678...", // Optional: Address that can burn tokens
+  adminAddress: "0x9abc...",  // Optional: Address that becomes the admin
+  deployerPrivateKey: "your-private-key-here",
+  chain: SupportedChain.ETHEREUM_SEPOLIA
+});
+
+console.log(`Token deployed at: ${tokenAddress}`);
+```
+
+### Supported Chains
+
+- Ethereum (Mainnet & Sepolia)
+- Polygon (Mainnet & Mumbai)
+- BSC (Mainnet & Testnet)
+- Arbitrum (Mainnet & Sepolia)
+- Optimism (Mainnet & Sepolia)
+- Base (Mainnet & Sepolia)
+
+## 🛠️ Development Setup
+
+### 1. Clone the repository
+
+```bash
+git clone https://github.com/stratosphere-network/sdk.git
+cd sdk
+```
 
 ### 2. Install dependencies
 
