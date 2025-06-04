@@ -4,6 +4,8 @@ import {
   TransactionResponse,
   TransactionHistoryRequest,
   Transaction,
+  TransactionFeeRequest,
+  TransactionFeeResponse,
 } from "../types";
 
 export class TransactionService extends BaseService {
@@ -21,6 +23,16 @@ export class TransactionService extends BaseService {
     return this.authenticatedRequest<Transaction[]>({
       method: "POST",
       url: "/transaction/history",
+      params: request,
+    });
+  }
+
+  async getFee(
+    request: TransactionFeeRequest
+  ): Promise<TransactionFeeResponse> {
+    return this.authenticatedRequest<TransactionFeeResponse>({
+      method: "GET",
+      url: "/transaction/fee",
       params: request,
     });
   }
