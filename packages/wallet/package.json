@@ -1,6 +1,8 @@
 {
   "name": "@stratosphere-network/wallet",
-  "version": "6.2.2",
+
+  "version": "8.0.0",
+
   "description": "Wallet module for StratoSphere SDK",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
