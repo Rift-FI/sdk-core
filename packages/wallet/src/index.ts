@@ -6,6 +6,7 @@ import { TransactionService } from "./services/transactions";
 import { PaymentLinksService } from "./services/payment-links";
 import { DeFiService } from "./services/defi";
 import { AssetsService } from "./services/assets";
+import { OnrampService } from "./services/onramp";
 
 export class Sphere {
   public readonly config: SphereConfig;
@@ -18,6 +19,7 @@ export class Sphere {
   public readonly paymentLinks: PaymentLinksService;
   public readonly defi: DeFiService;
   public readonly assets: AssetsService;
+  public readonly onramp: OnrampService;
 
   constructor(config: SphereConfig) {
     this.config = config;
@@ -30,6 +32,7 @@ export class Sphere {
     this.paymentLinks = new PaymentLinksService(this.httpClient);
     this.defi = new DeFiService(this.httpClient);
     this.assets = new AssetsService(this.httpClient);
+    this.onramp = new OnrampService(this.httpClient, config);
   }
 
   /**
@@ -49,6 +52,7 @@ export class Sphere {
     this.paymentLinks.setBearerToken(token);
     this.defi.setBearerToken(token);
     this.assets.setBearerToken(token);
+    // Note: onramp service doesn't use bearer tokens
   }
 
   /**
@@ -61,6 +65,14 @@ export class Sphere {
     this.paymentLinks.clearBearerToken();
     this.defi.clearBearerToken();
     this.assets.clearBearerToken();
+    // Note: onramp service doesn't use bearer tokens
+  }
+
+  /**
+   * Set API key specifically for M-Pesa operations
+   */
+  setMpesaApiKey(apiKey: string): void {
+    this.onramp.setMpesaApiKey(apiKey);
   }
 
   /**

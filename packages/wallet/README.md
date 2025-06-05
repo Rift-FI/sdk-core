@@ -8,6 +8,7 @@ Official TypeScript SDK for **Stratosphere network wallet module** - A comprehen
 - 💸 **Gasless Transactions**: Execute transactions without paying gas fees
 - 🔄 **DeFi Swaps**: Built-in token swapping across chains with best rates
 - 💳 **Payment Links**: Create and manage crypto payment requests
+- 📱 **M-Pesa Onramp**: Convert Kenyan Shillings to crypto via M-Pesa STK Push
 - 🤖 **AI Integration**: Built-in AI conversation and chat capabilities
 - 🔐 **Secret Sharing**: Secure API key sharing marketplace
 - 📊 **Portfolio Tracking**: Multi-chain balance and transaction history
@@ -62,6 +63,15 @@ const transaction = await sphere.transactions.send({
 });
 
 console.log("✅ Transaction sent:", transaction);
+
+// 📱 M-Pesa Onramp: Convert KES to crypto (Kenya users)
+// const mpesaOnramp = await sphere.onramp.initiateSafaricomSTK({
+//   amount: 100, // 100 KES
+//   phone: "0713322025",
+//   cryptoAsset: "POL-USDC",
+//   cryptoWalletAddress: "0x31DEBea3ba4101bb582dc31fDB3068bE686791b0",
+//   externalReference: "user123",
+// });
 ```
 
 ## 💳 Payment Links
@@ -169,6 +179,223 @@ const swapResult = await sphere.defi.swap({
 console.log("🔄 Swap completed:", swapResult);
 ```
 
+## 📱 M-Pesa Onramp
+
+Convert Kenyan Shillings (KES) to crypto using M-Pesa mobile money. Sphere provides seamless integration with Safaricom's M-Pesa STK Push for instant crypto onramping.
+
+### Supported Crypto Assets
+
+- **POL-USDC** - USDC on Polygon
+- **BERA-USDC** - USDC on Berachain
+- **ETH** - Ethereum
+- **WBERA** - Wrapped BERA on Berachain
+
+### Initiate M-Pesa STK Push
+
+Start a crypto purchase by triggering an STK push to the user's phone:
+
+```typescript
+// Initiate M-Pesa STK push for crypto onramping
+const stkResponse = await sphere.onramp.initiateSafaricomSTK({
+  email: "user@example.com", // Optional
+  amount: 100, // Amount in KES
+  phone: "0713322025", // User's M-Pesa phone number
+  cryptoAsset: "POL-USDC", // Crypto to receive
+  cryptoWalletAddress: "0x31DEBea3ba4101bb582dc31fDB3068bE686791b0",
+  externalReference: "user123", // Unique identifier (Telegram ID, user ID, etc.)
+});
+
+console.log("📱 STK Push initiated:", stkResponse);
+
+Response structure:
+{
+  "success": true,
+  "message": "STK Push initiated successfully. Check your phone.",
+  "data": {
+    "message": "STK Push initiated successfully.",
+    "merchantRequestID": "ed4e-4482-896f-139740cf342c4176666",
+    "checkoutRequestID": "ws_CO_05062025134410304713322025",
+    "safaricomResponse": { ... },
+    "cryptoIntent": {
+      "asset": "POL-USDC",
+      "walletAddress": "0x31DEBea3ba4101bb582dc31fDB3068bE686791b0"
+    },
+    "note": "Upon successful payment, POL-USDC will be sent to wallet"
+  }
+}
+```
+
+### Check Transaction Status
+
+Monitor the status of M-Pesa transactions and crypto transfers:
+
+```typescript
+// Check transaction status by checkout request ID
+const status = await sphere.onramp.getSafaricomTransactionStatus({
+  checkoutRequestId: "ws_CO_05062025134410304713322025",
+});
+
+// Or check by merchant request ID
+const statusByMerchant = await sphere.onramp.getSafaricomTransactionStatus({
+  merchantRequestId: "ed4e-4482-896f-139740cf342c4176666",
+});
+
+console.log("📊 Transaction status:", status);
+
+Response for successful transaction:
+{
+  "success": true,
+  "status": "success",
+  "data": {
+    "id": "f11306df-473e-4487-9e73-6c821e475558",
+    "status": "success",
+    "amount": 100,
+    "currency": "KES",
+    "phoneNumber": "254713322025",
+    "mpesaReceiptNumber": "TF53L3KG7L",
+    "cryptoStatus": "success",
+    "cryptoTxHash": "0xf9c9805a6f8fb783d928fa0a686ad8a3a6b191804a9d8a1865bd34f136af0b66",
+    "cryptoAmount": 0.735294,
+    "amountInUSD": 0.735294,
+    "transactionDate": "20250605102014",
+    "createdAt": "2025-06-05T07:19:59.534Z"
+  }
+}
+```
+
+### Auto-Poll Transaction Status
+
+Automatically check transaction status until completion:
+
+```typescript
+// Auto-poll using checkout request ID (recommended)
+const finalStatus = await sphere.onramp.pollSafaricomTransactionStatus(
+  "ws_CO_05062025134410304713322025", // checkoutRequestId
+  undefined, // merchantId (not needed)
+  10, // maxAttempts (default: 10)
+  10000 // intervalMs - poll every 10 seconds (default: 10000)
+);
+
+// Auto-poll using merchant request ID
+const finalStatusByMerchant =
+  await sphere.onramp.pollSafaricomTransactionStatus(
+    undefined, // checkoutRequestId (not needed)
+    "ed4e-4482-896f-139740cf342c4176666", // merchantId
+    15, // Try up to 15 times
+    5000 // Poll every 5 seconds
+  );
+
+// Handle the result
+if (finalStatus.status === "success") {
+  console.log("🎉 Payment successful!");
+  console.log("💰 Crypto amount:", finalStatus.data.cryptoAmount);
+  console.log("🔗 Crypto TX hash:", finalStatus.data.cryptoTxHash);
+  console.log("📱 M-Pesa receipt:", finalStatus.data.mpesaReceiptNumber);
+} else if (finalStatus.status === "failed") {
+  console.log("❌ Payment failed:", finalStatus.data.failureReason);
+} else {
+  console.log("⏳ Payment still pending");
+}
+```
+
+### Complete M-Pesa Flow Example
+
+Here's a complete example showing the entire onramp process:
+
+```typescript
+async function completeMpesaOnramp() {
+  try {
+    // Step 1: Initiate STK push
+    console.log("📱 Initiating M-Pesa STK push...");
+    const stkResponse = await sphere.onramp.initiateSafaricomSTK({
+      amount: 500, // 500 KES
+      phone: "0713322025",
+      cryptoAsset: "POL-USDC",
+      cryptoWalletAddress: "0x31DEBea3ba4101bb582dc31fDB3068bE686791b0",
+      externalReference: "telegram_user_12345",
+    });
+
+    if (!stkResponse.success) {
+      throw new Error("Failed to initiate STK push");
+    }
+
+    console.log("✅ STK push sent to phone");
+    const checkoutRequestId = stkResponse.data.checkoutRequestID;
+
+    // Step 2: Poll for completion
+    console.log("⏳ Waiting for M-Pesa payment...");
+    const result = await sphere.onramp.pollSafaricomTransactionStatus(
+      checkoutRequestId,
+      undefined,
+      20, // Wait up to 20 attempts
+      15000 // Check every 15 seconds
+    );
+
+    // Step 3: Handle result
+    switch (result.status) {
+      case "success":
+        console.log("🎉 Onramp successful!");
+        console.log(
+          `💰 Received: ${result.data.cryptoAmount} ${result.data.cryptoIntent.asset}`
+        );
+        console.log(`🔗 TX Hash: ${result.data.cryptoTxHash}`);
+        console.log(`📱 M-Pesa Receipt: ${result.data.mpesaReceiptNumber}`);
+        break;
+
+      case "failed":
+        console.log("❌ Onramp failed");
+        console.log(`💔 Reason: ${result.data.failureReason}`);
+        if (result.data.cryptoFailureReason) {
+          console.log(`🔗 Crypto error: ${result.data.cryptoFailureReason}`);
+        }
+        break;
+
+      case "pending":
+        console.log("⏳ Transaction still pending after maximum wait time");
+        console.log("💡 You can continue checking status manually");
+        break;
+    }
+
+    return result;
+  } catch (error) {
+    console.error("💥 M-Pesa onramp error:", error);
+    throw error;
+  }
+}
+
+// Use the complete flow
+completeMpesaOnramp()
+  .then((result) => console.log("🏁 Onramp completed:", result.status))
+  .catch((error) => console.error("🚨 Onramp failed:", error.message));
+```
+
+### Error Handling for M-Pesa
+
+```typescript
+try {
+  const stkResponse = await sphere.onramp.initiateSafaricomSTK({
+    amount: 100,
+    phone: "0713322025",
+    cryptoAsset: "POL-USDC",
+    cryptoWalletAddress: "0x31DEBea3ba4101bb582dc31fDB3068bE686791b0",
+    externalReference: "user123",
+  });
+} catch (error) {
+  if (error.status === 400) {
+    console.log("❌ Invalid request parameters:", error.message);
+    // Check phone number format, amount limits, etc.
+  } else if (error.status === 429) {
+    console.log("⏰ Rate limited - too many requests");
+    // Implement retry with backoff
+  } else if (error.status === 500) {
+    console.log("🔧 M-Pesa service temporarily unavailable");
+    // Show maintenance message
+  } else {
+    console.log("💥 Unexpected error:", error);
+  }
+}
+```
+
 ## 🤖 AI Features
 
 Integrate AI-powered crypto assistance:
@@ -270,6 +497,20 @@ sphere.paymentLinks.cancelSendLink(urlId); // Cancel a send link
 
 ```typescript
 sphere.defi.swap(request); // Swap tokens across chains
+```
+
+### 📱 M-Pesa Onramp
+
+```typescript
+// STK Push Initiation
+sphere.onramp.initiateSafaricomSTK(request); // Initiate M-Pesa STK push
+
+// Transaction Status
+sphere.onramp.getSafaricomTransactionStatus(request); // Get transaction status
+sphere.onramp.pollSafaricomTransactionStatus(checkoutId?, merchantId?, maxAttempts?, intervalMs?); // Auto-poll status
+
+// Transaction History
+sphere.onramp.getUserTransactionHistory(filters?); // Get user's onramp history
 ```
 
 ## 🚨 Error Handling
