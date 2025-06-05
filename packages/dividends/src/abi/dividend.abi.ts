@@ -130,13 +130,19 @@ export const DividendABI = [
     anonymous: false,
     inputs: [
       {
+        indexed: false,
+        internalType: "uint256",
+        name: "dividendId",
+        type: "uint256",
+      },
+      {
         indexed: true,
         internalType: "address",
         name: "token",
         type: "address",
       },
       {
-        indexed: true,
+        indexed: false,
         internalType: "string",
         name: "dividendName",
         type: "string",
