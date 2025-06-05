@@ -95,3 +95,59 @@ See `src/types.ts` for detailed type definitions:
 ---
 
 For more advanced usage, see the source code and tests in the `src/` directory.
+
+## Running Unit Tests
+
+To run the unit tests for this package, follow these steps:
+
+1. **Clone the repository**:
+
+   ```bash
+   git clone <repository-url>
+   cd strato-sdk/packages/dividends
+   ```
+
+2. **Install dependencies**:
+
+   ```bash
+   npm install
+   ```
+
+3. **Install and run anvil**:
+
+   - Anvil is a local Ethereum node used for testing. Install it if you haven't already:
+     ```bash
+     npm install -g anvil
+     ```
+   - Run anvil on port 13519:
+     ```bash
+     anvil --port 13519
+     ```
+
+4. **Prepare foundry and smart contracts artifacts**:
+
+   ```bash
+   # Install Foundry
+   curl -L https://foundry.paradigm.xyz | bash
+   foundryup
+
+   # Install OpenZeppelin contracts
+   forge install OpenZeppelin/openzeppelin-contracts
+
+   # Build contracts
+   forge build
+   ```
+
+5. **Generate contract artifacts**:
+
+   ```bash
+   ts-node scripts/generate-artifacts.ts
+   ```
+
+6. **Run the tests**:
+
+   ```bash
+   npm test
+   ```
+
+   This will execute the unit tests located in the `src/__tests__` directory.

@@ -2,7 +2,7 @@ import fs from "fs";
 import path from "path";
 
 const CONTRACTS_DIR = path.join(__dirname, "..");
-const ARTIFACTS_DIR = path.join(__dirname, "../src/__tests__/artifacts");
+const ARTIFACTS_DIR = path.join(__dirname, "../src/artifacts");
 
 // Read the compiled artifacts
 const mockUSDCArtifact = JSON.parse(
@@ -25,7 +25,7 @@ const mockTokenBArtifact = JSON.parse(
 );
 const dividendContractArtifact = JSON.parse(
   fs.readFileSync(
-    path.join(CONTRACTS_DIR, "out/DividendContract.sol/DividendContract.json"),
+    path.join(CONTRACTS_DIR, "out/Dividend.sol/Dividend.json"),
     "utf8"
   )
 );
