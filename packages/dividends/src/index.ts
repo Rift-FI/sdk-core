@@ -1,2 +1,2 @@
-export * from './types';
-export {Dividend} from './dividend'
+export * from "./types";
+export { Dividends } from "./dividend";
