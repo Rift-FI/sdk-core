@@ -19,6 +19,7 @@ import {
   DividendContract_ABI,
   DividendContract_BYTECODE,
 } from "../artifacts/dividendContract";
+import { anvil } from "viem/chains";
 
 describe("Dividends", () => {
   let dividends: Dividends;
@@ -57,6 +58,7 @@ describe("Dividends", () => {
       transport: http(anvilRpcUrl),
     });
     anvilClient = createPublicClient({
+      chain: anvil,
       transport: http(anvilRpcUrl),
     });
 
@@ -133,11 +135,11 @@ describe("Dividends", () => {
       abi: DividendContract_ABI,
       functionName: "initialize",
       args: [maxBatchSize],
+      account: anvilAdminAccount,
     });
 
     await walletClient.writeContract({
       ...initializeRequest,
-      account: anvilAdminAccount,
     });
   });
 
@@ -146,52 +148,61 @@ describe("Dividends", () => {
     // if admin should more than 5_000
     // if another account should be zero
 
-    const balances = await anvilClient.multicall({
-      contracts: [
-        {
-          address: mockUSDCAddress as `0x${string}`,
-          abi: MockUSDC_ABI,
-          functionName: "balanceOf",
-          args: [anvilAdminAccount.address],
-        },
-        {
-          address: mockUSDCAddress as `0x${string}`,
-          abi: MockUSDC_ABI,
-          functionName: "balanceOf",
-          args: [anvilAnotherAccount.address],
-        },
-        {
-          address: mockTokenAAddress as `0x${string}`,
-          abi: MockTokenA_ABI,
-          functionName: "balanceOf",
-          args: [anvilAdminAccount.address],
-        },
-        {
-          address: mockTokenAAddress as `0x${string}`,
-          abi: MockTokenA_ABI,
-          functionName: "balanceOf",
-          args: [anvilAnotherAccount.address],
-        },
-        {
-          address: mockTokenBAddress as `0x${string}`,
-          abi: MockTokenB_ABI,
-          functionName: "balanceOf",
-          args: [anvilAdminAccount.address],
-        },
-        {
-          address: mockTokenBAddress as `0x${string}`,
-          abi: MockTokenB_ABI,
-          functionName: "balanceOf",
-          args: [anvilAnotherAccount.address],
-        },
-      ],
-    });
+    const [
+      mockUSDCAdminBalance,
+      mockUSDCAnotherBalance,
+      mockTokenAAdminBalance,
+      mockTokenAAnotherBalance,
+      mockTokenBAdminBalance,
+      mockTokenBAnotherBalance,
+    ] = await Promise.all([
+      // mockUSDC balances
+      anvilClient.readContract({
+        address: mockUSDCAddress as `0x${string}`,
+        abi: MockUSDC_ABI,
+        functionName: "balanceOf",
+        args: [anvilAdminAccount.address],
+      }),
+      anvilClient.readContract({
+        address: mockUSDCAddress as `0x${string}`,
+        abi: MockUSDC_ABI,
+        functionName: "balanceOf",
+        args: [anvilAnotherAccount.address],
+      }),
+      // mockTokenA balances
+      anvilClient.readContract({
+        address: mockTokenAAddress as `0x${string}`,
+        abi: MockTokenA_ABI,
+        functionName: "balanceOf",
+        args: [anvilAdminAccount.address],
+      }),
+      anvilClient.readContract({
+        address: mockTokenAAddress as `0x${string}`,
+        abi: MockTokenA_ABI,
+        functionName: "balanceOf",
+        args: [anvilAnotherAccount.address],
+      }),
+      // mockTokenB balances
+      anvilClient.readContract({
+        address: mockTokenBAddress as `0x${string}`,
+        abi: MockTokenB_ABI,
+        functionName: "balanceOf",
+        args: [anvilAdminAccount.address],
+      }),
+      anvilClient.readContract({
+        address: mockTokenBAddress as `0x${string}`,
+        abi: MockTokenB_ABI,
+        functionName: "balanceOf",
+        args: [anvilAnotherAccount.address],
+      }),
+    ]);
 
-    expect(balances[0]).toBeGreaterThan(parseUnits("5000", 6));
-    expect(balances[1]).toBe(0);
-    expect(balances[2]).toBeGreaterThan(parseUnits("5000", 6));
-    expect(balances[3]).toBe(0);
-    expect(balances[4]).toBeGreaterThan(parseUnits("5000", 6));
-    expect(balances[5]).toBe(0);
+    // More readable assertions
+    expect(mockUSDCAdminBalance).toBeGreaterThan(parseUnits("5000", 6));
+    expect(mockUSDCAnotherBalance).toBe(0n);
+    expect(mockTokenAAdminBalance).toBeGreaterThan(parseUnits("5000", 18));
+    expect(mockTokenAAnotherBalance).toBe(0n);
+    expect(mockTokenBAdminBalance).toBeGreaterThan(parseUnits("5000", 18));
+    expect(mockTokenBAnotherBalance).toBe(0n);
   });
 });
