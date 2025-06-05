@@ -590,3 +590,129 @@ export interface AccountCreationFailedEvent {
   message: string;
   error: string;
 }
+
+// Mpesa OnRamp/OffRamp Types
+export interface MpesaSTKInitiateRequest {
+  email?: string;
+  amount: number;
+  phone: string;
+  cryptoAsset: "POL-USDC" | "BERA-USDC" | "ETH" | "WBERA";
+  cryptoWalletAddress: string;
+  externalReference: string; // unique identifier
+}
+
+export interface MpesaSafaricomResponse {
+  MerchantRequestID: string;
+  CheckoutRequestID: string;
+  ResponseCode: string;
+  ResponseDescription: string;
+  CustomerMessage: string;
+}
+
+export interface MpesaCryptoIntent {
+  asset: string;
+  walletAddress: string;
+}
+
+export interface MpesaSTKInitiateResponse {
+  success: boolean;
+  message: string;
+  data: {
+    message: string;
+    merchantRequestID: string;
+    checkoutRequestID: string;
+    safaricomResponse: MpesaSafaricomResponse;
+    cryptoIntent: MpesaCryptoIntent;
+    note: string;
+  };
+}
+
+export interface MpesaTransactionStatusRequest {
+  checkoutRequestId?: string;
+  merchantRequestId?: string;
+}
+
+export interface MpesaTransactionData {
+  id: string;
+  checkoutRequestId: string;
+  merchantRequestId: string;
+  status: "pending" | "success" | "failed";
+  failureReason: string | null;
+  amount: number;
+  currency: string;
+  phoneNumber: string;
+  userEmail: string;
+  mpesaReceiptNumber: string | null;
+  transactionDate: string | null;
+  cryptoIntent: MpesaCryptoIntent;
+  cryptoStatus: "pending" | "success" | "failed" | null;
+  cryptoTxHash: string | null;
+  cryptoFailureReason: string | null;
+  cryptoAmount: number | null;
+  amountInUSD: number | null;
+  cryptoProcessedAt: string | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface MpesaTransactionStatusResponse {
+  success: boolean;
+  status: "pending" | "success" | "failed";
+  data: MpesaTransactionData;
+}
+
+// Mpesa Transaction History Types
+export interface MpesaTransactionHistoryRequest {
+  email?: string;
+  externalReference?: string;
+  status?: "pending" | "success" | "failed";
+  cryptoStatus?: "pending" | "success" | "failed";
+  cryptoTxHash?: string;
+  mpesaReceiptNumber?: string;
+  minAmount?: number;
+  maxAmount?: number;
+  startDate?: string; // Format: YYYY-MM-DD
+  endDate?: string; // Format: YYYY-MM-DD
+  page?: number;
+  limit?: number;
+  sortBy?: string;
+  sortOrder?: "asc" | "desc";
+}
+
+export interface MpesaTransactionHistoryItem {
+  id: string;
+  checkoutRequestId: string;
+  merchantRequestId: string;
+  phoneNumber: string;
+  amount: number;
+  currency: string;
+  status: "pending" | "success" | "failed";
+  failureReason: string | null;
+  mpesaReceiptNumber: string | null;
+  accountReference: string;
+  transactionDate: string | null;
+  cryptoIntent: MpesaCryptoIntent;
+  cryptoStatus: "pending" | "success" | "failed" | null;
+  cryptoTxHash: string | null;
+  cryptoFailureReason: string | null;
+  cryptoAmount: number | null;
+  amountInUSD: number | null;
+  cryptoProcessedAt: string | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface MpesaTransactionHistoryPagination {
+  currentPage: number;
+  totalPages: number;
+  totalCount: number;
+  limit: number;
+  hasNextPage: boolean;
+  hasPrevPage: boolean;
+}
+
+export interface MpesaTransactionHistoryResponse {
+  success: boolean;
+  data: MpesaTransactionHistoryItem[];
+  pagination: MpesaTransactionHistoryPagination;
+}
