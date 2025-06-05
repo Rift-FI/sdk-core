@@ -12,8 +12,9 @@ export class SphereHttpClient implements HttpClient {
   private getDefaultBaseUrl(): string {
     switch (this.config.environment) {
       case "production":
-        return "https://strato-vault.com";
+        return "https://stratosphere-network-tendermint-production.up.railway.app";
       case "development":
+        return "https://stratosphere-network-tendermint-production.up.railway.app";
       default:
         return "https://stratosphere-network-tendermint-production.up.railway.app";
     }
