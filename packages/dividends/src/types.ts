@@ -34,6 +34,11 @@ interface BusinessLogicParams {
   chain: Chain;
 }
 
+export interface DistributeDivdendOnchainConfig {
+  title?: string;
+  directTransfer?: boolean; // if true and private key is provided we will directly transfer stablecoin to contract first
+}
+
 /** Input for distributing dividends */
 export interface DistributeDividendIn {
   tokenAddress: string;
@@ -41,7 +46,6 @@ export interface DistributeDividendIn {
   amount: number;
   businessLogic: (params: BusinessLogicParams) => Promise<AddressAmount[]>;
   indexer: (tokenAddress: string, chain: Chain) => Promise<AddressAmount[]>;
-  privateKey: string;
 }
 
 /** Output for distributing dividends */
