@@ -32,14 +32,13 @@ import {
   berachainBepolia,
 } from "viem/chains";
 import { DividendABI } from "./abi/dividend.abi";
-import moment from "moment";
 import { ERC20Abi } from "./abi/erc20.abi";
 
 export class Dividends {
   private chain: Chain;
   private publicClient: PublicClient;
   private walletClient: WalletClient | null;
-  private account: Account | null;
+  private account: Account;
   private isPrivateKey: boolean;
 
   constructor(chain: Chain, privateKeyOrAddress: string) {
@@ -172,7 +171,7 @@ export class Dividends {
           totalAmountRequired + parseUnits(divPortion.amount, 0);
       }
 
-      if (config?.directTransfer && this.account && this.walletClient) {
+      if (config?.directTransfer && this.walletClient) {
         // transfer stable coin to dividend contract
         const { request } = await this.publicClient.simulateContract({
           abi: ERC20Abi,
@@ -203,7 +202,7 @@ export class Dividends {
     }
 
     // distribute divident through smart contract
-    const now = moment().unix();
+    const now = new Date().getTime();
     const title = config?.title ?? `dividend-${now}`;
     const { request } = await this.publicClient.simulateContract({
       abi: DividendABI,

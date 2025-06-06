@@ -232,10 +232,12 @@ describe("Dividends", () => {
     expect(balance).toBeGreaterThan(0);
   });
 
-  afterAll(() => {
+  afterAll(async () => {
     if (anvilProcess) {
       anvilProcess.kill();
     }
+
+    await new Promise((resolve) => setTimeout(resolve, 2000));
   });
 
   it("check token balances", async () => {
@@ -548,15 +550,43 @@ describe("Dividends", () => {
       },
     });
 
-    // check usdc balance of participants
-    const finalBalances = await usdcBalanceCheck(
-      dividendResult.map((r) => r.address)
-    );
+    // check and sign for each dividend result
+    for (const r of dividendResult) {
+      const txHash = await walletClient.writeContract({
+        ...r.txUnsigned,
+        chain: anvilClient.chain,
+        account: anvilAdminAccount,
+      });
+
+      // check for tx hash
+      expect(txHash).toBeDefined();
+
+      // get tx receipt
+      const txReceipt = await anvilClient.getTransactionReceipt({
+        hash: txHash as `0x${string}`,
+      });
+
+      // check for tx receipt
+      expect(txReceipt).toBeDefined();
+      expect(txReceipt?.status).toBe("success");
+    }
 
     // check for tx type
     dividendResult.forEach((r) => {
       expect(r.type).toBe("unsigned");
     });
+
+    // check usdc balance of participants
+    const finalBalances = await usdcBalanceCheck(
+      dividendResult.map((r) => r.address)
+    );
+
+    // check if final balances is greater than initial balances
+    for (let i = 0; i < finalBalances.length; i++) {
+      expect(parseUnits(finalBalances[i], 0)).toBeGreaterThan(
+        parseUnits(initialBalances[i], 0)
+      );
+    }
   });
 
   it("check dividend automatic, with NO private key", async () => {
@@ -640,175 +670,163 @@ describe("Dividends", () => {
     expect(dividendResult.type).toBe("unsigned");
     // check for tx hash
     expect(dividendResult.txHash).toBeUndefined();
+
+    // try to sign tx
+    const txHash = await walletClient.writeContract({
+      ...dividendResult.txUnsigned,
+      chain: anvilClient.chain,
+      account: anvilAdminAccount,
+    });
+
+    // check for tx hash
+    expect(txHash).toBeDefined();
+
+    // get tx receipt
+    const txReceipt = await anvilClient.getTransactionReceipt({
+      hash: txHash as `0x${string}`,
+    });
+
+    // check for tx receipt
+    expect(txReceipt).toBeDefined();
+    expect(txReceipt?.status).toBe("success");
   });
 
-  // it("check dividend automatic, with private key + off direct transfer success", async () => {
-  //   // check initial balances of usdc of participants
-  //   const initialBalances = await usdcBalanceCheck(participantsWalletAddr);
-  //   const dividend = new Dividends(
-  //     {
-  //       id: 31337,
-  //       rpcUrl: anvilRpcUrl,
-  //     },
-  //     anvilAdminPK
-  //   );
+  it("check dividend automatic, with private key + off direct transfer success", async () => {
+    // check initial balances of usdc of participants
+    const initialBalances = await usdcBalanceCheck(participantsWalletAddr);
+    const dividend = new Dividends(
+      {
+        id: 31337,
+        rpcUrl: anvilRpcUrl,
+      },
+      anvilAdminPK
+    );
 
-  //   const divAmount = 1000;
-  //   const dividendResult = await dividend.distributeDividend(
-  //     {
-  //       tokenAddress: mockTokenAAddress as `0x${string}`,
-  //       stableCoinAddress: mockUSDCAddress as `0x${string}`,
-  //       amount: divAmount, // assume we distribute dividend of 1000 usdc,
-  //       indexer: async (tokenAddress, chain) => {
-  //         const result = [];
-  //         for (let i = 0; i < participantsWalletAddr.length; i++) {
-  //           result.push({
-  //             address: participantsWalletAddr[i],
-  //             amount: ratioTokenA[i].toString(),
-  //           });
-  //         }
+    const divAmount = 1000;
+    const dividendResult = await dividend.distributeDividend(
+      {
+        tokenAddress: mockTokenAAddress as `0x${string}`,
+        stableCoinAddress: mockUSDCAddress as `0x${string}`,
+        amount: divAmount, // assume we distribute dividend of 1000 usdc,
+        indexer: async (tokenAddress, chain) => {
+          const result = [];
+          for (let i = 0; i < participantsWalletAddr.length; i++) {
+            result.push({
+              address: participantsWalletAddr[i],
+              amount: ratioTokenA[i].toString(),
+            });
+          }
 
-  //         return result;
-  //       },
-  //       businessLogic: async (params) => {
-  //         const result: { address: string; amount: string }[] = [];
+          return result;
+        },
+        businessLogic: async (params) => {
+          const result: { address: string; amount: string }[] = [];
 
-  //         const _totalTokenSupply = params.totalSupply;
-  //         const _divAmount = params.dividendAmount;
-  //         const totalTokenSupply = parseUnits(_totalTokenSupply, 0);
-  //         const divAmount = parseUnits(_divAmount, 0);
-  //         for (let i = 0; i < params.holders.length; i++) {
-  //           const amountTokenOfMine = parseUnits(params.holders[i].amount, 0);
-  //           const _ratio =
-  //             (amountTokenOfMine * divAmount * parseUnits("10", 2)) /
-  //             totalTokenSupply;
+          const _totalTokenSupply = params.totalSupply;
+          const _divAmount = params.dividendAmount;
+          const totalTokenSupply = parseUnits(_totalTokenSupply, 0);
+          const divAmount = parseUnits(_divAmount, 0);
+          for (let i = 0; i < params.holders.length; i++) {
+            const amountTokenOfMine = parseUnits(params.holders[i].amount, 0);
+            const _ratio =
+              (amountTokenOfMine * divAmount * parseUnits("10", 2)) /
+              totalTokenSupply;
 
-  //           // make sure ratio is not in decimal
-  //           const ratio = _ratio.toString().split(".")[0];
+            // make sure ratio is not in decimal
+            const ratio = _ratio.toString().split(".")[0];
 
-  //           result.push({
-  //             address: params.holders[i].address,
-  //             amount: ratio,
-  //           });
-  //         }
+            result.push({
+              address: params.holders[i].address,
+              amount: ratio,
+            });
+          }
 
-  //         return result;
-  //       },
-  //     },
-  //     dividendAddress,
-  //     {
-  //       title: "testtest",
-  //       directTransfer: true,
-  //     }
-  //   );
+          return result;
+        },
+      },
+      dividendAddress
+    );
 
-  //   // check usdc balance of participants
-  //   const finalBalances = await usdcBalanceCheck(
-  //     dividendResult.dividendPortion.map((r) => r.address)
-  //   );
+    // check usdc balance of participants
+    const finalBalances = await usdcBalanceCheck(
+      dividendResult.dividendPortion.map((r) => r.address)
+    );
 
-  //   // check if final balances is greater than initial balances
-  //   for (let i = 0; i < finalBalances.length; i++) {
-  //     expect(parseUnits(finalBalances[i], 0)).toBeGreaterThan(
-  //       parseUnits(initialBalances[i], 0)
-  //     );
-  //   }
+    // check if final balances is greater than initial balances
+    for (let i = 0; i < finalBalances.length; i++) {
+      expect(parseUnits(finalBalances[i], 0)).toBeGreaterThan(
+        parseUnits(initialBalances[i], 0)
+      );
+    }
 
-  //   // check for tx type
-  //   expect(dividendResult.type).toBe("signed");
-  //   // check for tx hash
-  //   expect(dividendResult.txHash).toBeDefined();
+    // check for tx type
+    expect(dividendResult.type).toBe("signed");
+    // check for tx hash
+    expect(dividendResult.txHash).toBeDefined();
 
-  //   // get tx receipt
-  //   const txReceipt = await anvilClient.getTransactionReceipt({
-  //     hash: dividendResult.txHash as `0x${string}`,
-  //   });
-  //   expect(txReceipt).toBeDefined();
-  //   expect(txReceipt?.status).toBe("success");
-  // });
+    // get tx receipt
+    const txReceipt = await anvilClient.getTransactionReceipt({
+      hash: dividendResult.txHash as `0x${string}`,
+    });
+    expect(txReceipt).toBeDefined();
+    expect(txReceipt?.status).toBe("success");
+  });
 
-  // it("check dividend automatic, with private key + off direct transfer failure", async () => {
-  //   // check initial balances of usdc of participants
-  //   const initialBalances = await usdcBalanceCheck(participantsWalletAddr);
-  //   const dividend = new Dividends(
-  //     {
-  //       id: 31337,
-  //       rpcUrl: anvilRpcUrl,
-  //     },
-  //     anvilAdminPK
-  //   );
+  it("check dividend automatic, with private key + off direct transfer failure", async () => {
+    // check initial balances of usdc of participants
+    const dividend = new Dividends(
+      {
+        id: 31337,
+        rpcUrl: anvilRpcUrl,
+      },
+      anvilAdminPK
+    );
 
-  //   const divAmount = 1000;
-  //   const dividendResult = await dividend.distributeDividend(
-  //     {
-  //       tokenAddress: mockTokenAAddress as `0x${string}`,
-  //       stableCoinAddress: mockUSDCAddress as `0x${string}`,
-  //       amount: divAmount, // assume we distribute dividend of 1000 usdc,
-  //       indexer: async (tokenAddress, chain) => {
-  //         const result = [];
-  //         for (let i = 0; i < participantsWalletAddr.length; i++) {
-  //           result.push({
-  //             address: participantsWalletAddr[i],
-  //             amount: ratioTokenA[i].toString(),
-  //           });
-  //         }
+    const divAmount = 1000;
+    expect(async () => {
+      await dividend.distributeDividend(
+        {
+          tokenAddress: mockTokenAAddress as `0x${string}`,
+          stableCoinAddress: mockUSDCAddress as `0x${string}`,
+          amount: divAmount, // assume we distribute dividend of 1000 usdc,
+          indexer: async (tokenAddress, chain) => {
+            const result = [];
+            for (let i = 0; i < participantsWalletAddr.length; i++) {
+              result.push({
+                address: participantsWalletAddr[i],
+                amount: ratioTokenA[i].toString(),
+              });
+            }
 
-  //         return result;
-  //       },
-  //       businessLogic: async (params) => {
-  //         const result: { address: string; amount: string }[] = [];
+            return result;
+          },
+          businessLogic: async (params) => {
+            const result: { address: string; amount: string }[] = [];
 
-  //         const _totalTokenSupply = params.totalSupply;
-  //         const _divAmount = params.dividendAmount;
-  //         const totalTokenSupply = parseUnits(_totalTokenSupply, 0);
-  //         const divAmount = parseUnits(_divAmount, 0);
-  //         for (let i = 0; i < params.holders.length; i++) {
-  //           const amountTokenOfMine = parseUnits(params.holders[i].amount, 0);
-  //           const _ratio =
-  //             (amountTokenOfMine * divAmount * parseUnits("10", 2)) /
-  //             totalTokenSupply;
+            const _totalTokenSupply = params.totalSupply;
+            const _divAmount = params.dividendAmount;
+            const totalTokenSupply = parseUnits(_totalTokenSupply, 0);
+            const divAmount = parseUnits(_divAmount, 0);
+            for (let i = 0; i < params.holders.length; i++) {
+              const amountTokenOfMine = parseUnits(params.holders[i].amount, 0);
+              const _ratio =
+                (amountTokenOfMine * divAmount * parseUnits("10", 2)) /
+                totalTokenSupply;
 
-  //           // make sure ratio is not in decimal
-  //           const ratio = _ratio.toString().split(".")[0];
+              // make sure ratio is not in decimal
+              const ratio = _ratio.toString().split(".")[0];
 
-  //           result.push({
-  //             address: params.holders[i].address,
-  //             amount: ratio,
-  //           });
-  //         }
+              result.push({
+                address: params.holders[i].address,
+                amount: ratio,
+              });
+            }
 
-  //         return result;
-  //       },
-  //     },
-  //     dividendAddress,
-  //     {
-  //       title: "testtest",
-  //       directTransfer: true,
-  //     }
-  //   );
-
-  //   // check usdc balance of participants
-  //   const finalBalances = await usdcBalanceCheck(
-  //     dividendResult.dividendPortion.map((r) => r.address)
-  //   );
-
-  //   // check if final balances is greater than initial balances
-  //   for (let i = 0; i < finalBalances.length; i++) {
-  //     expect(parseUnits(finalBalances[i], 0)).toBeGreaterThan(
-  //       parseUnits(initialBalances[i], 0)
-  //     );
-  //   }
-
-  //   // check for tx type
-  //   expect(dividendResult.type).toBe("signed");
-  //   // check for tx hash
-  //   expect(dividendResult.txHash).toBeDefined();
-
-  //   // get tx receipt
-  //   const txReceipt = await anvilClient.getTransactionReceipt({
-  //     hash: dividendResult.txHash as `0x${string}`,
-  //   });
-  //   expect(txReceipt).toBeDefined();
-  //   expect(txReceipt?.status).toBe("success");
-  // });
+            return result;
+          },
+        },
+        dividendAddress
+      );
+    }).rejects.toThrow();
+  });
 });
