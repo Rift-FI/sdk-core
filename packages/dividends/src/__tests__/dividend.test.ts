@@ -1,6 +1,5 @@
 import { privateKeyToAccount } from "viem/accounts";
-import { Dividends } from "../dividend";
-import { Chain } from "../types";
+import { Dividends } from "../index";
 import { describe, expect, it, beforeEach } from "@jest/globals";
 import {
   Account,
@@ -13,7 +12,6 @@ import {
   WalletClient,
 } from "viem";
 import { MockUSDC_ABI, MockUSDC_BYTECODE } from "../artifacts/mockUSDC";
-import { getTransactionReceipt } from "viem/_types/actions/public/getTransactionReceipt";
 import { MockTokenA_ABI, MockTokenA_BYTECODE } from "../artifacts/mockTokenA";
 import { MockTokenB_ABI, MockTokenB_BYTECODE } from "../artifacts/mockTokenB";
 import {
