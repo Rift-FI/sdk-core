@@ -11,6 +11,7 @@ import {
   createPublicClient,
   createWalletClient,
   defineChain,
+  encodeFunctionData,
   formatUnits,
   http,
   isHex,
@@ -39,27 +40,35 @@ export class Dividends {
   private publicClient: PublicClient;
   private walletClient: WalletClient | null;
   private account: Account | null;
+  private isPrivateKey: boolean;
 
-  constructor(chain: Chain, privateKey?: string) {
+  constructor(chain: Chain, privateKeyOrAddress: string) {
     this.chain = chain;
     this.publicClient = {} as PublicClient;
     this.walletClient = {} as WalletClient;
 
     const chainForUse = this.getChain(chain);
-    if (privateKey && privateKey.length > 0) {
-      if (!isHex(privateKey)) {
-        throw new DividendsError("Invalid private key");
+    if (isHex(privateKeyOrAddress)) {
+      if (privateKeyOrAddress.length >= 60) {
+        this.account = privateKeyToAccount(
+          privateKeyOrAddress as `0x${string}`
+        );
+        this.walletClient = createWalletClient({
+          account: this.account,
+          chain: chainForUse,
+          transport: http(chainForUse.rpcUrls.default.http[0]),
+        });
+        this.isPrivateKey = true;
+      } else {
+        this.isPrivateKey = false;
+        this.account = {
+          address: privateKeyOrAddress,
+          type: "json-rpc",
+        };
+        this.walletClient = null;
       }
-
-      this.account = privateKeyToAccount(privateKey as `0x${string}`);
-      this.walletClient = createWalletClient({
-        account: this.account,
-        chain: chainForUse,
-        transport: http(chainForUse.rpcUrls.default.http[0]),
-      });
     } else {
-      this.account = null;
-      this.walletClient = null;
+      throw new DividendsError("Invalid private key or address");
     }
 
     this.publicClient = createPublicClient({
@@ -103,12 +112,13 @@ export class Dividends {
         abi: ERC20Abi,
         functionName: "transfer",
         args: [divPortion.address as `0x${string}`, parsedAmount],
-        ...(this.account && this.walletClient && { account: this.account }),
+        account: this.account,
       });
 
       // send tx
       let tx: string | undefined = undefined;
-      if (this.account && this.walletClient) {
+
+      if (this.walletClient) {
         tx = await this.walletClient.writeContract({
           ...request,
           account: this.account,
@@ -119,7 +129,7 @@ export class Dividends {
         address: divPortion.address,
         amount: divPortion.amount,
         txHash: tx,
-        type: "signed",
+        type: this.isPrivateKey ? "signed" : "unsigned",
         txUnsigned: request,
       });
     }
@@ -205,7 +215,7 @@ export class Dividends {
         dividendPreResult.map((dpr) => dpr.address),
         dividendPreResult.map((dpr) => parseUnits(dpr.amount, 0)), // we parse amount to 1 decimals, we assume that service will return amount in adjusted decimals
       ],
-      ...(this.account && this.walletClient && { account: this.account }),
+      account: this.account,
     });
 
     // send tx
@@ -220,7 +230,7 @@ export class Dividends {
     return {
       txHash: tx,
       txUnsigned: request,
-      type: tx ? "signed" : "unsigned",
+      type: this.isPrivateKey ? "signed" : "unsigned",
       dividendPortion: dividendPreResult,
     };
   }
