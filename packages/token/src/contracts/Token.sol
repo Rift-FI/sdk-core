@@ -1,168 +1,118 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.28;
+pragma solidity ^0.8.20;
 
-import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
-import "@openzeppelin/contracts/token/ERC20/extensions/ERC20Burnable.sol";
-import "@openzeppelin/contracts/token/ERC20/extensions/ERC20Pausable.sol";
-import "@openzeppelin/contracts/access/Ownable.sol";
-import "@openzeppelin/contracts/utils/Context.sol";
+import {ERC20Upgradeable} from "@openzeppelin/contracts-upgradeable/token/ERC20/ERC20Upgradeable.sol";
+import {ERC20BurnableUpgradeable} from "@openzeppelin/contracts-upgradeable/token/ERC20/extensions/ERC20BurnableUpgradeable.sol";
+import {AccessControlUpgradeable} from "@openzeppelin/contracts-upgradeable/access/AccessControlUpgradeable.sol";
+import {PausableUpgradeable} from "@openzeppelin/contracts-upgradeable/utils/PausableUpgradeable.sol";
+import {Initializable} from "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
+import {UUPSUpgradeable} from "@openzeppelin/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol";
 
-contract Token is Context, ERC20, Ownable {
+contract Token is
+    Initializable,
+    ERC20Upgradeable,
+    ERC20BurnableUpgradeable,
+    AccessControlUpgradeable,
+    PausableUpgradeable,
+    UUPSUpgradeable
+{
+    bytes32 public constant MINTER_ROLE = keccak256("MINTER_ROLE");
+    bytes32 public constant BURNER_ROLE = keccak256("BURNER_ROLE");
+    bytes32 public constant UPGRADER_ROLE = keccak256("UPGRADER_ROLE");
+    bytes32 public constant PAUSER_ROLE = keccak256("PAUSER_ROLE");
+
     uint8 private _decimals;
-    bool private _mintable;
-    bool private _burnable;
-    bool private _pausable;
-    bool private _paused;
+    bool private _transferable;
 
-    event Paused(address account);
-    event Unpaused(address account);
+    /// @custom:oz-upgrades-unsafe-allow constructor
+    constructor() {
+        _disableInitializers();
+    }
 
-    /**
-     * @dev Constructor sets the token properties and mints initial supply
-     * @param name The name of the token
-     * @param symbol The symbol of the token
-     * @param initialSupply The initial supply of the token
-     * @param tokenDecimals The number of decimals for the token
-     * @param tokenOwner The owner of the token
-     * @param isMintable Whether the token can be minted after creation
-     * @param isBurnable Whether the token can be burned
-     * @param isPausable Whether the token can be paused
-     */
-
-    constructor(
+    function initialize(
         string memory name,
         string memory symbol,
         uint256 initialSupply,
         uint8 tokenDecimals,
-        address tokenOwner,
-        bool isMintable,
-        bool isBurnable,
-        bool isPausable
-    ) ERC20(name, symbol) Ownable(tokenOwner) {
+        address initialAdmin,
+        address initialMinterBurner
+    ) public initializer {
+        __ERC20_init(name, symbol);
+        __ERC20Burnable_init();
+        __AccessControl_init();
+        __Pausable_init();
+        __UUPSUpgradeable_init();
+
+        _grantRole(DEFAULT_ADMIN_ROLE, initialAdmin);
+        _grantRole(UPGRADER_ROLE, initialAdmin);
+        _grantRole(PAUSER_ROLE, initialAdmin);
+
+        _grantRole(MINTER_ROLE, initialMinterBurner);
+        _grantRole(BURNER_ROLE, initialMinterBurner);
+
+        _setRoleAdmin(MINTER_ROLE, DEFAULT_ADMIN_ROLE);
+        _setRoleAdmin(BURNER_ROLE, DEFAULT_ADMIN_ROLE);
+        _setRoleAdmin(PAUSER_ROLE, DEFAULT_ADMIN_ROLE);
+        _setRoleAdmin(UPGRADER_ROLE, DEFAULT_ADMIN_ROLE);
+
         _decimals = tokenDecimals;
-        _mintable = isMintable;
-        _burnable = isBurnable;
-        _pausable = isPausable;
-        _paused = false;
+        _transferable = false; // Transfers disabled by default
 
         if (initialSupply > 0) {
-            _mint(tokenOwner, initialSupply * 10 ** _decimals);
+            _mint(initialAdmin, initialSupply * (10 ** uint256(tokenDecimals)));
         }
     }
 
-    /**
-     * @dev Returns the number of decimals used for token
-     * @return The number of decimals
-     */
     function decimals() public view virtual override returns (uint8) {
         return _decimals;
     }
 
-    /**
-     * @dev Mints new tokens if the token is mintable
-     * @param to The address to mint tokens to
-     * @param amount The amount of tokens to mint
-     */
-
-    function mint(address to, uint256 amount) public onlyOwner {
-        require(_mintable, "Token: minting is not allowed");
-        _mint(to, amount * 10 ** _decimals);
+    function setTransferable(bool isTransferable)
+        public
+        virtual
+        onlyRole(DEFAULT_ADMIN_ROLE)
+        whenNotPaused
+    {
+        _transferable = isTransferable;
     }
 
-    /**
-     * @dev Burns tokens if the token is burnable
-     * @param amount The amount of tokens to burn
-     */
-    function burn(uint256 amount) external {
-        require(_burnable, "Burning is disabled");
-        require(!_paused, "Token is paused");
-        _burn(_msgSender(), amount);
+    function transferable() public view virtual returns (bool) {
+        return _transferable;
     }
 
-    /**
-     * @dev Burns tokens from a specific account if the token is burnable
-     * @param account The account to burn tokens from
-     * @param amount The amount of tokens to burn
-     */
-    function burnFrom(address account, uint256 amount) external {
-        require(_burnable, "Burning is disabled");
-        require(!_paused, "Token is paused");
+    function mint(address to, uint256 amount) public virtual onlyRole(MINTER_ROLE) whenNotPaused {
+        _mint(to, amount);
+    }
 
-        uint256 currentAllowance = allowance(account, _msgSender());
-        require(
-            currentAllowance >= amount,
-            "ERC20: burn amount exceeds allowance"
-        );
-        unchecked {
-            _approve(account, _msgSender(), currentAllowance - amount);
-        }
+    function burn(address account, uint256 amount) public virtual onlyRole(BURNER_ROLE) whenNotPaused {
         _burn(account, amount);
     }
 
-    /**
-     * @dev Pauses all token transfers if the token is pausable
-     */
-    function pause() external onlyOwner {
-        require(_pausable, "Pausing is disabled");
-        require(!_paused, "Token is already paused");
-        _paused = true;
-        emit Paused(_msgSender());
+    function pause() public virtual onlyRole(PAUSER_ROLE) {
+        _pause();
     }
 
-    /**
-     * @dev Unpauses all token transfers if the token is paused
-     */
-    function unpause() external onlyOwner {
-        require(_pausable, "Pausing is disabled");
-        require(_paused, "Token is not paused");
-        _paused = false;
-        emit Unpaused(_msgSender());
+    function unpause() public virtual onlyRole(PAUSER_ROLE) {
+        _unpause();
     }
 
-    /**
-     * @dev Returns whether the token is paused
-     * @return Whether the token is paused
-     */
-    function paused() external view returns (bool) {
-        return _paused;
-    }
+    function _authorizeUpgrade(address newImplementation) internal virtual override onlyRole(UPGRADER_ROLE) {}
 
-    /**
-     * @dev Returns whether the token is mintable
-     * @return Whether the token is mintable
-     */
-    function mintable() external view returns (bool) {
-        return _mintable;
-    }
-
-    /**
-     * @dev Returns whether the token is burnable
-     * @return Whether the token is burnable
-     */
-    function burnable() external view returns (bool) {
-        return _burnable;
-    }
-
-    /**
-     * @dev Returns whether the token is pausable
-     * @return Whether the token is pausable
-     */
-    function pausable() external view returns (bool) {
-        return _pausable;
-    }
-
-    /**
-     * @dev Hook that is called before any transfer of tokens
-     * @param from The address tokens are transferred from
-     * @param to The address tokens are transferred to
-     * @param amount The amount of tokens transferred
-     */
     function _update(
         address from,
         address to,
-        uint256 amount
-    ) internal virtual override {
-        require(!_paused, "Token transfers are paused");
-        super._update(from, to, amount);
+        uint256 value
+    ) internal virtual override(ERC20Upgradeable) {
+        super._update(from, to, value);
+
+        if (from == address(0) || to == address(0)) {
+            return; // Allow minting and burning
+        }
+
+        if (!_transferable) {
+            if (!hasRole(DEFAULT_ADMIN_ROLE, from)) {
+                revert("Token: Transfers only allowed for admins when disabled");
+            }
+        }
     }
 }

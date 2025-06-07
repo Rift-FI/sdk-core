@@ -1,13 +1,13 @@
+import { BerachainV1Factory } from "./constants";
+
 export interface TokenConfig {
   name: string;
   symbol: string;
   totalSupply: string;
   decimals: number;
   chain: Chain;
-  isMintable?: boolean;
-  isBurnable?: boolean;
-  isPausable?: boolean;
 }
+
 export enum Chain {
   ETHEREUM_MAINNET = "ethereum-mainnet",
   POLYGON_MAINNET = "polygon-mainnet",
@@ -21,9 +21,14 @@ export enum Chain {
 }
 
 export enum RPC_URLS {
+  "ethereum-mainnet" = "https://rpc.ankr.com/eth",
+  "polygon-mainnet" = "https://polygon-rpc.com",
   "berachain-mainnet" = "https://rpc.berachain.com",
+  "base-mainnet" = "https://mainnet.base.org",
+  "arbitrum-mainnet" = "https://arb1.arbitrum.io/rpc",
+  "optimism-mainnet" = "https://mainnet.optimism.io",
 }
 
 export enum factoryAddress {
-  "berachain-mainnet" = "0x52c76E937766FdEeC07a0256E80d8515958c1ae6",
+  "berachain-mainnet" = BerachainV1Factory,
 }
