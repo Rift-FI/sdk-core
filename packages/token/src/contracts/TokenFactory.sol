@@ -1,18 +1,16 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.28;
+pragma solidity ^0.8.20;
 
 import "./Token.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
-import "@openzeppelin/contracts/utils/Address.sol";
+import "@openzeppelin/contracts/proxy/ERC1967/ERC1967Proxy.sol";
 import "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
 
 /**
  * @title TokenFactory
- * @dev A factory contract for creating new ERC20 tokens
+ * @dev A factory contract for creating new upgradeable ERC20 tokens
  */
 contract TokenFactory is Ownable, ReentrancyGuard {
-    using Address for address;
-
     event TokenCreated(
         address indexed tokenAddress,
         string name,
@@ -21,38 +19,39 @@ contract TokenFactory is Ownable, ReentrancyGuard {
         address indexed owner
     );
 
+    address public immutable tokenImplementation;
+
     mapping(address => address[]) private _creatorTokens;
     address[] private _allTokens;
 
     uint256 private _fee;
 
     /**
-     * @dev Constructor sets the initial owner and fee
+     * @dev Constructor sets the initial owner, fee and token implementation
      * @param initialFee The fee to create a new token
+     * @param _tokenImplementation The address of the Token implementation contract
      */
-    constructor(uint256 initialFee) Ownable(msg.sender) {
+    constructor(
+        uint256 initialFee,
+        address _tokenImplementation
+    ) Ownable(msg.sender) {
         _fee = initialFee;
+        tokenImplementation = _tokenImplementation;
     }
 
     /**
-     * @dev Creates a new ERC20 token
+     * @dev Creates a new upgradeable ERC20 token by deploying a proxy
      * @param name The name of the token
      * @param symbol The symbol of the token
      * @param initialSupply The initial supply of the token
      * @param decimals The number of decimals for the token
-     * @param isMintable Whether the token can be minted after creation
-     * @param isBurnable Whether the token can be burned
-     * @param isPausable Whether the token can be paused
-     * @return The address of the newly created token
+     * @return The address of the newly created token proxy
      */
     function createToken(
         string memory name,
         string memory symbol,
         uint256 initialSupply,
-        uint8 decimals,
-        bool isMintable,
-        bool isBurnable,
-        bool isPausable
+        uint8 decimals
     ) external payable nonReentrant returns (address) {
         require(bytes(name).length > 0, "Name cannot be empty");
         require(bytes(symbol).length > 0, "Symbol cannot be empty");
@@ -60,22 +59,26 @@ contract TokenFactory is Ownable, ReentrancyGuard {
         require(decimals <= 18, "Decimals cannot exceed 18");
         require(msg.value >= _fee, "Insufficient fee");
 
-        Token newToken = new Token(
-            name,
-            symbol,
-            initialSupply,
-            decimals,
-            msg.sender,
-            isMintable,
-            isBurnable,
-            isPausable
+        ERC1967Proxy proxy = new ERC1967Proxy(
+            tokenImplementation,
+            abi.encodeWithSelector(
+                Token.initialize.selector,
+                name,
+                symbol,
+                initialSupply,
+                decimals,
+                msg.sender,
+                msg.sender
+            )
         );
 
-        _creatorTokens[msg.sender].push(address(newToken));
-        _allTokens.push(address(newToken));
+        address tokenAddress = address(proxy);
+
+        _creatorTokens[msg.sender].push(tokenAddress);
+        _allTokens.push(tokenAddress);
 
         emit TokenCreated(
-            address(newToken),
+            tokenAddress,
             name,
             symbol,
             initialSupply,
@@ -88,7 +91,7 @@ contract TokenFactory is Ownable, ReentrancyGuard {
             require(success, "Refund failed");
         }
 
-        return address(newToken);
+        return tokenAddress;
     }
 
     /**
