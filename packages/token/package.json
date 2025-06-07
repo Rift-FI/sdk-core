@@ -7,7 +7,7 @@
   "scripts": {
     "build": "tsc",
     "dev": "tsc --watch",
-    "clean": "rm -rf dist",
+    "clean": "echo 'skip clean'",
     "prepublishOnly": "npm run clean && npm run build"
   },
   "keywords": [
