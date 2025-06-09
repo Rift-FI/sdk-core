@@ -30,6 +30,13 @@ const dividendContractArtifact = JSON.parse(
   )
 );
 
+const dividendFactoryContractArtifact = JSON.parse(
+  fs.readFileSync(
+    path.join(CONTRACTS_DIR, "out/DividendFactory.sol/DividendFactory.json"),
+    "utf8"
+  )
+);
+
 // Create artifacts directory if it doesn't exist
 if (!fs.existsSync(ARTIFACTS_DIR)) {
   fs.mkdirSync(ARTIFACTS_DIR, { recursive: true });
@@ -75,5 +82,17 @@ fs.writeFileSync(
   )} as const;
 export const DividendContract_BYTECODE = '${
     dividendContractArtifact.bytecode.object
+  }';`
+);
+
+fs.writeFileSync(
+  path.join(ARTIFACTS_DIR, "dividendFactoryContract.ts"),
+  `export const DividendFactoryContract_ABI = ${JSON.stringify(
+    dividendFactoryContractArtifact.abi,
+    null,
+    2
+  )} as const;
+export const DividendFactoryContract_BYTECODE = '${
+    dividendFactoryContractArtifact.bytecode.object
   }';`
 );

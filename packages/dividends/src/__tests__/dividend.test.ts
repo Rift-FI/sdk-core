@@ -19,7 +19,12 @@ import {
   DividendContract_BYTECODE,
 } from "../artifacts/dividendContract";
 import { anvil } from "viem/chains";
-import { ChildProcessWithoutNullStreams, spawn } from "child_process";
+import { ChildProcessWithoutNullStreams, execSync, spawn } from "child_process";
+import {
+  DividendFactoryContract_ABI,
+  DividendFactoryContract_BYTECODE,
+} from "../artifacts/dividendFactoryContract";
+import { DividendsError } from "../error";
 
 describe("Dividends", () => {
   const anvilRpcUrl = "http://localhost:13517";
@@ -43,6 +48,7 @@ describe("Dividends", () => {
   let mockTokenAAddress: string | `0x${string}`;
   let mockTokenBAddress: string | `0x${string}`;
   let dividendAddress: string | `0x${string}`;
+  let factoryDividedAddress: string | `0x${string}`;
 
   let anvilAdminAccount: Account;
   let anvilAnotherAccount: Account;
@@ -202,6 +208,46 @@ describe("Dividends", () => {
       ...initializeRequest,
     });
 
+    // deploy dividend factory
+    const divFactoryDeploymentTx = await walletClient.deployContract({
+      abi: DividendFactoryContract_ABI,
+      account: anvilAdminAccount,
+      bytecode: DividendFactoryContract_BYTECODE,
+      chain: anvilClient.chain,
+      args: [],
+    });
+
+    const { contractAddress: factoryDivAddr } =
+      await anvilClient.getTransactionReceipt({
+        hash: divFactoryDeploymentTx,
+      });
+
+    factoryDividedAddress = factoryDivAddr?.toString() ?? "0x0";
+
+    // deploy again dividend for factory init
+    const _div2Tx = await walletClient.deployContract({
+      abi: DividendContract_ABI,
+      account: anvilAdminAccount,
+      bytecode: DividendContract_BYTECODE,
+      chain: anvilClient.chain,
+      args: [],
+    });
+
+    const { contractAddress: _div2Addr } =
+      await anvilClient.getTransactionReceipt({
+        hash: _div2Tx,
+      });
+
+    // initialize dividend factory
+    await walletClient.writeContract({
+      address: factoryDividedAddress as `0x${string}`,
+      abi: DividendFactoryContract_ABI,
+      functionName: "initialize",
+      args: [_div2Addr as `0x${string}`],
+      account: anvilAdminAccount,
+      chain: anvilClient.chain,
+    });
+
     // distribute token A to participants
     await distributeTokenA();
 
@@ -233,6 +279,11 @@ describe("Dividends", () => {
   afterAll(async () => {
     if (anvilProcess) {
       anvilProcess.kill();
+
+      // make sure anvil process is killed, check port 13517 is terminated
+      try {
+        execSync(`lsof -i:13517`);
+      } catch (e) {}
     }
 
     await new Promise((resolve) => setTimeout(resolve, 2000));
@@ -826,5 +877,187 @@ describe("Dividends", () => {
         dividendAddress
       );
     }).rejects.toThrow();
+  });
+
+  it("check dividend factory", async () => {
+    const dividend = new Dividends(
+      {
+        id: 31337,
+        rpcUrl: anvilRpcUrl,
+      },
+      anvilAdminPK
+    );
+
+    // create new dividend contract through the factory
+    const { request: createDividendRequest } =
+      await anvilClient.simulateContract({
+        address: factoryDividedAddress as `0x${string}`,
+        abi: DividendFactoryContract_ABI,
+        functionName: "create",
+        args: [
+          mockTokenAAddress as `0x${string}`,
+          "mA",
+          anvilAdminAccount.address,
+        ],
+        account: anvilAdminAccount,
+      });
+
+    const tx = await walletClient.writeContract({
+      ...createDividendRequest,
+    });
+
+    const txReceipt = await anvilClient.getTransactionReceipt({
+      hash: tx as `0x${string}`,
+    });
+
+    expect(txReceipt?.status).toBe("success");
+
+    //get dividend address
+    const _dividendAddr = await dividend.getDividendContractAddress(
+      factoryDividedAddress as `0x${string}`,
+      mockTokenAAddress
+    );
+
+    // check _dividendAddr and is hex and have length >25
+    expect(_dividendAddr).toBeDefined();
+    expect((_dividendAddr as string).startsWith("0x")).toBe(true);
+    expect(_dividendAddr).toHaveLength(42);
+  });
+
+  it("check dividend factory and distribute dividend with contract that already created", async () => {
+    const dividend = new Dividends(
+      {
+        id: 31337,
+        rpcUrl: anvilRpcUrl,
+      },
+      anvilAdminPK
+    );
+
+    // create new dividend contract through the factory
+    const { request: createDividendRequest } =
+      await anvilClient.simulateContract({
+        address: factoryDividedAddress as `0x${string}`,
+        abi: DividendFactoryContract_ABI,
+        functionName: "create",
+        args: [
+          mockTokenBAddress as `0x${string}`,
+          "mBB",
+          anvilAdminAccount.address,
+        ],
+        account: anvilAdminAccount,
+      });
+
+    const tx = await walletClient.writeContract({
+      ...createDividendRequest,
+    });
+
+    const txReceipt = await anvilClient.getTransactionReceipt({
+      hash: tx as `0x${string}`,
+    });
+
+    expect(txReceipt?.status).toBe("success");
+
+    // get initial wallet
+    const initialBalances = await usdcBalanceCheck(participantsWalletAddr);
+
+    // try to distribute dividend
+    const divAmount = 2500;
+    const dividendResult = await dividend.distributeDividend(
+      {
+        tokenAddress: mockTokenBAddress as `0x${string}`,
+        stableCoinAddress: mockUSDCAddress as `0x${string}`,
+        amount: divAmount, // assume we distribute dividend of 1000 usdc,
+        indexer: async (tokenAddress, chain) => {
+          const result = [];
+          for (let i = 0; i < participantsWalletAddr.length; i++) {
+            result.push({
+              address: participantsWalletAddr[i],
+              amount: ratioTokenB[i].toString(),
+            });
+          }
+
+          return result;
+        },
+        businessLogic: async (params) => {
+          const result: { address: string; amount: string }[] = [];
+
+          const _totalTokenSupply = params.totalSupply;
+          const _divAmount = params.dividendAmount;
+          const totalTokenSupply = parseUnits(_totalTokenSupply, 0);
+          const divAmount = parseUnits(_divAmount, 0);
+          for (let i = 0; i < params.holders.length; i++) {
+            const amountTokenOfMine = parseUnits(params.holders[i].amount, 0);
+            const _ratio =
+              (amountTokenOfMine * divAmount * parseUnits("10", 2)) /
+              totalTokenSupply;
+
+            // make sure ratio is not in decimal
+            const ratio = _ratio.toString().split(".")[0];
+
+            result.push({
+              address: params.holders[i].address,
+              amount: ratio,
+            });
+          }
+
+          return result;
+        },
+      },
+      await dividend.getDividendContractAddress(
+        factoryDividedAddress as `0x${string}`,
+        mockTokenBAddress
+      ),
+      {
+        title: "testtest",
+        directTransfer: true,
+      }
+    );
+
+    // check usdc balance of participants
+    const finalBalances = await usdcBalanceCheck(
+      dividendResult.dividendPortion.map((r) => r.address)
+    );
+
+    // check if final balances is greater than initial balances
+    for (let i = 0; i < finalBalances.length; i++) {
+      expect(parseUnits(finalBalances[i], 0)).toBeGreaterThan(
+        parseUnits(initialBalances[i], 0)
+      );
+    }
+
+    // check for tx type
+    expect(dividendResult.type).toBe("signed");
+    // check for tx hash
+    expect(dividendResult.txHash).toBeDefined();
+
+    // get tx receipt
+    const txReceipt2 = await anvilClient.getTransactionReceipt({
+      hash: dividendResult.txHash as `0x${string}`,
+    });
+    expect(txReceipt2).toBeDefined();
+    expect(txReceipt2?.status).toBe("success");
+  });
+
+  it("check on chain rpc error", async () => {
+    expect(async () => {
+      const dividend = new Dividends(
+        {
+          id: 121212,
+        },
+        anvilAdminPK
+      );
+    }).rejects.toThrow(DividendsError);
+  });
+
+  it("check on pk error", async () => {
+    expect(async () => {
+      const dividend = new Dividends(
+        {
+          id: 121212,
+          rpcUrl: anvilRpcUrl,
+        },
+        "0x00000000000000as3l0l3"
+      );
+    }).rejects.toThrow(DividendsError);
   });
 });
