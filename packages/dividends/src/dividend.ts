@@ -33,6 +33,7 @@ import {
 } from "viem/chains";
 import { DividendABI } from "./abi/dividend.abi";
 import { ERC20Abi } from "./abi/erc20.abi";
+import { DividendFactoryABI } from "./abi/dividend-factory.abi";
 
 export class Dividends {
   private chain: Chain;
@@ -232,6 +233,20 @@ export class Dividends {
       type: this.isPrivateKey ? "signed" : "unsigned",
       dividendPortion: dividendPreResult,
     };
+  }
+
+  async getDividendContractAddress(
+    factoryAddress: string,
+    tokenAddress: string
+  ): Promise<string> {
+    const result = await this.publicClient.readContract({
+      abi: DividendFactoryABI,
+      address: factoryAddress as `0x${string}`,
+      functionName: "getDividendByToken",
+      args: [tokenAddress as `0x${string}`],
+    });
+
+    return result as string;
   }
 
   private async setupToken(tokenAddress: string, stableCoinAddress: string) {
