@@ -98,6 +98,344 @@ const contractAddress: string = await dividends.getDividendContractAddress(
 console.log("Dividend contract address:", contractAddress);
 ```
 
+### For frontend (with wallet integration)
+
+When integrating with frontend wallets like MetaMask, Rainbow, or Rabby, you should initialize the Dividends class with the wallet address only and handle transaction signing through the wallet interface.
+
+```typescript
+import { Dividends } from "@strato-sdk/dividends";
+import type {
+  Chain,
+  DistributeDividendIn,
+  DistributeDividendOut,
+  DistibuteDividendOutOnChain,
+  DistributeDivdendOnchainConfig,
+} from "@strato-sdk/dividends";
+import { createWalletClient, custom, createPublicClient, http } from "viem";
+import { mainnet } from "viem/chains";
+
+// Frontend wallet integration
+declare global {
+  interface Window {
+    ethereum?: any;
+  }
+}
+
+// Connect to user's wallet
+const walletClient = createWalletClient({
+  chain: mainnet,
+  transport: custom(window.ethereum),
+});
+
+const publicClient = createPublicClient({
+  chain: mainnet,
+  transport: http(),
+});
+
+// Get connected wallet address
+const [account] = await walletClient.getAddresses();
+
+// Initialize Dividends with wallet address (no private key)
+const chain: Chain = { id: 1 };
+const dividends = new Dividends(chain, account);
+
+// Example: Manual dividend distribution with wallet signing
+const distributeDividendParams: DistributeDividendIn = {
+  tokenAddress: "0x..." as `0x${string}`,
+  stableCoinAddress: "0x..." as `0x${string}`,
+  amount: 1000,
+  indexer: async (tokenAddress: string, chain: Chain) => {
+    // Your indexer logic here
+    return [
+      { address: "0x...", amount: "100" },
+      { address: "0x...", amount: "200" },
+    ];
+  },
+  businessLogic: async ({ holders, totalSupply, dividendAmount }) => {
+    return holders.map((holder) => ({
+      address: holder.address,
+      amount: (
+        (BigInt(holder.amount) * BigInt(dividendAmount)) /
+        BigInt(totalSupply)
+      ).toString(),
+    }));
+  },
+};
+
+// Get unsigned transactions
+const resultManual: DistributeDividendOut =
+  await dividends.distributeDividendManual(distributeDividendParams);
+
+// Sign each transaction with wallet
+for (const transfer of resultManual) {
+  if (transfer.type === "unsigned") {
+    try {
+      // Request user to sign transaction via wallet
+      const txHash = await walletClient.writeContract({
+        ...transfer.txUnsigned,
+        account,
+      });
+      console.log(`Transfer to ${transfer.address} successful: ${txHash}`);
+    } catch (error) {
+      console.error(`Failed to transfer to ${transfer.address}:`, error);
+    }
+  }
+}
+
+// Example: On-chain dividend distribution with wallet signing
+const dividendContractAddress = "0x..." as `0x${string}`;
+
+// First, ensure the dividend contract has sufficient stablecoin balance
+// You may need to transfer stablecoin to the contract first
+const transferToContract = await walletClient.writeContract({
+  address: distributeDividendParams.stableCoinAddress as `0x${string}`,
+  abi: [
+    {
+      name: "transfer",
+      type: "function",
+      inputs: [
+        { name: "to", type: "address" },
+        { name: "amount", type: "uint256" },
+      ],
+      outputs: [{ name: "", type: "bool" }],
+      stateMutability: "nonpayable",
+    },
+  ],
+  functionName: "transfer",
+  args: [dividendContractAddress, BigInt(1000 * 10 ** 6)], // Assuming 6 decimals
+  account,
+});
+
+console.log("Transferred stablecoin to contract:", transferToContract);
+
+// Get unsigned transaction for batch distribution
+const resultOnChain: DistibuteDividendOutOnChain =
+  await dividends.distributeDividend(
+    distributeDividendParams,
+    dividendContractAddress,
+    {
+      title: "Q4 2024 Dividend",
+      directTransfer: false, // We manually transferred above
+    }
+  );
+
+// Sign the batch transaction with wallet
+if (resultOnChain.type === "unsigned") {
+  try {
+    const batchTxHash = await walletClient.writeContract({
+      ...resultOnChain.txUnsigned,
+      account,
+    });
+    console.log(`Batch dividend distributed: ${batchTxHash}`);
+    console.log(`Recipients: ${resultOnChain.dividendPortion.length}`);
+  } catch (error) {
+    console.error("Failed to distribute dividend:", error);
+  }
+}
+```
+
+### Indexer Integration with Ponder (GraphQL)
+
+Ponder is a popular indexing framework for Ethereum data. Here's how to integrate it as an indexer function:
+
+```typescript
+import { Dividends } from "@strato-sdk/dividends";
+import type { Chain, AddressAmount } from "@strato-sdk/dividends";
+
+// Ponder GraphQL indexer function
+const ponderIndexer = async (
+  tokenAddress: string,
+  chain: Chain
+): Promise<AddressAmount[]> => {
+  // Your Ponder GraphQL endpoint
+  const PONDER_GRAPHQL_URL = "https://your-ponder-instance.com/graphql";
+
+  const query = `
+    query GetTokenBalances($tokenAddress: String!) {
+      tokenBalances(where: { tokenAddress: $tokenAddress }) {
+        totalCount
+        items {
+          account {
+            address
+          }
+          balance
+        }
+      }
+    }
+  `;
+
+  try {
+    const response = await fetch(PONDER_GRAPHQL_URL, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        query,
+        variables: {
+          tokenAddress: tokenAddress.toLowerCase(),
+        },
+      }),
+    });
+
+    const result = await response.json();
+
+    if (result.errors) {
+      throw new Error(`GraphQL errors: ${JSON.stringify(result.errors)}`);
+    }
+
+    // Transform Ponder response to expected format
+    const holders: AddressAmount[] = result.data.tokenBalances.items
+      .filter((item: any) => BigInt(item.balance) > 0n) // Only include holders with balance > 0
+      .map((item: any) => ({
+        address: item.account.address,
+        amount: item.balance, // Keep as string
+      }));
+
+    console.log(`Found ${holders.length} token holders from Ponder`);
+    return holders;
+  } catch (error) {
+    console.error("Error fetching from Ponder:", error);
+    throw new Error(`Failed to fetch token holders: ${error.message}`);
+  }
+};
+
+// Alternative: More advanced Ponder query with pagination
+const ponderIndexerWithPagination = async (
+  tokenAddress: string,
+  chain: Chain
+): Promise<AddressAmount[]> => {
+  const PONDER_GRAPHQL_URL = "https://your-ponder-instance.com/graphql";
+  let allHolders: AddressAmount[] = [];
+  let hasNextPage = true;
+  let cursor: string | null = null;
+  const pageSize = 1000;
+
+  while (hasNextPage) {
+    const query = `
+      query GetTokenBalances($tokenAddress: String!, $first: Int!, $after: String) {
+        tokenBalances(
+          where: { tokenAddress: $tokenAddress }
+          first: $first
+          after: $after
+          orderBy: "balance"
+          orderDirection: "desc"
+        ) {
+          totalCount
+          pageInfo {
+            hasNextPage
+            endCursor
+          }
+          items {
+            account {
+              address
+            }
+            balance
+          }
+        }
+      }
+    `;
+
+    try {
+      const response = await fetch(PONDER_GRAPHQL_URL, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          query,
+          variables: {
+            tokenAddress: tokenAddress.toLowerCase(),
+            first: pageSize,
+            after: cursor,
+          },
+        }),
+      });
+
+      const result = await response.json();
+
+      if (result.errors) {
+        throw new Error(`GraphQL errors: ${JSON.stringify(result.errors)}`);
+      }
+
+      const batchHolders = result.data.tokenBalances.items
+        .filter((item: any) => BigInt(item.balance) > 0n)
+        .map((item: any) => ({
+          address: item.account.address,
+          amount: item.balance,
+        }));
+
+      allHolders = [...allHolders, ...batchHolders];
+
+      hasNextPage = result.data.tokenBalances.pageInfo.hasNextPage;
+      cursor = result.data.tokenBalances.pageInfo.endCursor;
+
+      console.log(
+        `Fetched ${batchHolders.length} holders (total: ${allHolders.length})`
+      );
+    } catch (error) {
+      console.error("Error fetching batch from Ponder:", error);
+      throw new Error(`Failed to fetch token holders: ${error.message}`);
+    }
+  }
+
+  return allHolders;
+};
+
+// Using the Ponder indexer with Dividends
+const chain: Chain = { id: 1 };
+const dividends = new Dividends(chain, "0x..." as `0x${string}`);
+
+const distributeDividendParams: DistributeDividendIn = {
+  tokenAddress: "0xffad8675234e4c7eacd78fc56b831fbd7fb26d17" as `0x${string}`,
+  stableCoinAddress: "0x..." as `0x${string}`,
+  amount: 1000,
+  indexer: ponderIndexer, // Use Ponder as indexer
+  businessLogic: async ({ holders, totalSupply, dividendAmount }) => {
+    // Your dividend calculation logic
+    return holders.map((holder) => ({
+      address: holder.address,
+      amount: (
+        (BigInt(holder.amount) * BigInt(dividendAmount)) /
+        BigInt(totalSupply)
+      ).toString(),
+    }));
+  },
+};
+
+// Execute dividend distribution
+const result = await dividends.distributeDividendManual(
+  distributeDividendParams
+);
+console.log("Dividend distribution completed:", result);
+```
+
+### Error Handling for Frontend Integration
+
+```typescript
+import { DividendsError } from "@strato-sdk/dividends";
+
+try {
+  const result = await dividends.distributeDividend(/* ... */);
+  // Handle success
+} catch (error) {
+  if (error instanceof DividendsError) {
+    // Handle Dividends-specific errors
+    console.error("Dividends error:", error.message);
+    // Show user-friendly error message
+  } else if (error.name === "UserRejectedRequestError") {
+    // User rejected the transaction in wallet
+    console.log("User cancelled the transaction");
+  } else if (error.name === "InsufficientFundsError") {
+    // Not enough ETH for gas or token balance
+    console.error("Insufficient funds for transaction");
+  } else {
+    // Other wallet or network errors
+    console.error("Transaction failed:", error);
+  }
+}
+```
+
 ## Features
 
 - **Manual Distribution**: Direct ERC20 transfers to token holders
