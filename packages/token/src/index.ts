@@ -46,18 +46,20 @@ class Token {
       throw new Error("Chain is required");
     }
 
-    if (config.chain !== Chain.BERACHAIN_MAINNET) {
-      throw new Error(
-        "Unsupported chain: This function only supports Berachain Mainnet."
-      );
-    }
     const wallet = this.getWallet(
       config.chain,
       deployerPrivateKey,
       walletInstance
     );
 
-    const tokenFactoryAddress = factoryAddress[Chain.BERACHAIN_MAINNET];
+    const tokenFactoryAddress = factoryAddress[config.chain as keyof typeof factoryAddress];
+    
+    if (!tokenFactoryAddress) {
+      throw new Error(
+        "Unsupported chain."
+      );
+    }
+
     const tokenFactory = new ethers.Contract(
       tokenFactoryAddress,
       TokenFactoryAbi,
