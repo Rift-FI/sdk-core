@@ -1,5 +1,5 @@
 {
-  "name": "@strato-sdk/dividends",
+  "name": "@stratosphere-network/dividends",
   "version": "0.1.0",
   "description": "Dividend management functionality for Strato SDK",
   "main": "dist/index.js",
@@ -7,7 +7,7 @@
   "scripts": {
     "build": "tsc",
     "dev": "tsc --watch",
-    "clean": "rm -rf dist",
+    "clean": "jest",
     "prepublishOnly": "npm run clean && npm run build",
     "test": "jest",
     "test:watch": "jest --watch",
