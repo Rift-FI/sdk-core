@@ -14,6 +14,7 @@ on:
           - wallet
           - shared
           - token
+          - dividend
       version:
         description: "Version bump type"
         required: true
