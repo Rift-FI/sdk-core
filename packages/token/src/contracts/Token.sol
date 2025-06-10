@@ -67,12 +67,9 @@ contract Token is
         return _decimals;
     }
 
-    function setTransferable(bool isTransferable)
-        public
-        virtual
-        onlyRole(DEFAULT_ADMIN_ROLE)
-        whenNotPaused
-    {
+    function setTransferable(
+        bool isTransferable
+    ) public virtual onlyRole(DEFAULT_ADMIN_ROLE) whenNotPaused {
         _transferable = isTransferable;
     }
 
@@ -80,11 +77,17 @@ contract Token is
         return _transferable;
     }
 
-    function mint(address to, uint256 amount) public virtual onlyRole(MINTER_ROLE) whenNotPaused {
+    function mint(
+        address to,
+        uint256 amount
+    ) public virtual onlyRole(MINTER_ROLE) whenNotPaused {
         _mint(to, amount);
     }
 
-    function burn(address account, uint256 amount) public virtual onlyRole(BURNER_ROLE) whenNotPaused {
+    function burn(
+        address account,
+        uint256 amount
+    ) public virtual onlyRole(BURNER_ROLE) whenNotPaused {
         _burn(account, amount);
     }
 
@@ -96,7 +99,9 @@ contract Token is
         _unpause();
     }
 
-    function _authorizeUpgrade(address newImplementation) internal virtual override onlyRole(UPGRADER_ROLE) {}
+    function _authorizeUpgrade(
+        address newImplementation
+    ) internal virtual override onlyRole(UPGRADER_ROLE) {}
 
     function _update(
         address from,
@@ -111,7 +116,9 @@ contract Token is
 
         if (!_transferable) {
             if (!hasRole(DEFAULT_ADMIN_ROLE, from)) {
-                revert("Token: Transfers only allowed for admins when disabled");
+                revert(
+                    "Token: Transfers only allowed for admins when disabled"
+                );
             }
         }
     }
