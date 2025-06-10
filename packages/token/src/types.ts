@@ -1,4 +1,4 @@
-import { BerachainV1Factory } from "./constants";
+import { BepoliaV1Factory, BerachainV1Factory, SepoliaV1Factory } from "./constants";
 
 export interface TokenConfig {
   name: string;
@@ -10,9 +10,10 @@ export interface TokenConfig {
 
 export enum Chain {
   ETHEREUM_MAINNET = "ethereum-mainnet",
+  ETHEREUM_SEPOLIA = "ethereum-sepolia",
   POLYGON_MAINNET = "polygon-mainnet",
   BERACHAIN_MAINNET = "berachain-mainnet",
-
+  BERACHAIN_TESTNET = "berachain-testnet",
   BASE_MAINNET = "base-mainnet",
 
   ARBITRUM_MAINNET = "arbitrum-mainnet",
@@ -22,8 +23,10 @@ export enum Chain {
 
 export enum RPC_URLS {
   "ethereum-mainnet" = "https://rpc.ankr.com/eth",
+  "ethereum-sepolia" = "https://1rpc.io/sepolia",
   "polygon-mainnet" = "https://polygon-rpc.com",
   "berachain-mainnet" = "https://rpc.berachain.com",
+  "berachain-testnet" = "https://bepolia.rpc.berachain.com",
   "base-mainnet" = "https://mainnet.base.org",
   "arbitrum-mainnet" = "https://arb1.arbitrum.io/rpc",
   "optimism-mainnet" = "https://mainnet.optimism.io",
@@ -31,4 +34,6 @@ export enum RPC_URLS {
 
 export enum factoryAddress {
   "berachain-mainnet" = BerachainV1Factory,
+  "berachain-testnet" = BepoliaV1Factory,
+  "ethereum-sepolia" = SepoliaV1Factory,
 }
