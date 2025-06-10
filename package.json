@@ -25,7 +25,6 @@
     "node": ">=18.0.0"
   },
   "dependencies": {
-    "@stratosphere-network/wallet": "^6.0.0",
-    "moment": "^2.30.1"
+    "@stratosphere-network/wallet": "^6.0.0"
   }
 }

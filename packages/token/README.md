@@ -21,12 +21,9 @@ yarn add @stratosphere-network/token
 
 ## Usage
 
-<<<<<<< HEAD
-First, import the `Token` class and the necessary types from the package. If you plan to use an existing `ethers.Wallet` instance for deployment, you'll also need to import `ethers`:
-=======
-First, import the `Token` class and the necessary types from the package. If you plan to use an existing `ethers.Wallet` instance, you'll also need to import `ethers`:
+# First, import the `Token` class and the necessary types from the package. If you plan to use an existing `ethers.Wallet` instance for deployment, you'll also need to import `ethers`:
 
-> > > > > > > 5efa2a7fe3f1a6bd0d3e705d1dd6bdc7f677cdb2
+First, import the `Token` class and the necessary types from the package. If you plan to use an existing `ethers.Wallet` instance, you'll also need to import `ethers`:
 
 ```typescript
 import Token, { TokenConfig, Chain } from "@stratosphere-network/token";
@@ -36,7 +33,6 @@ import { ethers } from "ethers"; // Required if providing your own ethers.Wallet
 Next, create an instance of the `Token` class:
 
 ```typescript
-<<<<<<< HEAD
 const tokenClient = new Token();
 ```
 
@@ -61,12 +57,10 @@ You must provide at least one of these to the `deployToken` method.
 To deploy a new token, provide a `tokenConfig` object. The `deployToken` method returns an object containing the `transactionHash` and the `tokenAddress` of the newly created proxy contract.
 
 The address that deploys the token will automatically be granted the `DEFAULT_ADMIN_ROLE`, as well as the `MINTER_ROLE`, `BURNER_ROLE`, `PAUSER_ROLE`, and `UPGRADER_ROLE`.
->>>>>>> 5efa2a7fe3f1a6bd0d3e705d1dd6bdc7f677cdb2
 
 Currently, token deployment is **only supported on Berachain Mainnet**.
 
 ```typescript
-<<<<<<< HEAD
 // Ensure tokenClient is instantiated as shown in the "Usage" section:
 // import Token from "@stratosphere-network/token";
 // const tokenClient = new Token();
