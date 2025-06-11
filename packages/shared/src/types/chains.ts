@@ -186,6 +186,12 @@ export const ViemPublicClientChains: Record<SupportedChain, Chain> = {
     },
     testnet: false,
     sourceId: 80094, // berachain
+    contracts: {
+      multicall3: {
+        address: '0xcA11bde05977b3631167028862bE2a173976CA11',
+        blockCreated: 1382922,
+      },
+    },
   }),
   [SupportedChain.BERACHAIN_TESTNET]: defineChain( {
     id: 80069,
@@ -208,5 +214,11 @@ export const ViemPublicClientChains: Record<SupportedChain, Chain> = {
     },
     testnet: true,
     sourceId: 80069, // berachain
+    contracts: {
+      multicall3: {
+        address: '0xcA11bde05977b3631167028862bE2a173976CA11',
+        blockCreated: 1382922,
+      },
+    },
   }),
 };

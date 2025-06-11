@@ -16,6 +16,7 @@ import {
 } from "@stratospherex/smart-router";
 import { FeeAmount } from "@stratospherex/v3-sdk";
 import { parseAbi, PublicClient } from "viem";
+import { EstimatedSwap } from "../types";
 
 export class SwapService {
   private wallet: Wallet;
@@ -26,7 +27,7 @@ export class SwapService {
     this.viemClient = viemClient;
   }
 
-  async estimateSwap(tokenIn: string, tokenOut: string, amount: string) {
+  async estimateSwap(tokenIn: string, tokenOut: string, amount: string): Promise<EstimatedSwap> {
     const swapFrom = await this.getToken(tokenIn);
     const swapTo = await this.getToken(tokenOut);
 
@@ -38,7 +39,6 @@ export class SwapService {
 
     const pool = await router.getV3CandidatePools({
       onChainProvider: () => this.viemClient,
-      // subgraphProvider: () => v3SubgraphClient,
       currencyA: swapFrom,
       currencyB: swapTo,
       subgraphFallback: false,
@@ -75,7 +75,7 @@ export class SwapService {
 
   // Get token details from chain
   async getToken(address: string): Promise<Token> {
-    const network = await this.wallet.provider?.getNetwork();
+    const chainId = await this.viemClient.getChainId();
 
     const abis = parseAbi([
       "function symbol() view returns (string)",
@@ -104,7 +104,7 @@ export class SwapService {
     const [symbol, decimals, name] = results;
 
     return new Token(
-      Number(network?.chainId),
+      Number(chainId),
       address as `0x${string}`,
       Number(decimals.result),
       name?.result as string,
