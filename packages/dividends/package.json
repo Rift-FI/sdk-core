@@ -7,11 +7,11 @@
   "scripts": {
     "build": "tsc",
     "dev": "tsc --watch",
-    "clean": "echo 'test'",
+    "clean": "jest",
     "prepublishOnly": "npm run clean && npm run build",
-    "test": "echo 'test'",
-    "test:watch": "echo 'test'",
-    "test:coverage": "echo 'test'"
+    "test": "jest",
+    "test:watch": "jest --watch",
+    "test:coverage": "jest --coverage"
   },
   "devDependencies": {
     "@types/jest": "^29.5.12",
