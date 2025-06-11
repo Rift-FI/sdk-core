@@ -7,8 +7,9 @@ Official TypeScript SDK for **Stratosphere network wallet module** - A comprehen
 - 🌐 **Multi-chain Support**: Arbitrum, Base, Optimism, Ethereum, BNB, Polygon, Lisk, Berachain
 - 💸 **Gasless Transactions**: Execute transactions without paying gas fees
 - 🔄 **DeFi Swaps**: Built-in token swapping across chains with best rates
-- 💳 **Payment Links**: Create and manage crypto payment requests
+- 💳 **Payment Links**: Create and manage crypto payment requests with custom redirect URLs
 - 📱 **M-Pesa Onramp**: Convert Kenyan Shillings to crypto via M-Pesa STK Push
+- 🛠️ **Proxy Wallet**: Direct blockchain interaction with signing, transaction sending, and wallet management
 - 🤖 **AI Integration**: Built-in AI conversation and chat capabilities
 - 🔐 **Secret Sharing**: Secure API key sharing marketplace
 - 📊 **Portfolio Tracking**: Multi-chain balance and transaction history
@@ -160,6 +161,141 @@ console.log("💸 Your send links:", sendLinks);
 // Cancel a send link
 await sphere.paymentLinks.cancelSendLink("send-link-url-id");
 console.log("🔒 Send link cancelled");
+```
+
+### Register Custom Redirect URLs
+
+Configure custom redirect URLs for your payment links to provide seamless user experience:
+
+```typescript
+// Register redirect URL for payment requests
+// Users will be redirected to your app when they visit payment links
+const requestRedirect =
+  await sphere.paymentLinks.registerRequestLinkRedirectUrl({
+    url: "https://yourapp.com/pay", // Your payment handling URL
+    phone: "+1234567890", // Project owner's phone for verification
+  });
+
+console.log("🔗 Request redirect registered:", requestRedirect);
+
+// Register redirect URL for send links
+// Users will be redirected to your app when they visit send links
+const sendRedirect = await sphere.paymentLinks.registerSendLinkRedirectUrl({
+  url: "https://yourapp.com/claim", // Your claim handling URL
+  phone: "+1234567890", // Project owner's phone for verification
+});
+
+console.log("🔗 Send redirect registered:", sendRedirect);
+
+// Now when users visit your payment/send links, they'll be redirected to:
+// https://yourapp.com/pay?nonce=payment_nonce (for payment requests)
+// https://yourapp.com/claim?id=send_link_id (for send links)
+```
+
+## 🛠️ Proxy Wallet
+
+Direct blockchain interaction capabilities for advanced users and integrations:
+
+### Get Wallet Instance Information
+
+```typescript
+// Get wallet instance details for a specific chain
+const walletInfo = await sphere.proxyWallet.getWalletInstance({
+  chain: "ETHEREUM",
+});
+
+console.log("🔐 Wallet Info:", {
+  address: walletInfo.address,
+  publicKey: walletInfo.publicKey,
+  chainId: walletInfo.provider.chainId,
+  nativeToken: walletInfo.chain.nativeToken,
+});
+```
+
+### Sign Transactions
+
+Sign transactions without broadcasting them to the network:
+
+```typescript
+// Sign a transaction (doesn't broadcast)
+const signedTx = await sphere.proxyWallet.signTransaction({
+  chain: "ETHEREUM",
+  transactionData: {
+    to: "0x742d35Cc6634C0532925a3b8D4C9db96C4b4Db45",
+    value: "1000000000000000000", // 1 ETH in wei
+    gasLimit: "21000",
+    gasPrice: "20000000000", // 20 gwei
+    nonce: 42,
+  },
+});
+
+console.log("✍️ Signed Transaction:", {
+  signedTransaction: signedTx.signedTransaction,
+  txHash: signedTx.txHash,
+  from: signedTx.from,
+});
+```
+
+### Send Transactions
+
+Sign and broadcast transactions directly to the blockchain:
+
+```typescript
+// Sign and send transaction
+const txResult = await sphere.proxyWallet.sendTransaction({
+  chain: "ARBITRUM",
+  transactionData: {
+    to: "0x742d35Cc6634C0532925a3b8D4C9db96C4b4Db45",
+    value: "500000000000000000", // 0.5 ETH
+    gasLimit: "21000",
+  },
+});
+
+console.log("🚀 Transaction Sent:", {
+  hash: txResult.hash,
+  from: txResult.from,
+  to: txResult.to,
+  value: txResult.value,
+  confirmations: txResult.confirmations,
+});
+```
+
+### Sign Messages
+
+Sign arbitrary messages for authentication or verification:
+
+```typescript
+// Sign a message
+const messageSignature = await sphere.proxyWallet.signMessage({
+  chain: "ETHEREUM",
+  message: "Hello, Sphere Network! Timestamp: " + Date.now(),
+});
+
+console.log("📝 Message Signed:", {
+  signature: messageSignature.signature,
+  signer: messageSignature.signer,
+  messageHash: messageSignature.messageHash,
+  recoveredAddress: messageSignature.recoveredAddress,
+});
+
+// Verify the signature matches the signer
+const isValid = messageSignature.signer === messageSignature.recoveredAddress;
+console.log("✅ Signature valid:", isValid);
+```
+
+### Generate Signature Information
+
+Get general signing capabilities and available endpoints:
+
+```typescript
+// Get signature capabilities
+const sigInfo = await sphere.proxyWallet.generateSignature();
+
+console.log("🔧 Signing Capabilities:", {
+  address: sigInfo.address,
+  publicKey: sigInfo.publicKey,
+  availableEndpoints: sigInfo.availableEndpoints,
+});
 ```
 
 ## 🔄 DeFi Swaps
@@ -491,6 +627,20 @@ sphere.paymentLinks.claimSpecificSendLink(request); // Claim specific send link
 sphere.paymentLinks.claimOpenSendLink(request); // Claim open send link
 sphere.paymentLinks.listSendLinks(request?); // Get list of send links
 sphere.paymentLinks.cancelSendLink(urlId); // Cancel a send link
+
+// Redirect URL Registration
+sphere.paymentLinks.registerRequestLinkRedirectUrl(request); // Register payment request redirect URL
+sphere.paymentLinks.registerSendLinkRedirectUrl(request); // Register send link redirect URL
+```
+
+### 🛠️ Proxy Wallet
+
+```typescript
+sphere.proxyWallet.generateSignature(); // Get signature capabilities and endpoints
+sphere.proxyWallet.getWalletInstance(request); // Get wallet instance info for chain
+sphere.proxyWallet.signTransaction(request); // Sign transaction without broadcasting
+sphere.proxyWallet.sendTransaction(request); // Sign and broadcast transaction
+sphere.proxyWallet.signMessage(request); // Sign arbitrary message for verification
 ```
 
 ### 🔄 DeFi Operations

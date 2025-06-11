@@ -4,6 +4,7 @@ import { AuthService } from "./services/auth";
 import { WalletService } from "./services/wallet";
 import { TransactionService } from "./services/transactions";
 import { PaymentLinksService } from "./services/payment-links";
+import { ProxyWalletService } from "./services/proxy-wallet";
 import { DeFiService } from "./services/defi";
 import { AssetsService } from "./services/assets";
 import { OnrampService } from "./services/onramp";
@@ -17,6 +18,7 @@ export class Sphere {
   public readonly wallet: WalletService;
   public readonly transactions: TransactionService;
   public readonly paymentLinks: PaymentLinksService;
+  public readonly proxyWallet: ProxyWalletService;
   public readonly defi: DeFiService;
   public readonly assets: AssetsService;
   public readonly onramp: OnrampService;
@@ -30,6 +32,7 @@ export class Sphere {
     this.wallet = new WalletService(this.httpClient);
     this.transactions = new TransactionService(this.httpClient);
     this.paymentLinks = new PaymentLinksService(this.httpClient);
+    this.proxyWallet = new ProxyWalletService(this.httpClient);
     this.defi = new DeFiService(this.httpClient);
     this.assets = new AssetsService(this.httpClient);
     this.onramp = new OnrampService(this.httpClient, config);
@@ -50,6 +53,7 @@ export class Sphere {
     this.wallet.setBearerToken(token);
     this.transactions.setBearerToken(token);
     this.paymentLinks.setBearerToken(token);
+    this.proxyWallet.setBearerToken(token);
     this.defi.setBearerToken(token);
     this.assets.setBearerToken(token);
     // Note: onramp service doesn't use bearer tokens
@@ -63,6 +67,7 @@ export class Sphere {
     this.wallet.clearBearerToken();
     this.transactions.clearBearerToken();
     this.paymentLinks.clearBearerToken();
+    this.proxyWallet.clearBearerToken();
     this.defi.clearBearerToken();
     this.assets.clearBearerToken();
     // Note: onramp service doesn't use bearer tokens
