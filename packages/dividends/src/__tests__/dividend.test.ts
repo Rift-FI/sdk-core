@@ -27,7 +27,8 @@ import {
 import { DividendsError } from "../error";
 
 describe("Dividends", () => {
-  const anvilRpcUrl = "http://localhost:13517";
+  const anvilPort = Math.floor(Math.random() * (15999 - 13001 + 1)) + 13001;
+  const anvilRpcUrl = `http://localhost:${anvilPort}`;
   const anvilAdminPK =
     "0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80";
   const anvilAnotherPK =
@@ -113,7 +114,7 @@ describe("Dividends", () => {
 
   beforeAll(async () => {
     // start anvil fist
-    anvilProcess = spawn("anvil", ["--port", "13517"]);
+    anvilProcess = spawn("anvil", ["--port", anvilPort.toString()]);
 
     // make sure connected to anvil rpc localhost with port 13519
 
@@ -280,9 +281,9 @@ describe("Dividends", () => {
     if (anvilProcess) {
       anvilProcess.kill();
 
-      // make sure anvil process is killed, check port 13517 is terminated
+      // make sure anvil process is killed, check port is terminated
       try {
-        execSync(`lsof -i:13517`);
+        execSync(`lsof -i:${anvilPort}`);
       } catch (e) {}
     }
 
