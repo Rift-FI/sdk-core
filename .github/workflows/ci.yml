@@ -2,7 +2,7 @@ name: CI
 
 on:
   push:
-    branches: [master, preview, staging, fix/preview-dividend-build-error]
+    branches: [master, preview, staging]
   pull_request:
     branches: [preview, staging]
 
