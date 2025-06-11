@@ -12,7 +12,6 @@
     "node_modules",
     "dist",
     "src/__tests__",
-    "src/abi",
     "src/artifacts",
   ]
 }
