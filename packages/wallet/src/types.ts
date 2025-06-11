@@ -441,14 +441,20 @@ export interface ShareSecretResponse {
   data: string;
 }
 
-// Payment Links Types
-
 // Redirect URL Registration
-export interface RegisterRedirectUrlRequest {
-  url: string;
-  phone: string;
-  otpCode: string;
-}
+export type RegisterRedirectUrlRequest =
+  | {
+      url: string;
+      email: string;
+      otpCode: string;
+      phone?: never;
+    }
+  | {
+      url: string;
+      phone: string;
+      otpCode: string;
+      email?: never;
+    };
 
 export interface RegisterRedirectUrlResponse {
   message: string;
@@ -467,6 +473,8 @@ export interface CreatePaymentRequestInput {
 
 export interface PaymentRequestResult {
   data: string;
+  message?: string;
+  error?: string;
 }
 
 // Payment Execution
@@ -873,7 +881,8 @@ export interface MpesaTransactionHistoryResponse {
 
 // Proxy Wallet / Signature Types
 export interface GetWalletInstanceRequest {
-  chain: string;
+  chain: ChainName;
+  [key: string]: any;
 }
 
 export interface ChainInfo {
@@ -906,7 +915,7 @@ export interface WalletInstanceResponse {
 }
 
 export interface SignTransactionRequest {
-  chain: string;
+  chain: ChainName;
   transactionData: {
     to?: string;
     value?: string;
@@ -918,7 +927,9 @@ export interface SignTransactionRequest {
     nonce?: number;
     type?: number;
     chainId?: number;
+    [key: string]: any;
   };
+  [key: string]: any;
 }
 
 export interface SignTransactionResponse {
@@ -929,7 +940,7 @@ export interface SignTransactionResponse {
 }
 
 export interface SendTransactionRequest {
-  chain: string;
+  chain: ChainName;
   transactionData: {
     to?: string;
     value?: string;
@@ -941,7 +952,9 @@ export interface SendTransactionRequest {
     nonce?: number;
     type?: number;
     chainId?: number;
+    [key: string]: any;
   };
+  [key: string]: any;
 }
 
 export interface SendTransactionResponse {
@@ -961,8 +974,9 @@ export interface SendTransactionResponse {
 }
 
 export interface SignMessageRequest {
-  chain: string;
+  chain: ChainName;
   message: string;
+  [key: string]: any;
 }
 
 export interface SignMessageResponse {

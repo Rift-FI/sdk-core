@@ -8,19 +8,10 @@ import {
   SendTransactionResponse,
   SignMessageRequest,
   SignMessageResponse,
-  GenerateSignatureResponse,
 } from "../types";
 
 export class ProxyWalletService extends BaseService {
-  /**
-   * Generate signature information and available endpoints
-   */
-  async generateSignature(): Promise<GenerateSignatureResponse> {
-    return this.authenticatedRequest<GenerateSignatureResponse>({
-      method: "POST",
-      url: "/proxy-wallet/generate-signature",
-    });
-  }
+ 
 
   /**
    * Get wallet instance information for a specific chain
