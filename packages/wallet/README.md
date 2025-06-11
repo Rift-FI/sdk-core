@@ -10,7 +10,6 @@ Official TypeScript SDK for **Stratosphere network wallet module** - A comprehen
 - 💳 **Payment Links**: Create and manage crypto payment requests with custom redirect URLs
 - 📱 **M-Pesa Onramp**: Convert Kenyan Shillings to crypto via M-Pesa STK Push
 - 🛠️ **Proxy Wallet**: Direct blockchain interaction with signing, transaction sending, and wallet management
-- 🤖 **AI Integration**: Built-in AI conversation and chat capabilities
 - 🔐 **Secret Sharing**: Secure API key sharing marketplace
 - 📊 **Portfolio Tracking**: Multi-chain balance and transaction history
 - 🔒 **Enterprise Ready**: Production-grade security and reliability
@@ -532,27 +531,9 @@ try {
 }
 ```
 
-## 🤖 AI Features
 
-Integrate AI-powered crypto assistance:
 
-```typescript
-// Chat with AI about crypto/DeFi
-const chatResponse = await sphere.ai.chat({
-  secret: "your-openai-key",
-  prompt: "Explain yield farming strategies for beginners",
-});
 
-console.log("🤖 AI Response:", chatResponse.response);
-
-// Start a conversation with context
-const conversation = await sphere.ai.conversation({
-  accessToken: "shared-ai-access-token",
-  user_prompt: "Help me understand DeFi risks",
-  conversation_id: "conv_123",
-  nonce: "unique_nonce",
-});
-```
 
 ## 🌐 Supported Networks
 
