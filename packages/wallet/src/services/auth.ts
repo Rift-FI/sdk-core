@@ -2,7 +2,6 @@ import { BaseService } from "../base-service";
 import {
   LoginRequest,
   SignupRequest,
-  AuthResponse,
   OtpRequest,
   OtpVerifyRequest,
   OtpResponse,

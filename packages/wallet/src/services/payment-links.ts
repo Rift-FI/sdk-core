@@ -2,16 +2,19 @@ import { BaseService } from "../base-service";
 import {
   CreatePaymentRequestInput,
   PaymentRequestResult,
-  ClaimSendLinkInput,
-  ClaimSendLinkResult,
-  ApiResponse,
+  ClaimPaymentRequest,
+  ClaimPaymentResponse,
   GetPaymentRequestsInput,
   GetPaymentRequestsResult,
   GetSendLinksInput,
   GetSendLinksResult,
   CancelPaymentRequestResult,
   CancelSendLinkResult,
-  CreateSendLinkInput,
+  PayPaymentRequestResponse,
+  SendSpecificPaymentRequest,
+  SendOpenPaymentRequest,
+  RegisterRedirectUrlRequest,
+  RegisterRedirectUrlResponse,
 } from "../types";
 
 export class PaymentLinksService extends BaseService {
@@ -46,20 +49,16 @@ export class PaymentLinksService extends BaseService {
     });
   }
 
-  async payPaymentRequest(nonce: string): Promise<ApiResponse<string>> {
-    return this.authenticatedRequest<ApiResponse<string>>({
+  async payPaymentRequest(nonce: string): Promise<PayPaymentRequestResponse> {
+    return this.authenticatedRequest<PayPaymentRequestResponse>({
       method: "POST",
       url: "/payment-links/execute",
       params: { nonce },
     });
   }
 
-  getPaymentRedirectUrl(nonce: string): string {
-    return `${this.httpClient["baseUrl"]}/payment-links/redirect?nonce=${nonce}`;
-  }
-
   async createSpecificSendLink(
-    request: CreateSendLinkInput & { receiver: string }
+    request: SendSpecificPaymentRequest
   ): Promise<PaymentRequestResult> {
     // Validate time format before making the API call
     this.validateTimeFormat(request.time);
@@ -72,9 +71,8 @@ export class PaymentLinksService extends BaseService {
   }
 
   async createOpenSendLink(
-    request: CreateSendLinkInput
+    request: SendOpenPaymentRequest
   ): Promise<PaymentRequestResult> {
-    // Validate time format before making the API call
     this.validateTimeFormat(request.time);
 
     return this.authenticatedRequest<PaymentRequestResult>({
@@ -85,24 +83,22 @@ export class PaymentLinksService extends BaseService {
   }
 
   async claimSpecificSendLink(
-    request: ClaimSendLinkInput
-  ): Promise<ClaimSendLinkResult> {
-    return this.authenticatedRequest<ClaimSendLinkResult>({
+    request: ClaimPaymentRequest
+  ): Promise<ClaimPaymentResponse> {
+    return this.authenticatedRequest<ClaimPaymentResponse>({
       method: "POST",
       url: "/payment-links/claim-specific",
       params: { id: request.id },
-      data: { to: request.to },
     });
   }
 
   async claimOpenSendLink(
-    request: ClaimSendLinkInput
-  ): Promise<ClaimSendLinkResult> {
-    return this.authenticatedRequest<ClaimSendLinkResult>({
+    request: ClaimPaymentRequest
+  ): Promise<ClaimPaymentResponse> {
+    return this.authenticatedRequest<ClaimPaymentResponse>({
       method: "POST",
       url: "/payment-links/claim-open",
       params: { id: request.id },
-      data: { to: request.to },
     });
   }
 
@@ -139,6 +135,26 @@ export class PaymentLinksService extends BaseService {
     return this.authenticatedRequest<CancelSendLinkResult>({
       method: "DELETE",
       url: `/payment-links/cancel-send-link/${urlId}`,
+    });
+  }
+
+  async registerRequestLinkRedirectUrl(
+    request: RegisterRedirectUrlRequest
+  ): Promise<RegisterRedirectUrlResponse> {
+    return this.authenticatedRequest<RegisterRedirectUrlResponse>({
+      method: "POST",
+      url: "/payment-links/register-request-link-redirect",
+      data: request,
+    });
+  }
+
+  async registerSendLinkRedirectUrl(
+    request: RegisterRedirectUrlRequest
+  ): Promise<RegisterRedirectUrlResponse> {
+    return this.authenticatedRequest<RegisterRedirectUrlResponse>({
+      method: "POST",
+      url: "/payment-links/register-send-link-redirect",
+      data: request,
     });
   }
 }
