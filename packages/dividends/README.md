@@ -696,7 +696,7 @@ The package supports the following chains out of the box:
 - Optimism (10)
 - Base Sepolia (84532)
 - Berachain (288)
-- Berachain Bepolia (289)
+- Berachain Bepolia (80069)
 - Sepolia (1313161554)
 
 For other chains, provide a custom `rpcUrl` in the chain configuration.

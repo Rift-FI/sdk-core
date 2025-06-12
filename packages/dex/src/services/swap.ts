@@ -1,4 +1,4 @@
-import { ethers, Wallet } from "ethers";
+import { ethers, TransactionReceipt, Wallet } from "ethers";
 import {
   BigintIsh,
   Currency,
@@ -13,24 +13,31 @@ import {
   SmartRouter,
   SmartRouterTrade,
   BIPS_BASE,
+  SwapRouter,
 } from "@stratospherex/smart-router";
 import { FeeAmount } from "@stratospherex/v3-sdk";
-import { parseAbi, PublicClient } from "viem";
+import { hexToBigInt, parseAbi, PublicClient } from "viem";
 import { EstimatedSwap } from "../types";
+import { SMART_ROUTER_ADDRESS } from "../constants";
+import { SupportedChain } from "@stratosphere-network/shared";
+import { calculateGasMargin } from "../utils";
 
 export class SwapService {
   private wallet: Wallet;
   private viemClient: PublicClient;
+  private chain: SupportedChain;
 
-  constructor(wallet: Wallet, viemClient: PublicClient) {
+  constructor(chain: SupportedChain, wallet: Wallet, viemClient: PublicClient) {
+    this.chain = chain;
     this.wallet = wallet;
     this.viemClient = viemClient;
   }
 
-  async estimateSwap(tokenIn: string, tokenOut: string, amount: string): Promise<EstimatedSwap> {
-    const swapFrom = await this.getToken(tokenIn);
-    const swapTo = await this.getToken(tokenOut);
-
+  private async getBestTrade(
+    swapFrom: Token,
+    swapTo: Token,
+    amount: string
+  ): Promise<SmartRouterTrade<TradeType> | null> {
     const estAmount = CurrencyAmount.fromRawAmount(
       swapFrom,
       ethers.parseUnits(amount, swapFrom.decimals) as unknown as BigintIsh
@@ -62,6 +69,19 @@ export class SwapService {
       }
     );
 
+    return trade;
+  }
+
+  async estimateSwap(
+    tokenIn: string,
+    tokenOut: string,
+    amount: string
+  ): Promise<EstimatedSwap> {
+    const swapFrom = await this.getToken(tokenIn);
+    const swapTo = await this.getToken(tokenOut);
+
+    const trade = await this.getBestTrade(swapFrom, swapTo, amount);
+
     const breakdown = this.computeTradePriceBreakdown(trade);
     const route = trade?.routes[0];
     return {
@@ -71,6 +91,79 @@ export class SwapService {
       price_impact: Number(breakdown.priceImpactWithoutFee?.toFixed(2)),
       routes: route?.path as any,
     };
+  }
+
+  // Check approval for a token
+  async checkApproval(tokenAddress: string): Promise<boolean> {
+    const token = await this.getToken(tokenAddress);
+    const walletAddress = await this.wallet.getAddress();
+    const spender = SMART_ROUTER_ADDRESS[this.chain];
+    const allowance = await this.viemClient.readContract({
+      address: token.address,
+      abi: parseAbi([
+        "function allowance(address, address) view returns (uint256)",
+      ]),
+      functionName: "allowance",
+      args: [walletAddress as `0x${string}`, spender as `0x${string}`],
+    });
+
+    return allowance > 0;
+  }
+
+  // Approve a token
+  async approve(tokenAddress: string, amount: string): Promise<boolean> {
+    const token = await this.getToken(tokenAddress);
+    const spender = SMART_ROUTER_ADDRESS[this.chain];
+    const isApproved = await this.checkApproval(tokenAddress);
+    if (isApproved) {
+      return true;
+    }
+
+    const erc20Contract = new ethers.Contract(
+      tokenAddress,
+      parseAbi(["function approve(address, uint256) public returns (bool)"]),
+      this.wallet
+    );
+    const tx = await erc20Contract.approve(
+      spender,
+      ethers.parseUnits(amount, token.decimals)
+    );
+    await tx.wait();
+    return true;
+  }
+
+  // Swap tokens
+  async swap(
+    tokenIn: string,
+    tokenOut: string,
+    amount: string
+  ): Promise<TransactionReceipt | null> {
+    const swapFrom = await this.getToken(tokenIn);
+    const swapTo = await this.getToken(tokenOut);
+    const address = await this.wallet.getAddress();
+
+    const trade = await this.getBestTrade(swapFrom, swapTo, amount);
+    if (!trade) {
+      throw new Error("No trade found");
+    }
+
+    const { value, calldata } = SwapRouter.swapCallParameters(trade, {
+      recipient: address as `0x${string}`,
+      slippageTolerance: new Percent(1),
+    });
+    const tx = {
+      account: address as `0x${string}`,
+      to: SMART_ROUTER_ADDRESS[this.chain] as `0x${string}`,
+      data: calldata,
+      value: hexToBigInt(value),
+    };
+    const gasEstimation = await this.viemClient.estimateGas(tx);
+
+    const trx = await this.wallet.sendTransaction({
+      ...tx,
+      gasLimit: calculateGasMargin(gasEstimation),
+    });
+    return await trx.wait();
   }
 
   // Get token details from chain

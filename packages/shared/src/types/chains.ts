@@ -143,7 +143,7 @@ export const CHAIN_CONFIGS: Record<SupportedChain, ChainConfig> = {
     nativeCurrency: { name: "BERA", symbol: "BERA", decimals: 18 },
   },
   [SupportedChain.BERACHAIN_TESTNET]: {
-    chainId: 289,
+    chainId: 80069,
     name: "Berachain Bepolia",
     rpcUrl: "https://bepolia.rpc.berachain.com/",
     blockExplorer: "https://bepolia.beratrail.io/",
