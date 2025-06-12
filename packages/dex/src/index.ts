@@ -29,9 +29,9 @@ export class Dex {
 
     // Initialize services
     this.swap = new SwapService(
-      this.config.chain,
+      this.config.chain as any,
       this.wallet,
-      this.viemClient
+      this.viemClient as any
     );
   }
 }
