@@ -9,8 +9,9 @@
     "dev": "tsc --watch",
     "clean": "jest",
     "prepublishOnly": "npm run clean && npm run build",
-    "test": "forge build && ts-node scripts/generate-artifacts.ts && jest",
-    "test:watch": "jest --watch",
+    "test": "jest -- dividends2",
+    "test:integration": "forge build && ts-node scripts/generate-artifacts.ts && jest -- dividends1",
+    "test:watch": "jest --watch -- dividends2",
     "test:coverage": "jest --coverage"
   },
   "devDependencies": {
