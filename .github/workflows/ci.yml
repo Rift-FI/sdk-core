@@ -24,13 +24,13 @@ jobs:
           node-version: ${{ matrix.node-version }}
 
       - name: Install dependencies
-        run: yarn install
+        run: npm install
 
       - name: Build all packages
-        run: yarn run build
+        run: npm run build
 
       - name: Run tests (when available)
-        run: yarn test || echo "No tests configured yet"
+        run: npm test || echo "No tests configured yet"
 
   lint-and-format:
     runs-on: ubuntu-latest
@@ -45,7 +45,7 @@ jobs:
           node-version: "18"
 
       - name: Install dependencies
-        run: yarn install
+        run: npm install
 
       - name: Check TypeScript compilation for all packages
         run: |

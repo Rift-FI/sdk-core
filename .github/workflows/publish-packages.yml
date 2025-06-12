@@ -64,10 +64,10 @@ jobs:
           registry-url: "https://registry.npmjs.org"
 
       - name: Install dependencies
-        run: yarn install
+        run: npm install
 
       - name: Build all packages
-        run: yarn run build
+        run: npm run build
 
       - name: Debug - List workspace structure
         run: |
@@ -90,32 +90,32 @@ jobs:
         run: |
           echo "=== Checking wallet package files ==="
           cd packages/wallet
-          yarn pack --dry-run
+          npm pack --dry-run
           echo "=== Package.json files configuration ==="
           cat package.json | grep -A 10 '"files"'
 
       - name: Version bump - All packages
         if: github.event.inputs.package == 'all'
         run: |
-          yarn version ${{ github.event.inputs.version }} --workspaces --no-git-tag-version
+          npm version ${{ github.event.inputs.version }} --workspaces --no-git-tag-version
           git add .
           git commit -m "chore: bump all packages to ${{ github.event.inputs.version }}"
 
       - name: Version bump - Specific package
         if: github.event.inputs.package != 'all'
         run: |
-          yarn version ${{ github.event.inputs.version }} -w @stratosphere-network/${{ github.event.inputs.package }} --no-git-tag-version
+          npm version ${{ github.event.inputs.version }} -w @stratosphere-network/${{ github.event.inputs.package }} --no-git-tag-version
           git add .
           git commit -m "chore: bump @stratosphere-network/${{ github.event.inputs.package }} to ${{ github.event.inputs.version }}"
 
       - name: Publish all packages
         if: github.event.inputs.package == 'all'
-        run: yarn publish --workspaces --access ${{ github.event.inputs.access }} --tag ${{ github.event.inputs.tag }}
+        run: npm publish --workspaces --access ${{ github.event.inputs.access }} --tag ${{ github.event.inputs.tag }}
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
 
       - name: Publish specific package
         if: github.event.inputs.package != 'all'
-        run: yarn publish -w @stratosphere-network/${{ github.event.inputs.package }} --access ${{ github.event.inputs.access }} --tag ${{ github.event.inputs.tag }}
+        run: npm publish -w @stratosphere-network/${{ github.event.inputs.package }} --access ${{ github.event.inputs.access }} --tag ${{ github.event.inputs.tag }}
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
