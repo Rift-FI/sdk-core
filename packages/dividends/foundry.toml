@@ -3,5 +3,5 @@ src = "src/__tests__/contracts"
 out = "out"
 libs = ["lib"]
 remappings = [
-    "@openzeppelin/=lib/openzeppelin-contracts/"
+    "@openzeppelin/=lib/ozc/"
 ] 
