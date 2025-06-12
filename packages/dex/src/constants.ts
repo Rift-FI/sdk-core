@@ -1,4 +1,4 @@
-import { SupportedChain } from "@stratosphere-network/shared";
+import { SupportedChain } from "./types/chains";
 
 export const SMART_ROUTER_ADDRESS: Record<SupportedChain, string> = {
     [SupportedChain.BERACHAIN_MAINNET]: "0xfF7c752D360442d45b0416030E4F122bE5d0976C",

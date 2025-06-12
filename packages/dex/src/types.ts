@@ -1,4 +1,4 @@
-import { SupportedChain } from "@stratosphere-network/shared";
+import { SupportedChain } from "./types/chains";
 import { Token } from "@stratospherex/sdk";
 import { Wallet } from "ethers";
 

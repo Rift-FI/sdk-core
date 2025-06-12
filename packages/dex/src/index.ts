@@ -1,10 +1,7 @@
 import { SwapService } from "./services/swap";
 import { Config } from "./types";
-import {
-  createProvider,
-  createViemClient,
-} from "@stratosphere-network/shared/src/utils/provider";
 import { Wallet } from "ethers";
+import { createProvider, createViemClient } from "./utils/provider";
 
 export class Dex {
   private config: Config;

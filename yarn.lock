@@ -689,7 +689,6 @@
   version "0.1.0"
   resolved "file:packages/dex"
   dependencies:
-    "@stratosphere-network/shared" "^1.0.0"
     "@stratospherex/sdk" "^5.8.0"
     "@stratospherex/smart-router" "^4.15.0"
     viem "1.19.11"

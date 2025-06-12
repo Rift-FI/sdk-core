@@ -19,7 +19,7 @@ import { FeeAmount } from "@stratospherex/v3-sdk";
 import { hexToBigInt, parseAbi, PublicClient } from "viem";
 import { EstimatedSwap } from "../types";
 import { SMART_ROUTER_ADDRESS } from "../constants";
-import { SupportedChain } from "@stratosphere-network/shared";
+import { SupportedChain } from "../types/chains";
 import { calculateGasMargin } from "../utils";
 
 export class SwapService {
