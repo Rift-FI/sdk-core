@@ -54,13 +54,13 @@ jobs:
           echo "version=$VERSION" >> $GITHUB_OUTPUT
 
       - name: Install dependencies
-        run: npm install
+        run: yarn install
 
       - name: Build all packages
-        run: npm run build
+        run: yarn run build
 
       - name: Publish package
-        run: npm publish -w ${{ steps.extract.outputs.package_full }} --access public
+        run: yarn publish -w ${{ steps.extract.outputs.package_full }} --access public
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
 
@@ -78,7 +78,7 @@ jobs:
 
             ## Installation
             ```bash
-            npm install ${{ steps.extract.outputs.package_full }}@${{ steps.extract.outputs.version }}
+            yarn install ${{ steps.extract.outputs.package_full }}@${{ steps.extract.outputs.version }}
             ```
 
             See commit history for detailed changes.
