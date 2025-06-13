@@ -15,6 +15,7 @@ on:
           - shared
           - token
           - dividends
+          - dex
       version:
         description: "Version bump type"
         required: true

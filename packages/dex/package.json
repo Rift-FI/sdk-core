@@ -1,0 +1,21 @@
+{
+  "name": "@stratosphere-network/dex",
+  "version": "0.1.0",
+  "description": "Stratosphere Network DEX",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "scripts": {
+    "build": "tsc",
+    "dev": "tsc --watch",
+    "clean": "rm -rf dist",
+    "prepublishOnly": "npm run clean && npm run build"
+  },
+  "dependencies": {
+    "@stratospherex/sdk": "^5.8.0",
+    "@stratospherex/smart-router": "^4.15.0",
+    "viem": "1.19.11"
+  },
+  "publishConfig": {
+    "access": "public"
+  }
+}
