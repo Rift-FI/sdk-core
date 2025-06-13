@@ -1,0 +1,36 @@
+{
+  "name": "@stratosphere-network/dividends",
+  "version": "0.1.0",
+  "description": "Dividend management functionality for Strato SDK",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "scripts": {
+    "build": "tsc",
+    "dev": "tsc --watch",
+    "clean": "jest",
+    "prepublishOnly": "npm run clean && npm run build",
+    "test": "jest -- dividends2",
+    "test:integration": "forge build && ts-node scripts/generate-artifacts.ts && jest -- dividends1",
+    "test:watch": "jest --watch -- dividends2",
+    "test:coverage": "jest --coverage"
+  },
+  "devDependencies": {
+    "@types/jest": "^29.5.12",
+    "@types/node": "^20.0.0",
+    "jest": "^29.7.0",
+    "rimraf": "^5.0.0",
+    "ts-jest": "^29.1.2",
+    "typescript": "^5.0.0",
+    "ts-node": "^10.9.2"
+  },
+  "files": [
+    "dist/**/*",
+    "README.md"
+  ],
+  "publishConfig": {
+    "access": "public"
+  },
+  "dependencies": {
+    "viem": "^2.30.6"
+  }
+}

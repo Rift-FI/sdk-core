@@ -25,17 +25,41 @@ export interface LoginResponse {
 }
 
 // Authentication Types
-export interface LoginRequest {
-  phoneNumber: string;
-  externalId: string;
-  otpCode: string;
-}
+export type LoginRequest =
+  | {
+      phoneNumber: string;
+      otpCode: string;
+      externalId?: never;
+      email?: never;
+    }
+  | {
+      externalId: string;
+      password: string;
+      phoneNumber?: never;
+      otpCode?: never;
+      email?: never;
+    }
+  | {
+      email: string;
+      otpCode: string;
+      phoneNumber?: never;
+      externalId?: never;
+      password?: never;
+    };
 
-export interface SignupRequest {
-  externalId: string;
-  phoneNumber: string;
-  email?: string;
-}
+export type SignupRequest =
+  | {
+      externalId: string;
+      password: string;
+      phoneNumber?: string;
+      email?: string;
+    }
+  | {
+      externalId?: never;
+      password?: never;
+      phoneNumber?: string;
+      email?: string;
+    };
 export interface SignupResponse {
   message: string;
   userId: string;
@@ -46,18 +70,31 @@ export interface AuthResponse {
   token: string;
 }
 
-export interface OtpRequest {
-  phone: string;
-}
+export type OtpRequest =
+  | {
+      phone: string;
+      email?: never;
+    }
+  | {
+      email: string;
+      phone?: never;
+    };
 export interface OtpResponse {
   status: string;
   message?: string;
 }
 
-export interface OtpVerifyRequest {
-  phone: string;
-  code: string;
-}
+export type OtpVerifyRequest =
+  | {
+      phone: string;
+      code: string;
+      email?: never;
+    }
+  | {
+      email: string;
+      code: string;
+      phone?: never;
+    };
 
 export interface OtpResponse {
   status: string;
@@ -81,10 +118,28 @@ export interface UserResponse {
   user: User;
 }
 
-export interface DeleteUserRequest {
-  externalId: string;
-  otpCode: string;
-}
+export type DeleteUserRequest =
+  | {
+      externalId: string;
+      password: string;
+      phoneNumber?: never;
+      email?: never;
+      otpCode?: never;
+    }
+  | {
+      phoneNumber: string;
+      otpCode: string;
+      externalId?: never;
+      password?: never;
+      email?: never;
+    }
+  | {
+      email: string;
+      otpCode: string;
+      externalId?: never;
+      password?: never;
+      phoneNumber?: never;
+    };
 export interface DeleteUserResponse {
   message: string;
 }
@@ -386,19 +441,127 @@ export interface ShareSecretResponse {
   data: string;
 }
 
-// Payment Links Types
+// Redirect URL Registration
+export type RegisterRedirectUrlRequest =
+  | {
+      url: string;
+      email: string;
+      otpCode: string;
+      phone?: never;
+    }
+  | {
+      url: string;
+      phone: string;
+      otpCode: string;
+      email?: never;
+    };
+
+export interface RegisterRedirectUrlResponse {
+  message: string;
+  data: {
+    url: string;
+    project_api_key: string;
+  };
+}
+
+// Payment Request Creation
 export interface CreatePaymentRequestInput {
   amount: number;
   chain: ChainName;
-  token: "USDC" | "USDT" | "WBERA" | "USDC.e";
+  token: TokenSymbol;
 }
 
 export interface PaymentRequestResult {
   data: string;
+  message?: string;
+  error?: string;
 }
 
+// Payment Execution
 export interface PayPaymentRequestInput {
   nonce: string;
+}
+
+export interface PayPaymentRequestResponse {
+  message: string;
+  data?: any; // Transaction result data when successful
+  error?: any; // Error details when transaction fails
+}
+
+// Send Payment Creation
+export type SendSpecificPaymentRequest =
+  | {
+      time: string;
+      value: string;
+      token: TokenSymbol;
+      chain: ChainName;
+      username: string;
+      phoneNumber?: never;
+      email?: never;
+    }
+  | {
+      time: string;
+      value: string;
+      token: TokenSymbol;
+      chain: ChainName;
+      phoneNumber: string;
+      username?: never;
+      email?: never;
+    }
+  | {
+      time: string;
+      value: string;
+      token: TokenSymbol;
+      chain: ChainName;
+      email: string;
+      username?: never;
+      phoneNumber?: never;
+    };
+
+export interface SendOpenPaymentRequest {
+  time: string;
+  value: string;
+  token: TokenSymbol;
+  chain: ChainName;
+}
+
+export interface SendPaymentResponse {
+  data: string;
+  error?: string;
+}
+
+// Payment Claiming
+export interface ClaimPaymentRequest {
+  id: string;
+}
+
+export interface ClaimPaymentResponse {
+  message: string;
+  error?: any;
+}
+
+// Payment Links Error Types
+export interface PaymentLinkValidationError {
+  error?: string;
+  message?: string;
+  supportedCombinations?: {
+    [key in ChainName]?: TokenSymbol[];
+  };
+}
+
+export interface PaymentLinkNotFoundError {
+  message: "Payment link not found" | "Token not found or expired";
+}
+
+export interface PaymentLinkAlreadyPaidError {
+  message: "Payment link already paid";
+}
+
+export interface UnauthorizedPaymentError {
+  message:
+    | "Unauthorized"
+    | "Unauthorized: You are not authorized to spend this!"
+    | "Forbidden: Invalid spend token.";
 }
 
 export interface CreateSendLinkInput {
@@ -414,18 +577,17 @@ export interface CreateSendLinkInput {
   time: string;
   receiver?: string;
   value: string;
-  token: "USDC" | "USDT" | "WBERA" | "USDC.e";
+  token: TokenSymbol;
   chain: ChainName;
 }
 
 export interface ClaimSendLinkInput {
   id: string;
-  to: string;
 }
 
 export interface ClaimSendLinkResult {
-  message?: string;
-  data?: string;
+  message: string;
+  error?: any;
 }
 
 // Payment Links Management Types
@@ -438,16 +600,16 @@ export interface GetPaymentRequestsInput {
 export interface PaymentRequestItem {
   id: string;
   nonce: string;
-  amount: string;
+  amount: number;
   token: string;
   chain: string;
   creatorAddress: string;
   status: string;
   createdAt: string;
   updatedAt: string;
-  paidByAddress?: string;
-  paidByUser?: string;
-  paidAt?: string;
+  paidByAddress?: string | null;
+  paidByUserId?: string | null;
+  paidAt?: string | null;
 }
 
 export interface GetPaymentRequestsResult {
@@ -472,7 +634,7 @@ export interface SendLinkItem {
   id: string;
   urlId: string;
   value: string;
-  receiver?: string;
+  receiver?: string | null;
   expiresAt: string;
   createdAt: string;
   updatedAt: string;
@@ -715,4 +877,129 @@ export interface MpesaTransactionHistoryResponse {
   success: boolean;
   data: MpesaTransactionHistoryItem[];
   pagination: MpesaTransactionHistoryPagination;
+}
+
+// Proxy Wallet / Signature Types
+export interface GetWalletInstanceRequest {
+  chain: ChainName;
+  [key: string]: any;
+}
+
+export interface ChainInfo {
+  id: number;
+  name: string;
+  nativeToken: string;
+  tokens: string[];
+}
+
+export interface ProviderInfo {
+  url: string;
+  chainId: number;
+  name: string;
+}
+
+export interface WalletInstanceResponse {
+  address: string;
+  publicKey: string;
+  provider: ProviderInfo;
+  chain: ChainInfo;
+  _isWallet: boolean;
+  _isSigner: boolean;
+  availableMethods: {
+    getAddress: string;
+    getBalance: string;
+    sendTransaction: string;
+    signTransaction: string;
+    signMessage: string;
+  };
+}
+
+export interface SignTransactionRequest {
+  chain: ChainName;
+  transactionData: {
+    to?: string;
+    value?: string;
+    data?: string;
+    gasLimit?: string;
+    gasPrice?: string;
+    maxFeePerGas?: string;
+    maxPriorityFeePerGas?: string;
+    nonce?: number;
+    type?: number;
+    chainId?: number;
+    [key: string]: any;
+  };
+  [key: string]: any;
+}
+
+export interface SignTransactionResponse {
+  signedTransaction: string;
+  txHash: string;
+  from: string;
+  originalTx: SignTransactionRequest["transactionData"];
+}
+
+export interface SendTransactionRequest {
+  chain: ChainName;
+  transactionData: {
+    to?: string;
+    value?: string;
+    data?: string;
+    gasLimit?: string;
+    gasPrice?: string;
+    maxFeePerGas?: string;
+    maxPriorityFeePerGas?: string;
+    nonce?: number;
+    type?: number;
+    chainId?: number;
+    [key: string]: any;
+  };
+  [key: string]: any;
+}
+
+export interface SendTransactionResponse {
+  hash: string;
+  to?: string;
+  from: string;
+  value?: string;
+  gasLimit?: string;
+  gasPrice?: string;
+  nonce: number;
+  chainId?: number;
+  blockNumber?: number;
+  blockHash?: string;
+  timestamp?: number;
+  confirmations: number;
+  raw: any; // Raw transaction object
+}
+
+export interface SignMessageRequest {
+  chain: ChainName;
+  message: string;
+  [key: string]: any;
+}
+
+export interface SignMessageResponse {
+  signature: string;
+  message: string;
+  signer: string;
+  messageHash: string;
+  recoveredAddress: string;
+}
+
+export interface GenerateSignatureResponse {
+  address: string;
+  publicKey: string;
+  signature: string;
+  availableEndpoints: {
+    signMessage: string;
+    signTransaction: string;
+    sendTransaction: string;
+    getWallet: string;
+  };
+}
+
+export interface ProxyWalletError {
+  error: string;
+  supportedChains?: string[];
 }

@@ -7,9 +7,9 @@ Official TypeScript SDK for **Stratosphere network wallet module** - A comprehen
 - 🌐 **Multi-chain Support**: Arbitrum, Base, Optimism, Ethereum, BNB, Polygon, Lisk, Berachain
 - 💸 **Gasless Transactions**: Execute transactions without paying gas fees
 - 🔄 **DeFi Swaps**: Built-in token swapping across chains with best rates
-- 💳 **Payment Links**: Create and manage crypto payment requests
+- 💳 **Payment Links**: Create and manage crypto payment requests with custom redirect URLs
 - 📱 **M-Pesa Onramp**: Convert Kenyan Shillings to crypto via M-Pesa STK Push
-- 🤖 **AI Integration**: Built-in AI conversation and chat capabilities
+- 🛠️ **Proxy Wallet**: Direct blockchain interaction with signing, transaction sending, and wallet management
 - 🔐 **Secret Sharing**: Secure API key sharing marketplace
 - 📊 **Portfolio Tracking**: Multi-chain balance and transaction history
 - 🔒 **Enterprise Ready**: Production-grade security and reliability
@@ -40,11 +40,24 @@ const sphere = new Sphere({
   environment: Environment.PRODUCTION,
 });
 
-// Authenticate user
-const authResponse = await sphere.auth.login({
+// Authenticate user - Multiple authentication methods available (MUTUALLY EXCLUSIVE):
+
+// Method 1: Phone + OTP ONLY (do NOT provide email or externalId)
+const phoneAuth = await sphere.auth.login({
   phoneNumber: "+1234567890",
   otpCode: "123456",
-  externalId: "user@example.com", // use email,phone e.t.c as external ID
+});
+
+// Method 2: Email + OTP ONLY (do NOT provide phone or externalId)
+const emailAuth = await sphere.auth.login({
+  email: "user@example.com",
+  otpCode: "123456",
+});
+
+// Method 3: External ID + Password ONLY (do NOT provide phone or email)
+const passwordAuth = await sphere.auth.login({
+  externalId: "user@example.com",
+  password: "your-secure-password",
 });
 
 //internally, the sphere instance is gonna be authenticated
@@ -74,6 +87,170 @@ console.log("✅ Transaction sent:", transaction);
 // });
 ```
 
+## 🔐 Authentication
+
+Sphere SDK supports multiple authentication methods to accommodate different use cases.
+
+### ⚠️ CRITICAL: Authentication Parameter Rules
+
+**Authentication parameters are MUTUALLY EXCLUSIVE**:
+
+- ❌ **NEVER** provide `phoneNumber` + `email` together
+- ❌ **NEVER** provide `phoneNumber` + `externalId` together
+- ❌ **NEVER** provide `email` + `externalId` together
+- ❌ **NEVER** provide all three together
+
+**Choose ONE authentication method per request:**
+
+- 📱 Phone-based: Use `phoneNumber` + `otpCode` ONLY
+- 📧 Email-based: Use `email` + `otpCode` ONLY
+- 🔑 External ID: Use `externalId` + `password` ONLY
+
+### User Registration
+
+```typescript
+// Method 1: Register with External ID + Password ONLY
+// ⚠️ Do NOT provide phoneNumber or email when using externalId
+const signupWithPassword = await sphere.auth.signup({
+  externalId: "user@example.com", // Can be email, username, or any unique ID
+  password: "secure-password",
+  // phoneNumber: "+1234567890", // ❌ NEVER provide with externalId
+  // email: "user@example.com", // ❌ NEVER provide with externalId
+});
+
+// Method 2: Register with Phone ONLY (OTP-based)
+// ⚠️ Do NOT provide email or externalId when using phoneNumber
+const signupWithPhone = await sphere.auth.signup({
+  phoneNumber: "+1234567890",
+  // email: "user@example.com", // ❌ NEVER provide with phoneNumber
+  // externalId: "user123", // ❌ NEVER provide with phoneNumber
+});
+
+// Method 3: Register with Email ONLY (OTP-based)
+// ⚠️ Do NOT provide phoneNumber or externalId when using email
+const signupWithEmail = await sphere.auth.signup({
+  email: "user@example.com",
+  // phoneNumber: "+1234567890", // ❌ NEVER provide with email
+  // externalId: "user123", // ❌ NEVER provide with email
+});
+```
+
+### User Authentication
+
+```typescript
+// Method 1: Phone + OTP Login ONLY
+// ⚠️ Do NOT provide email or externalId when using phoneNumber
+// First, send OTP
+await sphere.auth.sendOtp({ phone: "+1234567890" });
+// Then login with OTP
+const phoneLogin = await sphere.auth.login({
+  phoneNumber: "+1234567890",
+  otpCode: "123456",
+  // externalId: "user@example.com", // ❌ NEVER provide with phoneNumber
+  // email: "user@example.com", // ❌ NEVER provide with phoneNumber
+});
+
+// Method 2: Email + OTP Login ONLY
+// ⚠️ Do NOT provide phoneNumber or externalId when using email
+// Send OTP to email
+await sphere.auth.sendOtp({ email: "user@example.com" });
+// Login with email OTP
+const emailLogin = await sphere.auth.login({
+  email: "user@example.com",
+  otpCode: "123456",
+  // phoneNumber: "+1234567890", // ❌ NEVER provide with email
+  // externalId: "user123", // ❌ NEVER provide with email
+});
+
+// Method 3: External ID + Password Login ONLY
+// ⚠️ Do NOT provide phoneNumber or email when using externalId
+const passwordLogin = await sphere.auth.login({
+  externalId: "user@example.com",
+  password: "secure-password",
+  // phoneNumber: "+1234567890", // ❌ NEVER provide with externalId
+  // email: "user@example.com", // ❌ NEVER provide with externalId
+});
+
+// Check authentication status
+if (sphere.auth.isAuthenticated()) {
+  console.log("✅ User is authenticated");
+
+  // Get user details
+  const user = await sphere.auth.getUser();
+  console.log("👤 User info:", user);
+}
+
+// Logout
+sphere.auth.logout();
+```
+
+### OTP Management
+
+```typescript
+// Send OTP to phone ONLY
+// ⚠️ Do NOT provide email when using phone
+await sphere.auth.sendOtp({
+  phone: "+1234567890",
+  // email: "user@example.com", // ❌ NEVER provide with phone
+});
+
+// Send OTP to email ONLY
+// ⚠️ Do NOT provide phone when using email
+await sphere.auth.sendOtp({
+  email: "user@example.com",
+  // phone: "+1234567890", // ❌ NEVER provide with email
+});
+
+// Verify OTP for phone ONLY
+// ⚠️ Do NOT provide email when using phone
+const verifyPhone = await sphere.auth.verifyOtp({
+  phone: "+1234567890",
+  code: "123456",
+  // email: "user@example.com", // ❌ NEVER provide with phone
+});
+
+// Verify OTP for email ONLY
+// ⚠️ Do NOT provide phone when using email
+const verifyEmail = await sphere.auth.verifyOtp({
+  email: "user@example.com",
+  code: "123456",
+  // phone: "+1234567890", // ❌ NEVER provide with email
+});
+```
+
+### Account Deletion
+
+```typescript
+// Delete with External ID + Password ONLY
+// ⚠️ Do NOT provide phoneNumber or email when using externalId
+await sphere.auth.deleteUser({
+  externalId: "user@example.com",
+  password: "secure-password",
+  // phoneNumber: "+1234567890", // ❌ NEVER provide with externalId
+  // email: "user@example.com", // ❌ NEVER provide with externalId
+});
+
+// Delete with Phone + OTP ONLY
+// ⚠️ Do NOT provide email or externalId when using phoneNumber
+await sphere.auth.sendOtp({ phone: "+1234567890" });
+await sphere.auth.deleteUser({
+  phoneNumber: "+1234567890",
+  otpCode: "123456",
+  // email: "user@example.com", // ❌ NEVER provide with phoneNumber
+  // externalId: "user123", // ❌ NEVER provide with phoneNumber
+});
+
+// Delete with Email + OTP ONLY
+// ⚠️ Do NOT provide phoneNumber or externalId when using email
+await sphere.auth.sendOtp({ email: "user@example.com" });
+await sphere.auth.deleteUser({
+  email: "user@example.com",
+  otpCode: "123456",
+  // phoneNumber: "+1234567890", // ❌ NEVER provide with email
+  // externalId: "user123", // ❌ NEVER provide with email
+});
+```
+
 ## 💳 Payment Links
 
 ### Payment Requests (Request money from others)
@@ -89,11 +266,6 @@ const paymentRequest = await sphere.paymentLinks.requestPayment({
 });
 
 console.log("💳 Payment request:", paymentRequest.data);
-
-// Share the link - users can pay without having your app
-const paymentUrl = sphere.paymentLinks.getPaymentRedirectUrl(
-  paymentRequest.data
-);
 
 // Someone pays your payment request
 await sphere.paymentLinks.payPaymentRequest(paymentRequest.data);
@@ -118,39 +290,66 @@ console.log("❌ Payment request cancelled:", cancelResult);
 
 Create links to send money to specific or open recipients:
 
+**Time Format**: Use number followed by time unit:
+
+- `s` = seconds (e.g., `30s`)
+- `m` = minutes (e.g., `5m`)
+- `h` = hours (e.g., `2h`)
+- `d` = days (e.g., `7d`)
+
 ```typescript
 // Create a specific send link (for a particular recipient)
-const specificSendLink = await sphere.paymentLinks.createSpecificSendLink({
-  time: "1h", // Expiration time 1s,1m,1d,
-  receiver: "0x742d35Cc6634C0532925a3b8D4C9db96C4b4Db45", // Specific recipient
-  value: "50",
+// You can specify recipient by username, phoneNumber, or email (mutually exclusive)
+
+// Option 1: Send to username
+const specificSendLinkUsername =
+  await sphere.paymentLinks.createSpecificSendLink({
+    time: "1h", // Expiration time: 1s, 1m, 1h, 1d
+    username: "john_doe", // Recipient's username
+    value: "50",
+    token: "USDC",
+    chain: "ARBITRUM",
+  });
+
+// Option 2: Send to phone number
+const specificSendLinkPhone = await sphere.paymentLinks.createSpecificSendLink({
+  time: "2h", // Expiration time: 1s, 1m, 1h, 1d
+  phoneNumber: "+1234567890", // Recipient's phone number
+  value: "75",
   token: "USDC",
-  chain: "ARBITRUM",
+  chain: "BASE",
+});
+
+// Option 3: Send to email
+const specificSendLinkEmail = await sphere.paymentLinks.createSpecificSendLink({
+  time: "24h", // Expiration time: 1s, 1m, 1h, 1d
+  email: "recipient@example.com", // Recipient's email
+  value: "100",
+  token: "USDC",
+  chain: "POLYGON",
 });
 
 // Create an open send link (anyone can claim)
 const openSendLink = await sphere.paymentLinks.createOpenSendLink({
-  time: "1h", // Expiration time 1s,1m,1d,
+  time: "1h", // Expiration time: 1s, 1m, 1h, 1d
   value: "25",
   token: "USDC",
   chain: "BASE",
 });
 
-// Claim a specific send link
+// Claim a specific send link (no recipient address needed)
 const claimSpecific = await sphere.paymentLinks.claimSpecificSendLink({
   id: "send-link-id",
-  to: "0x742d35Cc6634C0532925a3b8D4C9db96C4b4Db45",
 });
 
-// Claim an open send link
+// Claim an open send link (no recipient address needed)
 const claimOpen = await sphere.paymentLinks.claimOpenSendLink({
   id: "send-link-id",
-  to: "0x742d35Cc6634C0532925a3b8D4C9db96C4b4Db45",
 });
 
 // Get all your send links
 const sendLinks = await sphere.paymentLinks.listSendLinks({
-  fulfilled: "false",
+  fulfilled: "false", // "true" for claimed links, "false" for unclaimed
   limit: "10",
   page: "1",
 });
@@ -160,6 +359,375 @@ console.log("💸 Your send links:", sendLinks);
 // Cancel a send link
 await sphere.paymentLinks.cancelSendLink("send-link-url-id");
 console.log("🔒 Send link cancelled");
+```
+
+### Register Custom Redirect URLs
+
+Configure custom redirect URLs for your payment links to provide seamless user experience. **Requires OTP verification for security.**
+
+```typescript
+// Step 1: Send OTP for verification (choose email OR phone)
+// Option A: Send OTP to email
+await sphere.auth.sendOtp({ email: "owner@yourapp.com" });
+
+// Option B: Send OTP to phone
+await sphere.auth.sendOtp({ phone: "+1234567890" });
+
+// Step 2: Register redirect URL for payment requests with OTP
+// Users will be redirected to your app when they visit payment links
+
+// Option A: Register with email + OTP
+const requestRedirectEmail =
+  await sphere.paymentLinks.registerRequestLinkRedirectUrl({
+    url: "https://yourapp.com/pay", // Your payment handling URL
+    email: "owner@yourapp.com", // Project owner's email
+    otpCode: "123456", // OTP received via email
+    // phone: "+1234567890", // ❌ NEVER provide with email
+  });
+
+// Option B: Register with phone + OTP
+const requestRedirectPhone =
+  await sphere.paymentLinks.registerRequestLinkRedirectUrl({
+    url: "https://yourapp.com/pay", // Your payment handling URL
+    phone: "+1234567890", // Project owner's phone
+    otpCode: "123456", // OTP received via SMS
+    // email: "owner@yourapp.com", // ❌ NEVER provide with phone
+  });
+
+console.log("🔗 Request redirect registered:", requestRedirectEmail);
+
+// Step 3: Register redirect URL for send links with OTP
+// Users will be redirected to your app when they visit send links
+
+// Option A: Register with email + OTP
+const sendRedirectEmail = await sphere.paymentLinks.registerSendLinkRedirectUrl(
+  {
+    url: "https://yourapp.com/claim", // Your claim handling URL
+    email: "owner@yourapp.com", // Project owner's email
+    otpCode: "123456", // OTP received via email
+    // phone: "+1234567890", // ❌ NEVER provide with email
+  }
+);
+
+// Option B: Register with phone + OTP
+const sendRedirectPhone = await sphere.paymentLinks.registerSendLinkRedirectUrl(
+  {
+    url: "https://yourapp.com/claim", // Your claim handling URL
+    phone: "+1234567890", // Project owner's phone
+    otpCode: "123456", // OTP received via SMS
+    // email: "owner@yourapp.com", // ❌ NEVER provide with phone
+  }
+);
+
+console.log("🔗 Send redirect registered:", sendRedirectEmail);
+
+// Now when users visit your payment/send links, they'll be redirected to:
+// https://yourapp.com/pay?nonce=payment_nonce (for payment requests)
+// https://yourapp.com/claim?id=send_link_id (for send links)
+```
+
+### Payment Links Error Handling
+
+```typescript
+try {
+  // Creating payment requests or send links
+  const paymentRequest = await sphere.paymentLinks.requestPayment({
+    amount: 100,
+    chain: "BASE",
+    token: "USDC",
+  });
+
+  console.log("✅ Payment request created:", paymentRequest.data);
+} catch (error) {
+  if (error.error?.includes("Token not found")) {
+    console.log("❌ Invalid token/chain combination");
+    // Show supported combinations to user
+  } else if (error.message?.includes("Invalid time format")) {
+    console.log("⏰ Invalid time format for send link");
+    console.log("💡 Use format: number + unit (1s, 5m, 2h, 30d)");
+  } else if (error.status === 401) {
+    console.log("🔐 Authentication required");
+    // Redirect to login
+  } else {
+    console.log("💥 Payment link error:", error.message);
+  }
+}
+
+try {
+  // Claiming or paying payment links
+  await sphere.paymentLinks.payPaymentRequest("payment-nonce");
+  console.log("✅ Payment successful");
+} catch (error) {
+  if (error.message?.includes("Payment link not found")) {
+    console.log("❌ Payment link not found or expired");
+  } else if (error.message?.includes("already paid")) {
+    console.log("⚠️ Payment link already paid");
+  } else if (error.message?.includes("Unauthorized")) {
+    console.log("🚫 Not authorized to pay this link");
+  } else if (error.message?.includes("insufficient")) {
+    console.log("💰 Insufficient balance for payment");
+  } else {
+    console.log("💥 Payment failed:", error.message);
+  }
+}
+```
+
+## 🛠️ Proxy Wallet
+
+The Proxy Wallet service provides direct blockchain interaction capabilities for advanced users and integrations. It allows you to manage wallet instances, sign transactions, send transactions, and sign messages across multiple chains.
+
+### Get Wallet Instance Information
+
+Get comprehensive wallet details for any supported chain:
+
+```typescript
+// Get wallet instance details for a specific chain
+const walletInfo = await sphere.proxyWallet.getWalletInstance({
+  chain: "ETHEREUM",
+});
+
+console.log("🔐 Wallet Instance Info:", {
+  address: walletInfo.address,
+  publicKey: walletInfo.publicKey,
+  chainInfo: {
+    id: walletInfo.chain.id,
+    name: walletInfo.chain.name,
+    nativeToken: walletInfo.chain.nativeToken,
+    supportedTokens: walletInfo.chain.tokens,
+  },
+  provider: {
+    url: walletInfo.provider.url,
+    chainId: walletInfo.provider.chainId,
+    name: walletInfo.provider.name,
+  },
+  capabilities: {
+    isWallet: walletInfo._isWallet,
+    isSigner: walletInfo._isSigner,
+    availableMethods: walletInfo.availableMethods,
+  },
+});
+
+// Supported chains: ETHEREUM, ARBITRUM, BASE, OPTIMISM, BNB, POLYGON, LISK, BERACHAIN
+```
+
+### Sign Transactions
+
+Sign transactions without broadcasting them to the network. Perfect for offline signing or when you need to review transactions before sending:
+
+```typescript
+// Basic ETH transfer signature
+const signedEthTx = await sphere.proxyWallet.signTransaction({
+  chain: "ETHEREUM",
+  transactionData: {
+    to: "0x742d35Cc6634C0532925a3b8D4C9db96C4b4Db45",
+    value: "1000000000000000000", // 1 ETH in wei
+    gasLimit: "21000",
+    gasPrice: "20000000000", // 20 gwei
+    nonce: 42,
+  },
+});
+
+// EIP-1559 transaction with priority fees
+const signedEIP1559Tx = await sphere.proxyWallet.signTransaction({
+  chain: "ARBITRUM",
+  transactionData: {
+    to: "0x742d35Cc6634C0532925a3b8D4C9db96C4b4Db45",
+    value: "500000000000000000", // 0.5 ETH
+    gasLimit: "21000",
+    maxFeePerGas: "30000000000", // 30 gwei
+    maxPriorityFeePerGas: "2000000000", // 2 gwei
+    type: 2, // EIP-1559 transaction
+  },
+});
+
+// Contract interaction signature
+const signedContractTx = await sphere.proxyWallet.signTransaction({
+  chain: "BASE",
+  transactionData: {
+    to: "0xa0b86a33e6411c8f62a587c5c51e3f58a4d9b8d4", // Contract address
+    value: "0",
+    data: "0xa9059cbb000000000000000000000000742d35cc6634c0532925a3b8d4c9db96c4b4db45000000000000000000000000000000000000000000000000000000000000007b", // ERC-20 transfer
+    gasLimit: "60000",
+  },
+});
+
+console.log("✍️ Signed Transaction:", {
+  signedTransaction: signedEthTx.signedTransaction,
+  txHash: signedEthTx.txHash,
+  from: signedEthTx.from,
+  originalTx: signedEthTx.originalTx,
+});
+```
+
+### Send Transactions
+
+Sign and broadcast transactions directly to the blockchain with automatic gas estimation:
+
+```typescript
+// Simple ETH transfer
+const ethTransfer = await sphere.proxyWallet.sendTransaction({
+  chain: "ARBITRUM",
+  transactionData: {
+    to: "0x742d35Cc6634C0532925a3b8D4C9db96C4b4Db45",
+    value: "500000000000000000", // 0.5 ETH
+    gasLimit: "21000", // Optional - will auto-estimate if not provided
+  },
+});
+
+// Token transfer (ERC-20)
+const tokenTransfer = await sphere.proxyWallet.sendTransaction({
+  chain: "POLYGON",
+  transactionData: {
+    to: "0x2791bca1f2de4661ed88a30c99a7a9449aa84174", // USDC contract
+    value: "0",
+    data: "0xa9059cbb000000000000000000000000742d35cc6634c0532925a3b8d4c9db96c4b4db45000000000000000000000000000000000000000000000000000000000000007b",
+    gasLimit: "65000",
+  },
+});
+
+// Contract interaction with automatic nonce
+const contractCall = await sphere.proxyWallet.sendTransaction({
+  chain: "BNB",
+  transactionData: {
+    to: "0xe9e7cea3dedca5984780bafc599bd69add087d56", // BUSD contract
+    value: "0",
+    data: "0x70a08231000000000000000000000000742d35cc6634c0532925a3b8d4c9db96c4b4db45", // balanceOf
+    gasLimit: "50000",
+    // nonce will be automatically determined
+  },
+});
+
+console.log("🚀 Transaction Result:", {
+  hash: ethTransfer.hash,
+  from: ethTransfer.from,
+  to: ethTransfer.to,
+  value: ethTransfer.value,
+  gasUsed: ethTransfer.gasLimit,
+  confirmations: ethTransfer.confirmations,
+  blockNumber: ethTransfer.blockNumber,
+  blockHash: ethTransfer.blockHash,
+  timestamp: ethTransfer.timestamp,
+  rawTransaction: ethTransfer.raw,
+});
+```
+
+### Sign Messages
+
+Sign arbitrary messages for authentication, verification, or off-chain interactions:
+
+```typescript
+// Simple message signing
+const messageSignature = await sphere.proxyWallet.signMessage({
+  chain: "ETHEREUM",
+  message: "Hello, Sphere Network! Timestamp: " + Date.now(),
+});
+
+// Login message signing
+const loginSignature = await sphere.proxyWallet.signMessage({
+  chain: "ARBITRUM",
+  message: `Welcome to DApp!\n\nNonce: ${Date.now()}\nWallet: ${
+    walletInfo.address
+  }`,
+});
+
+// Structured data signing (personal_sign format)
+const structuredSignature = await sphere.proxyWallet.signMessage({
+  chain: "BASE",
+  message: JSON.stringify({
+    action: "transfer",
+    amount: "100",
+    token: "USDC",
+    timestamp: Date.now(),
+  }),
+});
+
+console.log("📝 Message Signature:", {
+  originalMessage: messageSignature.message,
+  signature: messageSignature.signature,
+  signer: messageSignature.signer,
+  messageHash: messageSignature.messageHash,
+  recoveredAddress: messageSignature.recoveredAddress,
+});
+
+// Verify the signature
+const isValidSignature =
+  messageSignature.signer === messageSignature.recoveredAddress;
+console.log("✅ Signature valid:", isValidSignature);
+
+// Use signature for authentication
+if (isValidSignature) {
+  console.log(
+    "🔐 Message successfully verified for address:",
+    messageSignature.signer
+  );
+}
+```
+
+### Multi-Chain Usage Examples
+
+```typescript
+// Working with multiple chains in sequence
+const chains = ["ETHEREUM", "ARBITRUM", "BASE", "POLYGON"];
+
+for (const chain of chains) {
+  // Get wallet info for each chain
+  const walletInfo = await sphere.proxyWallet.getWalletInstance({ chain });
+  console.log(`💳 ${chain} wallet:`, walletInfo.address);
+
+  // Sign a message on each chain
+  const signature = await sphere.proxyWallet.signMessage({
+    chain,
+    message: `Hello from ${chain} at ${Date.now()}`,
+  });
+  console.log(`✍️ ${chain} signature:`, signature.signature);
+}
+
+// Cross-chain transaction coordination
+const arbitrumTx = await sphere.proxyWallet.sendTransaction({
+  chain: "ARBITRUM",
+  transactionData: {
+    to: "0x742d35Cc6634C0532925a3b8D4C9db96C4b4Db45",
+    value: "100000000000000000", // 0.1 ETH
+  },
+});
+
+const baseTx = await sphere.proxyWallet.sendTransaction({
+  chain: "BASE",
+  transactionData: {
+    to: "0x742d35Cc6634C0532925a3b8D4C9db96C4b4Db45",
+    value: "100000000000000000", // 0.1 ETH
+  },
+});
+
+console.log("🌉 Cross-chain transactions:", {
+  arbitrum: arbitrumTx.hash,
+  base: baseTx.hash,
+});
+```
+
+### Error Handling
+
+```typescript
+try {
+  const result = await sphere.proxyWallet.sendTransaction({
+    chain: "ETHEREUM",
+    transactionData: {
+      to: "0x742d35Cc6634C0532925a3b8D4C9db96C4b4Db45",
+      value: "1000000000000000000",
+    },
+  });
+  console.log("✅ Transaction successful:", result.hash);
+} catch (error) {
+  if (error.message?.includes("insufficient funds")) {
+    console.log("💰 Insufficient balance for transaction");
+  } else if (error.message?.includes("gas")) {
+    console.log("⛽ Gas estimation failed - check gas limits");
+  } else if (error.error?.includes("unsupported chain")) {
+    console.log("🌐 Chain not supported:", error.supportedChains);
+  } else {
+    console.log("💥 Transaction failed:", error);
+  }
+}
 ```
 
 ## 🔄 DeFi Swaps
@@ -396,28 +964,6 @@ try {
 }
 ```
 
-## 🤖 AI Features
-
-Integrate AI-powered crypto assistance:
-
-```typescript
-// Chat with AI about crypto/DeFi
-const chatResponse = await sphere.ai.chat({
-  secret: "your-openai-key",
-  prompt: "Explain yield farming strategies for beginners",
-});
-
-console.log("🤖 AI Response:", chatResponse.response);
-
-// Start a conversation with context
-const conversation = await sphere.ai.conversation({
-  accessToken: "shared-ai-access-token",
-  user_prompt: "Help me understand DeFi risks",
-  conversation_id: "conv_123",
-  nonce: "unique_nonce",
-});
-```
-
 ## 🌐 Supported Networks
 
 | Network   | Chain ID | Native Token | Status  |
@@ -480,17 +1026,29 @@ sphere.transactions.getHistory(request); // Get transaction history
 // Payment Requests (requesting money from others)
 sphere.paymentLinks.requestPayment(request); // Create payment request
 sphere.paymentLinks.payPaymentRequest(nonce); // Pay a payment request
-sphere.paymentLinks.getPaymentRedirectUrl(nonce); // Get payment redirect URL
 sphere.paymentLinks.listPaymentRequests(request?); // Get list of payment requests
 sphere.paymentLinks.cancelPaymentRequest(nonce); // Cancel a payment request
 
 // Send Links (sending money to others)
-sphere.paymentLinks.createSpecificSendLink(request); // Create specific send link
+sphere.paymentLinks.createSpecificSendLink(request); // Create specific send link (username/phone/email)
 sphere.paymentLinks.createOpenSendLink(request); // Create open send link
-sphere.paymentLinks.claimSpecificSendLink(request); // Claim specific send link
-sphere.paymentLinks.claimOpenSendLink(request); // Claim open send link
+sphere.paymentLinks.claimSpecificSendLink(request); // Claim specific send link (id only)
+sphere.paymentLinks.claimOpenSendLink(request); // Claim open send link (id only)
 sphere.paymentLinks.listSendLinks(request?); // Get list of send links
 sphere.paymentLinks.cancelSendLink(urlId); // Cancel a send link
+
+// Redirect URL Registration (requires OTP verification)
+sphere.paymentLinks.registerRequestLinkRedirectUrl(request); // Register payment request redirect URL (email/phone + OTP)
+sphere.paymentLinks.registerSendLinkRedirectUrl(request); // Register send link redirect URL (email/phone + OTP)
+```
+
+### 🛠️ Proxy Wallet
+
+```typescript
+sphere.proxyWallet.getWalletInstance(request); // Get wallet instance info for chain
+sphere.proxyWallet.signTransaction(request); // Sign transaction without broadcasting
+sphere.proxyWallet.sendTransaction(request); // Sign and broadcast transaction
+sphere.proxyWallet.signMessage(request); // Sign arbitrary message for verification
 ```
 
 ### 🔄 DeFi Operations
