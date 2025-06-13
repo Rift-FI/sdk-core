@@ -1,5 +1,7 @@
 import { ethers, JsonRpcProvider, Wallet } from 'ethers';
-import { SupportedChain, CHAIN_CONFIGS } from '../types/chains';
+import { SupportedChain, CHAIN_CONFIGS, ViemPublicClientChains } from '../types/chains';
+import { createPublicClient, http, PublicClient } from 'viem';
+import { mainnet } from 'viem/chains'
 
 /**
  * Creates a JSON RPC provider for the specified chain
@@ -31,6 +33,18 @@ export function createWallet(privateKey: string, chain: SupportedChain): Wallet 
   const formattedPrivateKey = privateKey.startsWith('0x') ? privateKey : `0x${privateKey}`;
   
   return new Wallet(formattedPrivateKey, provider);
+}
+
+/**
+ * Creates a viem public client for the specified chain
+ * @param chain The supported chain to create a client for
+ * @returns Viem public client instance
+ */
+export function createViemClient(chain: SupportedChain): PublicClient {
+  return createPublicClient({
+    chain: ViemPublicClientChains[chain],
+    transport: http(),
+  });
 }
 
 /**

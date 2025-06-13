@@ -360,7 +360,7 @@ export class Dividends {
         return baseSepolia;
       case 288:
         return berachain;
-      case 289:
+      case 80069:
         return berachainBepolia;
       case 1313161554:
         return sepolia;
