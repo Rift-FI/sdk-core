@@ -15,6 +15,9 @@
     "@stratospherex/smart-router": "^4.15.0",
     "viem": "1.19.11"
   },
+   "files": [
+    "dist"
+  ],
   "publishConfig": {
     "access": "public"
   }
