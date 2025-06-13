@@ -1,11 +1,11 @@
-# @strato-sdk/dividends
+# @stratosphere-network/dividends
 
 This package provides dividend management functionality for the Strato SDK, allowing you to distribute ERC20 token dividends to holders either manually or via a smart contract.
 
 ## Installation
 
 ```bash
-npm install @strato-sdk/dividends
+npm install @stratosphere-network/dividends
 ```
 
 ## Usage
@@ -13,14 +13,14 @@ npm install @strato-sdk/dividends
 ### For backend (pass private key to class)
 
 ```typescript
-import { Dividends } from "@strato-sdk/dividends";
+import { Dividends } from "@stratosphere-network/dividends";
 import type {
   Chain,
   DistributeDividendIn,
   DistributeDividendOut,
   DistibuteDividendOutOnChain,
   DistributeDivdendOnchainConfig,
-} from "@strato-sdk/dividends";
+} from "@stratosphere-network/dividends";
 
 // Example chain object
 const chain: Chain = {
@@ -103,14 +103,14 @@ console.log("Dividend contract address:", contractAddress);
 When integrating with frontend wallets like MetaMask, Rainbow, or Rabby, you should initialize the Dividends class with the wallet address only and handle transaction signing through the wallet interface.
 
 ```typescript
-import { Dividends } from "@strato-sdk/dividends";
+import { Dividends } from "@stratosphere-network/dividends";
 import type {
   Chain,
   DistributeDividendIn,
   DistributeDividendOut,
   DistibuteDividendOutOnChain,
   DistributeDivdendOnchainConfig,
-} from "@strato-sdk/dividends";
+} from "@stratosphere-network/dividends";
 import { createWalletClient, custom, createPublicClient, http } from "viem";
 import { mainnet } from "viem/chains";
 
@@ -239,8 +239,8 @@ if (resultOnChain.type === "unsigned") {
 Ponder is a popular indexing framework for Ethereum data. Here's how to integrate it as an indexer function:
 
 ```typescript
-import { Dividends } from "@strato-sdk/dividends";
-import type { Chain, AddressAmount } from "@strato-sdk/dividends";
+import { Dividends } from "@stratosphere-network/dividends";
+import type { Chain, AddressAmount } from "@stratosphere-network/dividends";
 
 // Ponder GraphQL indexer function
 const ponderIndexer = async (
@@ -413,7 +413,7 @@ console.log("Dividend distribution completed:", result);
 ### Error Handling for Frontend Integration
 
 ```typescript
-import { DividendsError } from "@strato-sdk/dividends";
+import { DividendsError } from "@stratosphere-network/dividends";
 
 try {
   const result = await dividends.distributeDividend(/* ... */);
@@ -704,7 +704,7 @@ For other chains, provide a custom `rpcUrl` in the chain configuration.
 ## Error Handling
 
 ```typescript
-import { DividendsError } from "@strato-sdk/dividends";
+import { DividendsError } from "@stratosphere-network/dividends";
 
 try {
   const result = await dividends.distributeDividend(/* ... */);
@@ -725,7 +725,7 @@ To run the unit tests for this package, follow these steps:
 
    ```bash
    git clone <repository-url>
-   cd strato-sdk/packages/dividends
+   cd stratosphere-network/packages/dividends
    ```
 
 2. **Install dependencies**:
