@@ -143,7 +143,7 @@ export class PaymentLinksService extends BaseService {
   ): Promise<RegisterRedirectUrlResponse> {
     return this.authenticatedRequest<RegisterRedirectUrlResponse>({
       method: "POST",
-      url: "/payment-links/register-request-link-redirect",
+      url: "/payment-links/register-request-link-redirect-url",
       data: request,
     });
   }
@@ -153,7 +153,7 @@ export class PaymentLinksService extends BaseService {
   ): Promise<RegisterRedirectUrlResponse> {
     return this.authenticatedRequest<RegisterRedirectUrlResponse>({
       method: "POST",
-      url: "/payment-links/register-send-link-redirect",
+      url: "/payment-links/register-send-link-redirect-url",
       data: request,
     });
   }
