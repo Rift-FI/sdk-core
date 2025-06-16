@@ -456,11 +456,11 @@ export type RegisterRedirectUrlRequest =
       email: string;
       otpCode: string;
       platform: Platform;
-      phone?: never;
+      phoneNumber?: never;
     }
   | {
       url: string;
-      phone: string;
+      phoneNumber: string;
       otpCode: string;
       platform: Platform;
       email?: never;
