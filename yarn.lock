@@ -679,34 +679,34 @@
   resolved "https://registry.npmjs.org/@socket.io/component-emitter/-/component-emitter-3.1.2.tgz"
   integrity sha512-9BCxFwvbGg/RsZK9tjXd8s4UcwR0MWeFQ1XEKIQVVvAGJyINdrqKMcTRyLoK8Rse1GjzLV9cwjWV1olXRWEXVA==
 
-"@stratosphere-network/core@file:/Users/hafidabi/pkmt/stratos-sdk/packages/core":
+"@stratosphere-network/core@file:/Users/tarikh/Workspance/PKMT/strato-sdk/packages/core":
   version "1.0.0"
   resolved "file:packages/core"
   dependencies:
     "@stratosphere-network/wallet" "^6.0.0"
 
-"@stratosphere-network/dex@file:/Users/hafidabi/pkmt/stratos-sdk/packages/dex":
-  version "0.1.0"
+"@stratosphere-network/dex@file:/Users/tarikh/Workspance/PKMT/strato-sdk/packages/dex":
+  version "1.0.0"
   resolved "file:packages/dex"
   dependencies:
     "@stratospherex/sdk" "^5.8.0"
     "@stratospherex/smart-router" "^4.15.0"
     viem "1.19.11"
 
-"@stratosphere-network/dividends@file:/Users/hafidabi/pkmt/stratos-sdk/packages/dividends":
+"@stratosphere-network/dividends@file:/Users/tarikh/Workspance/PKMT/strato-sdk/packages/dividends":
   version "0.1.0"
   resolved "file:packages/dividends"
   dependencies:
     viem "^2.30.6"
 
-"@stratosphere-network/shared@^1.0.0", "@stratosphere-network/shared@file:/Users/hafidabi/pkmt/stratos-sdk/packages/shared":
+"@stratosphere-network/shared@^1.0.0", "@stratosphere-network/shared@file:/Users/tarikh/Workspance/PKMT/strato-sdk/packages/shared":
   version "1.0.0"
   resolved "file:packages/shared"
   dependencies:
     ethers "^6.8.0"
     viem "^2.31.0"
 
-"@stratosphere-network/token@file:/Users/hafidabi/pkmt/stratos-sdk/packages/token":
+"@stratosphere-network/token@file:/Users/tarikh/Workspance/PKMT/strato-sdk/packages/token":
   version "4.0.0"
   resolved "file:packages/token"
   dependencies:
@@ -722,7 +722,7 @@
   dependencies:
     socket.io-client "^4.7.5"
 
-"@stratosphere-network/wallet@file:/Users/hafidabi/pkmt/stratos-sdk/packages/wallet":
+"@stratosphere-network/wallet@file:/Users/tarikh/Workspance/PKMT/strato-sdk/packages/wallet":
   version "10.0.0"
   resolved "file:packages/wallet"
   dependencies:
