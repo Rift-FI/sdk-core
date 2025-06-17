@@ -143,6 +143,14 @@ export type DeleteUserRequest =
 export interface DeleteUserResponse {
   message: string;
 }
+
+// Get All Users Types
+export interface GetAllUsersResponse {
+  externalId: string[];
+  phoneNumber: string[];
+  email: string[];
+}
+
 // Project Types
 export interface Project {
   id: string;
@@ -235,6 +243,28 @@ export interface Transaction {
   token: string;
   recipient_address: string;
   created_at: string;
+}
+
+export interface TransactionHistory {
+  id: string;
+  userId: string;
+  transactionHash: string;
+  chain: string;
+  token: string;
+  currency?: string;
+  amount: number;
+  recipientAddress: string;
+  createdAt: string;
+}
+
+export interface TransactionHistoryResponse {
+  transactions: TransactionHistory[];
+  pagination: {
+    total: number;
+    pages: number;
+    currentPage: number;
+    perPage: number;
+  };
 }
 
 // Transaction Fee Types
@@ -456,6 +486,7 @@ export type RegisterRedirectUrlRequest =
       email: string;
       otpCode: string;
       platform: Platform;
+      project_api_key: string;
       phoneNumber?: never;
     }
   | {
@@ -463,6 +494,7 @@ export type RegisterRedirectUrlRequest =
       phoneNumber: string;
       otpCode: string;
       platform: Platform;
+      project_api_key: string;
       email?: never;
     };
 
@@ -475,6 +507,32 @@ export interface RegisterRedirectUrlResponse {
     updatedAt: Date;
     platform: Platform;
   };
+}
+
+// Redirect Link Models
+export interface RequestLinkRedirect {
+  url: string;
+  project_api_key: string;
+  createdAt: string;
+  updatedAt: string;
+  platform: Platform;
+}
+
+export interface SendLinkRedirect {
+  url: string;
+  project_api_key: string;
+  createdAt: string;
+  updatedAt: string;
+  platform: Platform;
+}
+
+export interface GetRedirectLinksResponse {
+  sendLinkRedirect: SendLinkRedirect | null;
+  requestRedirectLink: RequestLinkRedirect | null;
+}
+
+export interface GetRedirectLinksRequest {
+  project_api_key: string;
 }
 
 // Payment Request Creation
