@@ -441,18 +441,28 @@ export interface ShareSecretResponse {
   data: string;
 }
 
+// Platform Types
+export enum Platform {
+  SERVER = "SERVER",
+  MOBILE = "MOBILE",
+  WEB = "WEB",
+  TELEGRAM = "TELEGRAM",
+}
+
 // Redirect URL Registration
 export type RegisterRedirectUrlRequest =
   | {
       url: string;
       email: string;
       otpCode: string;
-      phone?: never;
+      platform: Platform;
+      phoneNumber?: never;
     }
   | {
       url: string;
-      phone: string;
+      phoneNumber: string;
       otpCode: string;
+      platform: Platform;
       email?: never;
     };
 
@@ -461,6 +471,9 @@ export interface RegisterRedirectUrlResponse {
   data: {
     url: string;
     project_api_key: string;
+    createdAt: Date;
+    updatedAt: Date;
+    platform: Platform;
   };
 }
 

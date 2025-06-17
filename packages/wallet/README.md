@@ -363,9 +363,12 @@ console.log("🔒 Send link cancelled");
 
 ### Register Custom Redirect URLs
 
-Configure custom redirect URLs for your payment links to provide seamless user experience. **Requires OTP verification for security.**
+Configure custom redirect URLs for your payment links to provide seamless user experience. **Requires OTP verification for security and platform specification.**
 
 ```typescript
+// Import Platform enum for type safety
+import { Platform } from "@stratosphere-network/wallet";
+
 // Step 1: Send OTP for verification (choose email OR phone)
 // Option A: Send OTP to email
 await sphere.auth.sendOtp({ email: "owner@yourapp.com" });
@@ -373,57 +376,71 @@ await sphere.auth.sendOtp({ email: "owner@yourapp.com" });
 // Option B: Send OTP to phone
 await sphere.auth.sendOtp({ phone: "+1234567890" });
 
-// Step 2: Register redirect URL for payment requests with OTP
+// Step 2: Register redirect URL for payment requests with OTP and platform
 // Users will be redirected to your app when they visit payment links
 
-// Option A: Register with email + OTP
+// Option A: Register with email + OTP for WEB platform
 const requestRedirectEmail =
   await sphere.paymentLinks.registerRequestLinkRedirectUrl({
     url: "https://yourapp.com/pay", // Your payment handling URL
     email: "owner@yourapp.com", // Project owner's email
     otpCode: "123456", // OTP received via email
+    platform: Platform.WEB, // Specify target platform: WEB, MOBILE, SERVER, or TELEGRAM
     // phone: "+1234567890", // ❌ NEVER provide with email
   });
 
-// Option B: Register with phone + OTP
+// Option B: Register with phone + OTP for MOBILE platform
 const requestRedirectPhone =
   await sphere.paymentLinks.registerRequestLinkRedirectUrl({
     url: "https://yourapp.com/pay", // Your payment handling URL
     phone: "+1234567890", // Project owner's phone
     otpCode: "123456", // OTP received via SMS
+    platform: Platform.MOBILE, // Specify target platform: WEB, MOBILE, SERVER, or TELEGRAM
     // email: "owner@yourapp.com", // ❌ NEVER provide with phone
   });
 
 console.log("🔗 Request redirect registered:", requestRedirectEmail);
+// Response includes: { message, data: { url, project_api_key, createdAt, updatedAt, platform } }
 
-// Step 3: Register redirect URL for send links with OTP
+// Step 3: Register redirect URL for send links with OTP and platform
 // Users will be redirected to your app when they visit send links
 
-// Option A: Register with email + OTP
+// Option A: Register with email + OTP for TELEGRAM platform
 const sendRedirectEmail = await sphere.paymentLinks.registerSendLinkRedirectUrl(
   {
-    url: "https://yourapp.com/claim", // Your claim handling URL
+    url: "https://t.me/yourbot?claim=", // Your Telegram bot claim URL
     email: "owner@yourapp.com", // Project owner's email
     otpCode: "123456", // OTP received via email
+    platform: Platform.TELEGRAM, // Specify target platform: WEB, MOBILE, SERVER, or TELEGRAM
     // phone: "+1234567890", // ❌ NEVER provide with email
   }
 );
 
-// Option B: Register with phone + OTP
+// Option B: Register with phone + OTP for SERVER platform
 const sendRedirectPhone = await sphere.paymentLinks.registerSendLinkRedirectUrl(
   {
-    url: "https://yourapp.com/claim", // Your claim handling URL
+    url: "https://api.yourapp.com/webhook/claim", // Your server webhook URL
     phone: "+1234567890", // Project owner's phone
     otpCode: "123456", // OTP received via SMS
+    platform: Platform.SERVER, // Specify target platform: WEB, MOBILE, SERVER, or TELEGRAM
     // email: "owner@yourapp.com", // ❌ NEVER provide with phone
   }
 );
 
-console.log("🔗 Send redirect registered:", sendRedirectEmail);
+console.log("🔗 Send redirect registered:", sendRedirectPhone);
+// Response includes: { message, data: { url, project_api_key, createdAt, updatedAt, platform } }
 
-// Now when users visit your payment/send links, they'll be redirected to:
-// https://yourapp.com/pay?nonce=payment_nonce (for payment requests)
-// https://yourapp.com/claim?id=send_link_id (for send links)
+// Platform-specific redirect examples:
+// WEB: https://yourapp.com/pay?nonce=payment_nonce
+// MOBILE: yourapp://pay?nonce=payment_nonce (deep link)
+// TELEGRAM: https://t.me/yourbot?claim=send_link_id
+// SERVER: https://api.yourapp.com/webhook/claim?id=send_link_id
+
+// Available Platform Options:
+// - Platform.WEB: Web applications and websites
+// - Platform.MOBILE: Mobile applications (deep links)
+// - Platform.TELEGRAM: Telegram bots and mini apps
+// - Platform.SERVER: Server-to-server webhooks and APIs
 ```
 
 ### Payment Links Error Handling
@@ -1037,9 +1054,9 @@ sphere.paymentLinks.claimOpenSendLink(request); // Claim open send link (id only
 sphere.paymentLinks.listSendLinks(request?); // Get list of send links
 sphere.paymentLinks.cancelSendLink(urlId); // Cancel a send link
 
-// Redirect URL Registration (requires OTP verification)
-sphere.paymentLinks.registerRequestLinkRedirectUrl(request); // Register payment request redirect URL (email/phone + OTP)
-sphere.paymentLinks.registerSendLinkRedirectUrl(request); // Register send link redirect URL (email/phone + OTP)
+// Redirect URL Registration (requires OTP verification + platform specification)
+sphere.paymentLinks.registerRequestLinkRedirectUrl(request); // Register payment request redirect URL (email/phone + OTP + platform)
+sphere.paymentLinks.registerSendLinkRedirectUrl(request); // Register send link redirect URL (email/phone + OTP + platform)
 ```
 
 ### 🛠️ Proxy Wallet
