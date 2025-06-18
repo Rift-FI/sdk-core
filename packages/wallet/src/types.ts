@@ -182,11 +182,14 @@ export type ChainName =
   | "LISK"
   | "BNB"
   | "BERACHAIN"
-  | "POLYGON";
+  | "POLYGON"
+  | "BERACHAIN_TESTNET"
+  | "POLYGON_TESTNET";
 
 export type TokenSymbol =
   | "USDC"
   | "USDT"
+  | "DYU"
   | "ETH"
   | "BTC"
   | "WBERA"
