@@ -483,50 +483,45 @@ export enum Platform {
 }
 
 // Redirect URL Registration
-export type RegisterRedirectUrlRequest =
-  | {
-      url: string;
-      email: string;
-      otpCode: string;
-      platform: Platform;
-      project_api_key: string;
-      phoneNumber?: never;
-    }
-  | {
-      url: string;
-      phoneNumber: string;
-      otpCode: string;
-      platform: Platform;
-      project_api_key: string;
-      email?: never;
-    };
+export interface RegisterRedirectUrlRequest {
+  url?: string;
+  phoneNumber?: string;
+  telegram_url?: string;
+  mobile_url?: string;
+  email?: string;
+  otpCode: string;
+  project_api_key: string;
+}
 
 export interface RegisterRedirectUrlResponse {
   message: string;
   data: {
     url: string;
+    telegram_url?: string;
+    mobile_url?: string;
     project_api_key: string;
     createdAt: Date;
     updatedAt: Date;
-    platform: Platform;
   };
 }
 
 // Redirect Link Models
 export interface RequestLinkRedirect {
   url: string;
+  telegram_url?: string;
+  mobile_url?: string;
   project_api_key: string;
   createdAt: string;
   updatedAt: string;
-  platform: Platform;
 }
 
 export interface SendLinkRedirect {
   url: string;
+  telegram_url?: string;
+  mobile_url?: string;
   project_api_key: string;
   createdAt: string;
   updatedAt: string;
-  platform: Platform;
 }
 
 export interface GetRedirectLinksResponse {
