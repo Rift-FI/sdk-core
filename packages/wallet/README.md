@@ -428,12 +428,9 @@ console.log("🔒 Send link cancelled");
 
 ### Register Custom Redirect URLs
 
-Configure custom redirect URLs for your payment links to provide seamless user experience. **Requires OTP verification for security and platform specification.**
+Configure custom redirect URLs for your payment links to provide seamless user experience. **Requires OTP verification for security.**
 
 ```typescript
-// Import Platform enum for type safety
-import { Platform } from "@stratosphere-network/wallet";
-
 // Step 1: Send OTP for verification (choose email OR phone)
 // Option A: Send OTP to email
 await sphere.auth.sendOtp({ email: "owner@yourapp.com" });
@@ -441,75 +438,75 @@ await sphere.auth.sendOtp({ email: "owner@yourapp.com" });
 // Option B: Send OTP to phone
 await sphere.auth.sendOtp({ phone: "+1234567890" });
 
-// Step 2: Register redirect URL for payment requests with OTP and platform
+// Step 2: Register redirect URL for payment requests with OTP
 // Users will be redirected to your app when they visit payment links
+// You can provide any combination of url, mobile_url, and telegram_url
 
-// Option A: Register with email + OTP for WEB platform
+// Option A: Register with email + OTP - Web URL only
 const requestRedirectEmail =
   await sphere.paymentLinks.registerRequestLinkRedirectUrl({
-    url: "https://yourapp.com/pay", // Your payment handling URL
+    url: "https://yourapp.com/pay", // Your web payment handling URL
     email: "owner@yourapp.com", // Project owner's email
     otpCode: "123456", // OTP received via email
-    platform: Platform.WEB, // Specify target platform: WEB, MOBILE, SERVER, or TELEGRAM
     project_api_key: "your-project-api-key", // Your project's API key
-    // phone: "+1234567890", // ❌ NEVER provide with email
+    // phoneNumber: "+1234567890", // ❌ NEVER provide with email
   });
 
-// Option B: Register with phone + OTP for MOBILE platform
+// Option B: Register with phone + OTP - Multiple URLs for different platforms
 const requestRedirectPhone =
   await sphere.paymentLinks.registerRequestLinkRedirectUrl({
-    url: "https://yourapp.com/pay", // Your payment handling URL
-    phone: "+1234567890", // Project owner's phone
+    url: "https://yourapp.com/pay", // Web URL
+    mobile_url: "yourapp://pay", // Mobile deep link
+    telegram_url: "https://t.me/yourbot?pay=", // Telegram bot URL
+    phoneNumber: "+1234567890", // Project owner's phone
     otpCode: "123456", // OTP received via SMS
-    platform: Platform.MOBILE, // Specify target platform: WEB, MOBILE, SERVER, or TELEGRAM
     project_api_key: "your-project-api-key", // Your project's API key
-    // email: "owner@yourapp.com", // ❌ NEVER provide with phone
+    // email: "owner@yourapp.com", // ❌ NEVER provide with phoneNumber
   });
 
 console.log("🔗 Request redirect registered:", requestRedirectEmail);
-// Response includes: { message, data: { url, project_api_key, createdAt, updatedAt, platform } }
+// Response includes: { message, data: { url, telegram_url?, mobile_url?, project_api_key, createdAt, updatedAt } }
 
-// Step 3: Register redirect URL for send links with OTP and platform
+// Step 3: Register redirect URL for send links with OTP
 // Users will be redirected to your app when they visit send links
 
-// Option A: Register with email + OTP for TELEGRAM platform
+// Option A: Register with email + OTP - Telegram URL only
 const sendRedirectEmail = await sphere.paymentLinks.registerSendLinkRedirectUrl(
   {
-    url: "https://t.me/yourbot?claim=", // Your Telegram bot claim URL
+    telegram_url: "https://t.me/yourbot?claim=", // Your Telegram bot claim URL
     email: "owner@yourapp.com", // Project owner's email
     otpCode: "123456", // OTP received via email
-    platform: Platform.TELEGRAM, // Specify target platform: WEB, MOBILE, SERVER, or TELEGRAM
     project_api_key: "your-project-api-key", // Your project's API key
-    // phone: "+1234567890", // ❌ NEVER provide with email
+    // phoneNumber: "+1234567890", // ❌ NEVER provide with email
   }
 );
 
-// Option B: Register with phone + OTP for SERVER platform
+// Option B: Register with phone + OTP - All URL types
 const sendRedirectPhone = await sphere.paymentLinks.registerSendLinkRedirectUrl(
   {
-    url: "https://api.yourapp.com/webhook/claim", // Your server webhook URL
-    phone: "+1234567890", // Project owner's phone
+    url: "https://yourapp.com/claim", // Web claim URL
+    mobile_url: "yourapp://claim", // Mobile deep link
+    telegram_url: "https://t.me/yourbot?claim=", // Telegram bot URL
+    phoneNumber: "+1234567890", // Project owner's phone
     otpCode: "123456", // OTP received via SMS
-    platform: Platform.SERVER, // Specify target platform: WEB, MOBILE, SERVER, or TELEGRAM
     project_api_key: "your-project-api-key", // Your project's API key
-    // email: "owner@yourapp.com", // ❌ NEVER provide with phone
+    // email: "owner@yourapp.com", // ❌ NEVER provide with phoneNumber
   }
 );
 
 console.log("🔗 Send redirect registered:", sendRedirectPhone);
-// Response includes: { message, data: { url, project_api_key, createdAt, updatedAt, platform } }
+// Response includes: { message, data: { url, telegram_url?, mobile_url?, project_api_key, createdAt, updatedAt } }
 
-// Platform-specific redirect examples:
+// URL Examples by Platform:
 // WEB: https://yourapp.com/pay?nonce=payment_nonce
 // MOBILE: yourapp://pay?nonce=payment_nonce (deep link)
 // TELEGRAM: https://t.me/yourbot?claim=send_link_id
-// SERVER: https://api.yourapp.com/webhook/claim?id=send_link_id
 
-// Available Platform Options:
-// - Platform.WEB: Web applications and websites
-// - Platform.MOBILE: Mobile applications (deep links)
-// - Platform.TELEGRAM: Telegram bots and mini apps
-// - Platform.SERVER: Server-to-server webhooks and APIs
+// Flexible URL Configuration:
+// - Provide url for web applications and websites
+// - Provide mobile_url for mobile app deep links
+// - Provide telegram_url for Telegram bots and mini apps
+// - You can provide any combination of these URLs
 ```
 
 ### Get Current Redirect URLs
@@ -530,17 +527,19 @@ console.log("🔗 Current redirect URLs:", {
 // Each redirect link contains:
 // {
 //   url: string,
+//   telegram_url?: string,
+//   mobile_url?: string,
 //   project_api_key: string,
 //   createdAt: string,
-//   updatedAt: string,
-//   platform: Platform
+//   updatedAt: string
 // }
 
 // Use this to check if redirect URLs are configured
 if (redirectLinks.requestRedirectLink) {
   console.log("✅ Payment request redirect configured:", {
-    url: redirectLinks.requestRedirectLink.url,
-    platform: redirectLinks.requestRedirectLink.platform,
+    webUrl: redirectLinks.requestRedirectLink.url,
+    telegramUrl: redirectLinks.requestRedirectLink.telegram_url,
+    mobileUrl: redirectLinks.requestRedirectLink.mobile_url,
   });
 } else {
   console.log("⚠️ No payment request redirect URL configured");
@@ -548,8 +547,9 @@ if (redirectLinks.requestRedirectLink) {
 
 if (redirectLinks.sendLinkRedirect) {
   console.log("✅ Send link redirect configured:", {
-    url: redirectLinks.sendLinkRedirect.url,
-    platform: redirectLinks.sendLinkRedirect.platform,
+    webUrl: redirectLinks.sendLinkRedirect.url,
+    telegramUrl: redirectLinks.sendLinkRedirect.telegram_url,
+    mobileUrl: redirectLinks.sendLinkRedirect.mobile_url,
   });
 } else {
   console.log("⚠️ No send link redirect URL configured");
@@ -1171,9 +1171,9 @@ sphere.paymentLinks.claimOpenSendLink(request); // Claim open send link (id only
 sphere.paymentLinks.listSendLinks(request?); // Get list of send links
 sphere.paymentLinks.cancelSendLink(urlId); // Cancel a send link
 
-// Redirect URL Registration (requires OTP verification + platform specification + project API key)
-sphere.paymentLinks.registerRequestLinkRedirectUrl(request); // Register payment request redirect URL (email/phone + OTP + platform + project_api_key)
-sphere.paymentLinks.registerSendLinkRedirectUrl(request); // Register send link redirect URL (email/phone + OTP + platform + project_api_key)
+// Redirect URL Registration (requires OTP verification + project API key)
+sphere.paymentLinks.registerRequestLinkRedirectUrl(request); // Register payment request redirect URL (email/phoneNumber + OTP + url/mobile_url/telegram_url + project_api_key)
+sphere.paymentLinks.registerSendLinkRedirectUrl(request); // Register send link redirect URL (email/phoneNumber + OTP + url/mobile_url/telegram_url + project_api_key)
 sphere.paymentLinks.getRedirectLinks(request); // Get current redirect URLs for project (requires project_api_key)
 ```
 
