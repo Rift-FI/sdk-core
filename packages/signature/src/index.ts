@@ -1,12 +1,7 @@
 // EIP-2612 Permit signature functionality
 export {
-  PermitSignature,
-  TransferRequestBody,
-  SignatureConfig,
-  SignatureResult,
+  GaslessTransferParameters,
+  Erc2612SignatureOutput,
+  Erc2612SignatureParameters,
 } from "./types";
-export {
-  generatePermitSignature,
-  prepareTransferBody,
-  submitGaslessTransfer,
-} from "./permit";
+export { Signature } from "./permit";

@@ -1,183 +1,174 @@
+import { ethers, Signer } from "ethers";
 import {
-  Wallet,
-  Contract,
-  TypedDataDomain,
-  TypedDataField,
-  JsonRpcProvider,
-  parseUnits,
-  formatUnits,
-  toBigInt,
-  toBeHex,
-  Signature,
-} from "ethers";
-import axios from "axios";
-import { PermitSignature, TransferRequestBody } from "./types";
+  Erc2612SignatureOutput,
+  Erc2612SignatureParameters,
+  GaslessTransferParameters,
+} from "./types";
+// Minimal ABI for ERC-20 Permit functions
+const ERC20_PERMIT_ABI = [
+  "function nonces(address owner) view returns (uint256)",
+  "function name() view returns (string)",
+  "function decimals() view returns (uint8)",
+] as const;
 
-const TRANSFER_API_URL =
-  "https://rewardsvault-production.up.railway.app/api/gas/transfer";
+/**
+ * @class Signature
+ * @description A class to handle the creation of EIP-2612 permit signatures
+ * and submission to a gasless transfer API.
+ */
+export class Signature {
+  private _transferApiUrl: string;
 
-const getPermitDomain = async (
-  tokenContract: Contract,
-  chainId: bigint
-): Promise<TypedDataDomain> => {
-  let name: string = "Unknown Token";
-  try {
-    name = await tokenContract.name();
-  } catch (e) {
+  /**
+   * @constructor
+   * @param {string} [transferApiUrl] - The URL of the gasless transfer API.
+   * Defaults to 'https://rewardsvault-production.up.railway.app/api/gas/transfer'.
+   */
+  constructor(
+    transferApiUrl: string = "https://rewardsvault-production.up.railway.app/api/gas/transfer"
+  ) {
+    this._transferApiUrl = transferApiUrl;
+  }
+
+  /**
+   * @getter transferApiUrl
+   * @returns {string} The current gasless transfer API URL.
+   */
+  public get transferApiUrl(): string {
+    return this._transferApiUrl;
+  }
+
+  /**
+   * @setter transferApiUrl
+   * @param {string} url - The new URL for the gasless transfer API.
+   */
+  public set transferApiUrl(url: string) {
+    // Basic validation could be added here
+    if (!url.startsWith("https://")) {
+      console.warn("Warning: Using a non-HTTPS URL for the transfer API.");
+    }
+    this._transferApiUrl = url;
+  }
+
+  /**
+   * Generates an EIP-2612 permit signature.
+   * This method performs all necessary on-chain reads and off-chain signing.
+   * @param {Erc2612SignatureParameters} params - The parameters for generating the signature.
+   * @returns {Promise<Erc2612SignatureOutput>} The generated signature object.
+   */
+  public async erc2612signature(
+    params: Erc2612SignatureParameters
+  ): Promise<Erc2612SignatureOutput> {
+    const { signer, tokenAddress, spender, value, deadlineInMinutes } = params;
+
+    if (!signer.provider) {
+      throw new Error("Signer must be connected to a provider.");
+    }
+
+    const ownerAddress = await signer.getAddress();
+    const tokenContract = new ethers.Contract(
+      tokenAddress,
+      ERC20_PERMIT_ABI,
+      signer.provider
+    );
+
+    // 1. Fetch necessary on-chain data in parallel
+    const [nonce, tokenName, chainId, decimals] = await Promise.all([
+      tokenContract.nonces(ownerAddress),
+      tokenContract.name(),
+      signer.provider.getNetwork().then((network) => network.chainId),
+      tokenContract.decimals(),
+    ]);
+
+    // 2. Calculate deadline
+    const deadline = Math.floor(Date.now() / 1000) + deadlineInMinutes * 60;
+
+    // 3. Parse the value into the token's smallest unit
+    const parsedValue = ethers.parseUnits(value, decimals);
+
+    // 4. Define the EIP-712 domain
+    // The domain separates signatures from different applications and chains [1]
+    const domain = {
+      name: tokenName,
+      version: "1", // Common version for EIP-2612 tokens [2]
+      chainId: chainId,
+      verifyingContract: tokenAddress,
+    };
+
+    // 5. Define the EIP-712 types for the Permit message [3]
+    const types = {
+      Permit: [
+        { name: "owner", type: "address" },
+        { name: "spender", type: "address" },
+        { name: "value", type: "uint256" },
+        { name: "nonce", type: "uint256" },
+        { name: "deadline", type: "uint256" },
+      ],
+    };
+
+    // 6. Construct the message to be signed
+    const message = {
+      owner: ownerAddress,
+      spender: spender,
+      value: parsedValue,
+      nonce: nonce.toNumber(),
+      deadline: deadline,
+    };
+
+    // 7. Sign the typed data
+    // This prompts the user's wallet (e.g., MetaMask) to sign the structured data [3]
+    const signature = await signer.signTypedData(domain, types, message);
+
+    // 8. Split the signature into v, r, s components [3, 4]
+    const { v, r, s } = ethers.Signature.from(signature);
+
+    return { v, r, s, deadline, nonce: nonce.toNumber(), value: parsedValue };
+  }
+
+  /**
+   * Submits the permit signature and transfer details to the gasless relayer API.
+   * @param {GaslessTransferParameters} params - The payload for the gasless transfer.
+   * @returns {Promise<any>} The response from the relayer API.
+   */
+  public async gasless(params: GaslessTransferParameters): Promise<any> {
+    const { signature, tokenAddress, recipient, amount } = params;
+
+    const payload = {
+      signature: {
+        v: signature.v,
+        r: signature.r,
+        s: signature.s,
+        deadline: signature.deadline,
+      },
+      transfer: {
+        token: tokenAddress,
+        recipient: recipient,
+        amount: amount,
+      },
+    };
+
     try {
-      const nameBytes = await tokenContract.NAME();
-      name = typeof nameBytes === "string" ? nameBytes : "Unknown Token";
-    } catch (innerE) {
-      console.error(
-        `Error ${JSON.stringify(innerE)} while fetching token name }`
-      );
+      const response = await fetch(this._transferApiUrl, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(payload),
+      });
+
+      if (!response.ok) {
+        const errorBody = await response.json();
+        throw new Error(
+          `API request failed with status ${response.status}: ${JSON.stringify(
+            errorBody
+          )}`
+        );
+      }
+
+      return await response.json();
+    } catch (error) {
+      console.error("Error submitting gasless transfer:", error);
+      throw error; // Re-throw the error to be handled by the caller
     }
   }
-
-  let version: string = "1";
-  try {
-    version = await tokenContract.version();
-  } catch (e) {
-    console.warn(
-      `Could not retrieve token version for ${tokenContract.target}: ${e}`
-    );
-  }
-
-  return {
-    name: name,
-    version: version,
-    chainId: chainId,
-    verifyingContract: tokenContract.target as string,
-  };
-};
-
-const permitTypes: Record<string, TypedDataField[]> = {
-  Permit: [
-    { name: "owner", type: "address" },
-    { name: "spender", type: "address" },
-    { name: "value", type: "uint256" },
-    { name: "nonce", type: "uint256" },
-    { name: "deadline", type: "uint256" },
-  ],
-};
-
-/**
- * Generates an ERC2612 permit signature.
- * @param ownerWallet The wallet of the token owner signing the permit.
- * @param tokenAddress The address of the ERC20 token contract.
- * @param spenderAddress The address authorised to spend the tokens (your relayer/contract).
- * @param value The amount of tokens to approve.
- * @param deadline The permit expiration timestamp (Unix seconds).
- * @param provider Ethers provider instance.
- * @returns The signature components (v, r, s) and deadline.
- */
-export const generatePermitSignature = async (
-  ownerWallet: Wallet,
-  tokenAddress: string,
-  spenderAddress: string,
-  value: bigint,
-  deadline: bigint,
-  provider: JsonRpcProvider
-): Promise<PermitSignature> => {
-  const tokenContract = new Contract(
-    tokenAddress,
-    [
-      "function nonces(address owner) view returns (uint256)",
-      "function name() view returns (string)",
-      "function NAME() view returns (bytes32)",
-      "function version() view returns (string)",
-    ],
-    provider
-  );
-
-  const nonce = await tokenContract.nonces(ownerWallet.address);
-  const network = await provider.getNetwork();
-  const chainId = network.chainId;
-  const domain = await getPermitDomain(tokenContract, chainId);
-
-  const permitValues = {
-    owner: ownerWallet.address,
-    spender: spenderAddress,
-    value: value,
-    nonce: nonce,
-    deadline: deadline,
-  };
-
-  const signature = await ownerWallet.signTypedData(
-    domain,
-    permitTypes,
-    permitValues
-  );
-
-  const sig = Signature.from(signature);
-
-  return {
-    v: sig.v,
-    r: sig.r,
-    s: sig.s,
-    deadline: deadline,
-  };
-};
-
-/**
- * Prepares the JSON body for the /transfer API endpoint.
- *
- * @param targetNetwork Target network identifier (e.g., "sepolia", "mainnet").
- * @param ownerAddress Address of the token owner.
- * @param tokenValue Amount of the token being transferred (as bigint).
- * @param permitSignature The permit signature object { v, r, s, deadline }.
- * @param recipientAddress The final recipient of the tokens.
- * @param chargeValue Fee charged for the gasless transaction (as bigint).
- * @param nativeFeeValue Native fee component (as bigint).
- * @returns The request body object.
- */
-export const prepareTransferBody = (
-  targetNetwork: string,
-  ownerAddress: string,
-  tokenValue: bigint,
-  permitSignature: PermitSignature,
-  recipientAddress: string,
-  chargeValue: bigint,
-  nativeFeeValue: bigint
-): TransferRequestBody => {
-  return {
-    target: targetNetwork,
-    owner: ownerAddress,
-    value: tokenValue.toString(),
-    deadline: permitSignature.deadline.toString(),
-    v: permitSignature.v,
-    r: permitSignature.r,
-    s: permitSignature.s,
-    to: recipientAddress,
-    charge: chargeValue.toString(),
-    nativeFee: nativeFeeValue.toString(),
-  };
-};
-
-/**
- * Calls the gas abstraction API to execute the transfer.
- *
- * @param requestBody The prepared request body from prepareTransferBody.
- * @returns The API response.
- */
-export const submitGaslessTransfer = async (
-  requestBody: TransferRequestBody
-): Promise<any> => {
-  try {
-    const response = await axios.post(TRANSFER_API_URL, requestBody, {
-      headers: {
-        "Content-Type": "application/json",
-      },
-    });
-    console.log("Transfer API Response:", response.data);
-    return response.data;
-  } catch (error: any) {
-    console.error(
-      "Error calling transfer API:",
-      error.response?.data || error.message
-    );
-    throw new Error(
-      `API call failed: ${error.response?.data?.error || error.message}`
-    );
-  }
-};
+}
