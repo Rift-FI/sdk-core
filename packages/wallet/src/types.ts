@@ -186,6 +186,7 @@ export type ChainName =
   | "BERACHAIN_TESTNET"
   | "POLYGON_TESTNET";
 
+
 export type TokenSymbol =
   | "USDC"
   | "USDT"
@@ -196,7 +197,8 @@ export type TokenSymbol =
   | "USDC.e"
   | "LSK"
   | "BNB"
-  | "MATIC";
+  | "MATIC"
+  | "SAIL";
 
 export interface Balance {
   amount: number;
