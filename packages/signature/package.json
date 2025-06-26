@@ -11,7 +11,8 @@
     "dev": "tsc --watch",
     "clean": "rm -rf dist out",
     "prepublishOnly": "npm run clean && npm run build",
-    "test": "jest",
+    "test": "jest -- signature-only",
+    "test:all": "jest",
     "test:contracts": "forge test",
     "test:watch": "jest --watch",
     "test:coverage": "jest --coverage"
