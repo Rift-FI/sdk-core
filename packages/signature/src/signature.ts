@@ -8,6 +8,7 @@ import {
 const ERC20_PERMIT_ABI = [
   "function nonces(address owner) view returns (uint256)",
   "function name() view returns (string)",
+  "function NAME() view returns (bytes32)",
   "function decimals() view returns (uint8)",
 ] as const;
 
@@ -34,7 +35,7 @@ export class Signature {
    * @getter transferApiUrl
    * @returns {string} The current gasless transfer API URL.
    */
-  public get transferApiUrl(): string {
+  public getTransferApiUrl(): string {
     return this._transferApiUrl;
   }
 
@@ -42,7 +43,7 @@ export class Signature {
    * @setter transferApiUrl
    * @param {string} url - The new URL for the gasless transfer API.
    */
-  public set transferApiUrl(url: string) {
+  public setTransferApiUrl(url: string) {
     // Basic validation could be added here
     if (!url.startsWith("https://")) {
       console.warn("Warning: Using a non-HTTPS URL for the transfer API.");
@@ -95,6 +96,14 @@ export class Signature {
       verifyingContract: tokenAddress,
     };
 
+    // try to get version from the contract
+    try {
+      const version = await tokenContract.version();
+      domain.version = version;
+    } catch (error) {
+      console.error("Error getting version from the contract:", error);
+    }
+
     // 5. Define the EIP-712 types for the Permit message [3]
     const types = {
       Permit: [
@@ -111,7 +120,7 @@ export class Signature {
       owner: ownerAddress,
       spender: spender,
       value: parsedValue,
-      nonce: nonce.toNumber(),
+      nonce: Number(nonce), // Handle both number and bigint
       deadline: deadline,
     };
 
@@ -122,7 +131,7 @@ export class Signature {
     // 8. Split the signature into v, r, s components [3, 4]
     const { v, r, s } = ethers.Signature.from(signature);
 
-    return { v, r, s, deadline, nonce: nonce.toNumber(), value: parsedValue };
+    return { v, r, s, deadline, nonce: Number(nonce), value: parsedValue };
   }
 
   /**

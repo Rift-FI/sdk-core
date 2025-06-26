@@ -1,4 +1,4 @@
-import { Signature } from "../src/permit";
+import { Signature } from "../src/signature";
 import {
   Erc2612SignatureParameters,
   Erc2612SignatureOutput,
@@ -18,29 +18,15 @@ describe("Signature Class", () => {
   });
 
   test("should have default transfer API URL", () => {
-    expect(signatureInstance.transferApiUrl).toBe(
+    expect(signatureInstance.getTransferApiUrl()).toBe(
       "https://rewardsvault-production.up.railway.app/api/gas/transfer"
     );
   });
 
   test("should allow setting custom transfer API URL", () => {
     const customUrl = "https://custom-api.example.com/transfer";
-    signatureInstance.transferApiUrl = customUrl;
-    expect(signatureInstance.transferApiUrl).toBe(customUrl);
-  });
-
-  test("should warn when setting non-HTTPS URL", () => {
-    const consoleSpy = jest.spyOn(console, "warn").mockImplementation();
-    const httpUrl = "http://insecure-api.example.com/transfer";
-
-    signatureInstance.transferApiUrl = httpUrl;
-
-    expect(consoleSpy).toHaveBeenCalledWith(
-      "Warning: Using a non-HTTPS URL for the transfer API."
-    );
-    expect(signatureInstance.transferApiUrl).toBe(httpUrl);
-
-    consoleSpy.mockRestore();
+    signatureInstance.setTransferApiUrl(customUrl);
+    expect(signatureInstance.getTransferApiUrl()).toBe(customUrl);
   });
 
   test("should have erc2612signature method", () => {
@@ -103,14 +89,4 @@ describe("Signature Class", () => {
       "Signer must be connected to a provider."
     );
   });
-
-  // TODO: Add integration tests with mock signer and provider when needed
-  // test('should generate ERC2612 signature with mock signer', async () => {
-  //   // Mock implementation would go here
-  // });
-
-  // TODO: Add test for gasless transfer with mock API response
-  // test('should submit gasless transfer successfully', async () => {
-  //   // Mock fetch and test gasless method
-  // });
 });

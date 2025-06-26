@@ -4,4 +4,4 @@ export {
   Erc2612SignatureOutput,
   Erc2612SignatureParameters,
 } from "./types";
-export { Signature } from "./permit";
+export { Signature } from "./signature";
