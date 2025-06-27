@@ -27,6 +27,7 @@ import {
 import { DividendsError } from "../error";
 import { SupportedChain } from "../types";
 import { Wallet } from "ethers";
+import { getChain, getChainFromSupportedChain } from "../utils";
 
 describe("Dividends", () => {
   const anvilPort = Math.floor(Math.random() * (15999 - 13001 + 1)) + 13001;
@@ -205,7 +206,7 @@ describe("Dividends", () => {
       address: dividendAddress as `0x${string}`,
       abi: DividendContract_ABI,
       functionName: "initialize",
-      args: [maxBatchSize],
+      args: [maxBatchSize, parseUnits("0", 18), anvilAdminAccount.address],
       account: anvilAdminAccount,
     });
 
@@ -248,7 +249,11 @@ describe("Dividends", () => {
       address: factoryDividedAddress as `0x${string}`,
       abi: DividendFactoryContract_ABI,
       functionName: "initialize",
-      args: [_div2Addr as `0x${string}`],
+      args: [
+        _div2Addr as `0x${string}`,
+        parseUnits("0", 18),
+        anvilAdminAccount.address,
+      ],
       account: anvilAdminAccount,
       chain: anvilClient.chain,
     });
@@ -853,5 +858,155 @@ describe("Dividends", () => {
     });
     expect(txReceipt2).toBeDefined();
     expect(txReceipt2?.status).toBe("success");
+  });
+
+  // Test coverage for utils.ts functions
+  describe("Utils functions", () => {
+    describe("getChainFromSupportedChain", () => {
+      it("should return correct chain IDs for all supported chains", () => {
+        expect(
+          getChainFromSupportedChain(SupportedChain.ETHEREUM_MAINNET)
+        ).toEqual({ id: 1 });
+        expect(
+          getChainFromSupportedChain(SupportedChain.ETHEREUM_SEPOLIA)
+        ).toEqual({ id: 11155111 });
+        expect(
+          getChainFromSupportedChain(SupportedChain.POLYGON_MAINNET)
+        ).toEqual({ id: 137 });
+        expect(
+          getChainFromSupportedChain(SupportedChain.POLYGON_MUMBAI)
+        ).toEqual({ id: 80001 });
+        expect(getChainFromSupportedChain(SupportedChain.BSC_MAINNET)).toEqual({
+          id: 56,
+        });
+        expect(getChainFromSupportedChain(SupportedChain.BSC_TESTNET)).toEqual({
+          id: 97,
+        });
+        expect(
+          getChainFromSupportedChain(SupportedChain.ARBITRUM_MAINNET)
+        ).toEqual({ id: 42161 });
+        expect(
+          getChainFromSupportedChain(SupportedChain.ARBITRUM_SEPOLIA)
+        ).toEqual({ id: 421614 });
+        expect(
+          getChainFromSupportedChain(SupportedChain.OPTIMISM_MAINNET)
+        ).toEqual({ id: 10 });
+        expect(
+          getChainFromSupportedChain(SupportedChain.OPTIMISM_SEPOLIA)
+        ).toEqual({ id: 11155420 });
+        expect(getChainFromSupportedChain(SupportedChain.BASE_MAINNET)).toEqual(
+          { id: 8453 }
+        );
+        expect(getChainFromSupportedChain(SupportedChain.BASE_SEPOLIA)).toEqual(
+          { id: 84532 }
+        );
+        expect(
+          getChainFromSupportedChain(SupportedChain.BERACHAIN_MAINNET)
+        ).toEqual({ id: 80094 });
+        expect(
+          getChainFromSupportedChain(SupportedChain.BERACHAIN_TESTNET)
+        ).toEqual({ id: 80069 });
+        expect(getChainFromSupportedChain(SupportedChain.ANVIL)).toEqual({
+          id: 31337,
+        });
+      });
+
+      it("should throw error for unsupported chain", () => {
+        expect(() => {
+          getChainFromSupportedChain("UNSUPPORTED_CHAIN" as SupportedChain);
+        }).toThrow(DividendsError);
+      });
+    });
+
+    describe("getChain", () => {
+      it("should return correct viem chains for known chain IDs", () => {
+        // Test mainnet
+        const mainnetChain = getChain({ id: 1 });
+        expect(mainnetChain.id).toBe(1);
+        expect(mainnetChain.name).toBe("Ethereum");
+
+        // Test polygon
+        const polygonChain = getChain({ id: 137 });
+        expect(polygonChain.id).toBe(137);
+        expect(polygonChain.name).toBe("Polygon");
+
+        // Test base
+        const baseChain = getChain({ id: 8453 });
+        expect(baseChain.id).toBe(8453);
+        expect(baseChain.name).toBe("Base");
+
+        // Test arbitrum
+        const arbitrumChain = getChain({ id: 42161 });
+        expect(arbitrumChain.id).toBe(42161);
+        expect(arbitrumChain.name).toBe("Arbitrum One");
+
+        // Test optimism
+        const optimismChain = getChain({ id: 10 });
+        expect(optimismChain.id).toBe(10);
+        expect(optimismChain.name).toBe("OP Mainnet");
+
+        // Test base sepolia
+        const baseSepoliaChain = getChain({ id: 84532 });
+        expect(baseSepoliaChain.id).toBe(84532);
+        expect(baseSepoliaChain.name).toBe("Base Sepolia");
+
+        // Test berachain
+        const berachainChain = getChain({ id: 80094 });
+        expect(berachainChain.id).toBe(80094);
+
+        // Test berachain testnet
+        const berachainTestnetChain = getChain({ id: 80069 });
+        expect(berachainTestnetChain.id).toBe(80069);
+
+        // Test sepolia
+        const sepoliaChain = getChain({ id: 11155111 });
+        expect(sepoliaChain.id).toBe(11155111);
+
+        // Test anvil
+        const anvilChain = getChain({ id: 31337 });
+        expect(anvilChain.id).toBe(31337);
+        expect(anvilChain.name).toBe("Anvil");
+      });
+
+      it("should create custom chain when RPC URL is provided", () => {
+        const customChain = getChain({
+          id: 999999,
+          rpcUrl: "https://custom-rpc.example.com",
+        });
+
+        expect(customChain.id).toBe(999999);
+        expect(customChain.name).toBe("Custom");
+        expect(customChain.nativeCurrency).toEqual({
+          decimals: 18,
+          name: "Ether",
+          symbol: "ETH",
+        });
+        expect(customChain.rpcUrls.default.http[0]).toBe(
+          "https://custom-rpc.example.com"
+        );
+      });
+
+      it("should throw error for unknown chain ID without RPC URL", () => {
+        expect(() => {
+          getChain({ id: 999999 });
+        }).toThrow(DividendsError);
+
+        expect(() => {
+          getChain({ id: 999999 });
+        }).toThrow("No id match for chain, RPC URL is required");
+      });
+
+      it("should handle edge cases properly", () => {
+        // Test with undefined rpcUrl (should throw)
+        expect(() => {
+          getChain({ id: 999999, rpcUrl: undefined });
+        }).toThrow(DividendsError);
+
+        // Test with empty string rpcUrl (should throw)
+        expect(() => {
+          getChain({ id: 999999, rpcUrl: "" });
+        }).toThrow(DividendsError);
+      });
+    });
   });
 });

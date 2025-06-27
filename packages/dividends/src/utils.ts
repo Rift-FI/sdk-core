@@ -66,11 +66,11 @@ export function getChain(chain: Chain) {
       return optimism;
     case 84532:
       return baseSepolia;
-    case 288:
+    case 80094:
       return berachain;
     case 80069:
       return berachainBepolia;
-    case 1313161554:
+    case 11155111:
       return sepolia;
     case 31337:
       return anvil;

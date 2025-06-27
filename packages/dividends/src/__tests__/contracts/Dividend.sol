@@ -12,7 +12,7 @@ import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
  * @title Dividend
  * @dev A contract for distributing ERC20 tokens as dividends to multiple recipients
  *      Supports batch transfers for gas efficiency when dealing with large recipient lists
- *      Includes emergency functions and comprehensive event logging
+ *      Includes emergency functions, fee collection, and comprehensive event logging
  */
 contract Dividend is
     Initializable,
@@ -28,6 +28,8 @@ contract Dividend is
         address indexed token,
         string dividendName,
         uint256 totalAmount,
+        uint256 feeAmount,
+        uint256 netAmount,
         uint256 recipientCount,
         uint256 timestamp
     );
@@ -45,11 +47,31 @@ contract Dividend is
         uint256 amount
     );
 
+    event FeeCollected(
+        uint256 dividendId,
+        address indexed token,
+        address indexed feeAddress,
+        uint256 feeAmount,
+        uint256 feePercentage
+    );
+
+    event FeeAddressUpdated(
+        address indexed oldFeeAddress,
+        address indexed newFeeAddress
+    );
+
+    event FeePercentageUpdated(
+        uint256 oldFeePercentage,
+        uint256 newFeePercentage
+    );
+
     // Structs
     struct DividendInfo {
         string name;
         address token;
         uint256 totalAmount;
+        uint256 feeAmount;
+        uint256 netAmount;
         uint256 recipientCount;
         uint256 timestamp;
         bool completed;
@@ -60,24 +82,45 @@ contract Dividend is
     uint256 public dividendCounter;
     uint256 public maxBatchSize;
 
-    // Mapping to track if an address has received a specific dividend
-    mapping(uint256 => mapping(address => bool)) public hasReceivedDividend;
+    // Fee-related state variables
+    uint256 public feePercentage; // Fee percentage in basis points (10000 = 100%)
+    address public feeAddress; // Address to receive fees
 
     /**
      * @dev Initializes the dividend contract
      * @param _maxBatchSize Maximum number of recipients per batch (recommended: 100-200)
+     * @param _feePercentage Initial fee percentage in basis points (e.g., 250 = 2.5%)
+     * @param _feeAddress Initial address to receive fees
      */
-    function initialize(uint256 _maxBatchSize) public initializer {
+    function initialize(
+        uint256 _maxBatchSize,
+        uint256 _feePercentage,
+        address _feeAddress
+    ) public initializer {
         __Ownable_init(msg.sender);
-        // __UUPSUpgradeable_init();
         __ReentrancyGuard_init();
 
+        require(_maxBatchSize > 0, "Batch size must be greater than 0");
+        require(_feePercentage <= 10000, "Fee percentage cannot exceed 100%");
+        require(_feeAddress != address(0), "Invalid fee address");
+
         maxBatchSize = _maxBatchSize;
+        feePercentage = _feePercentage;
+        feeAddress = _feeAddress;
         dividendCounter = 0;
     }
 
     /**
-     * @dev Distributes tokens to multiple recipients in batches
+     * @dev Calculates the fee amount based on total amount and fee percentage
+     * @param totalAmount The total amount to calculate fee from
+     * @return The calculated fee amount
+     */
+    function calculateFee(uint256 totalAmount) public view returns (uint256) {
+        return (totalAmount * feePercentage) / 10000;
+    }
+
+    /**
+     * @dev Distributes tokens to multiple recipients in batches with fee deduction
      * @param name Name of the dividend (e.g., "Quarter 1 dividend")
      * @param token Address of the ERC20 token to distribute
      * @param recipients Array of recipient addresses
@@ -95,65 +138,92 @@ contract Dividend is
         require(recipients.length > 0, "No recipients provided");
 
         IERC20 tokenContract = IERC20(token);
-        uint256 totalAmount = 0;
 
-        // Calculate total amount needed
-        for (uint256 i = 0; i < amounts.length; i++) {
-            totalAmount += amounts[i];
+        // Calculate total dividend amount and fee in a single scope
+        uint256 totalDividendAmount;
+        uint256 feeAmount;
+        uint256 totalAmountNeeded;
+        {
+            // Calculate total dividend amount needed
+            for (uint256 i = 0; i < amounts.length; i++) {
+                totalDividendAmount += amounts[i];
+            }
+
+            // Calculate fee and total amount needed
+            feeAmount = calculateFee(totalDividendAmount);
+            totalAmountNeeded = totalDividendAmount + feeAmount;
         }
 
         require(
-            tokenContract.balanceOf(address(this)) >= totalAmount,
+            tokenContract.balanceOf(address(this)) >= totalAmountNeeded,
             "Insufficient token balance"
         );
 
-        // Store dividend info
-        uint256 currentDividendId = dividendCounter++;
-        dividendHistory[currentDividendId] = DividendInfo({
-            name: name,
-            token: token,
-            totalAmount: totalAmount,
-            recipientCount: recipients.length,
-            timestamp: block.timestamp,
-            completed: false
-        });
+        // Store dividend info and transfer fee in a single scope
+        uint256 currentDividendId;
+        {
+            currentDividendId = dividendCounter++;
+            dividendHistory[currentDividendId] = DividendInfo({
+                name: name,
+                token: token,
+                totalAmount: totalAmountNeeded,
+                feeAmount: feeAmount,
+                netAmount: totalDividendAmount,
+                recipientCount: recipients.length,
+                timestamp: block.timestamp,
+                completed: false
+            });
+
+            // Transfer fee to fee address if fee amount > 0
+            if (feeAmount > 0) {
+                tokenContract.safeTransfer(feeAddress, feeAmount);
+                emit FeeCollected(
+                    currentDividendId,
+                    token,
+                    feeAddress,
+                    feeAmount,
+                    feePercentage
+                );
+            }
+        }
 
         // Process transfers in batches
-        uint256 batchCount = (recipients.length + maxBatchSize - 1) /
-            maxBatchSize;
+        {
+            uint256 batchCount = (recipients.length + maxBatchSize - 1) /
+                maxBatchSize;
 
-        for (uint256 batchIndex = 0; batchIndex < batchCount; batchIndex++) {
-            uint256 startIndex = batchIndex * maxBatchSize;
-            uint256 endIndex = startIndex + maxBatchSize;
-            if (endIndex > recipients.length) {
-                endIndex = recipients.length;
-            }
+            for (
+                uint256 batchIndex = 0;
+                batchIndex < batchCount;
+                batchIndex++
+            ) {
+                uint256 startIndex = batchIndex * maxBatchSize;
+                uint256 endIndex = startIndex + maxBatchSize;
+                if (endIndex > recipients.length) {
+                    endIndex = recipients.length;
+                }
 
-            uint256 batchAmount = 0;
+                uint256 batchAmount = 0;
 
-            // Execute transfers for this batch
-            for (uint256 i = startIndex; i < endIndex; i++) {
-                require(
-                    recipients[i] != address(0),
-                    "Invalid recipient address"
+                // Execute transfers for this batch
+                for (uint256 i = startIndex; i < endIndex; i++) {
+                    require(
+                        recipients[i] != address(0),
+                        "Invalid recipient address"
+                    );
+                    require(amounts[i] > 0, "Amount must be greater than 0");
+
+                    tokenContract.safeTransfer(recipients[i], amounts[i]);
+                    batchAmount += amounts[i];
+                }
+
+                emit BatchTransferCompleted(
+                    token,
+                    batchIndex,
+                    endIndex - startIndex,
+                    batchAmount
                 );
-                require(amounts[i] > 0, "Amount must be greater than 0");
-                require(
-                    !hasReceivedDividend[currentDividendId][recipients[i]],
-                    "Recipient already received dividend"
-                );
-
-                tokenContract.safeTransfer(recipients[i], amounts[i]);
-                hasReceivedDividend[currentDividendId][recipients[i]] = true;
-                batchAmount += amounts[i];
             }
-
-            emit BatchTransferCompleted(
-                token,
-                batchIndex,
-                endIndex - startIndex,
-                batchAmount
-            );
         }
 
         // Mark dividend as completed
@@ -163,14 +233,16 @@ contract Dividend is
             currentDividendId,
             token,
             name,
-            totalAmount,
+            totalAmountNeeded,
+            feeAmount,
+            totalDividendAmount,
             recipients.length,
             block.timestamp
         );
     }
 
     /**
-     * @dev Distributes equal amounts to all recipients
+     * @dev Distributes equal amounts to all recipients with fee deduction
      * @param name Name of the dividend (e.g., "Quarter 1 dividend")
      * @param token Address of the ERC20 token to distribute
      * @param recipients Array of recipient addresses
@@ -188,56 +260,86 @@ contract Dividend is
         require(amountPerRecipient > 0, "Amount must be greater than 0");
 
         IERC20 tokenContract = IERC20(token);
-        uint256 totalAmount = recipients.length * amountPerRecipient;
+
+        // Calculate amounts in a single scope
+        uint256 totalDividendAmount;
+        uint256 feeAmount;
+        uint256 totalAmountNeeded;
+        {
+            totalDividendAmount = recipients.length * amountPerRecipient;
+            feeAmount = calculateFee(totalDividendAmount);
+            totalAmountNeeded = totalDividendAmount + feeAmount;
+        }
 
         require(
-            tokenContract.balanceOf(address(this)) >= totalAmount,
+            tokenContract.balanceOf(address(this)) >= totalAmountNeeded,
             "Insufficient token balance"
         );
 
-        // Store dividend info
-        uint256 currentDividendId = dividendCounter++;
-        dividendHistory[currentDividendId] = DividendInfo({
-            name: name,
-            token: token,
-            totalAmount: totalAmount,
-            recipientCount: recipients.length,
-            timestamp: block.timestamp,
-            completed: false
-        });
+        // Store dividend info and transfer fee in a single scope
+        uint256 currentDividendId;
+        {
+            currentDividendId = dividendCounter++;
+            dividendHistory[currentDividendId] = DividendInfo({
+                name: name,
+                token: token,
+                totalAmount: totalAmountNeeded,
+                feeAmount: feeAmount,
+                netAmount: totalDividendAmount,
+                recipientCount: recipients.length,
+                timestamp: block.timestamp,
+                completed: false
+            });
+
+            // Transfer fee to fee address if fee amount > 0
+            if (feeAmount > 0) {
+                tokenContract.safeTransfer(feeAddress, feeAmount);
+                emit FeeCollected(
+                    currentDividendId,
+                    token,
+                    feeAddress,
+                    feeAmount,
+                    feePercentage
+                );
+            }
+        }
 
         // Process transfers in batches
-        uint256 batchCount = (recipients.length + maxBatchSize - 1) /
-            maxBatchSize;
+        {
+            uint256 batchCount = (recipients.length + maxBatchSize - 1) /
+                maxBatchSize;
 
-        for (uint256 batchIndex = 0; batchIndex < batchCount; batchIndex++) {
-            uint256 startIndex = batchIndex * maxBatchSize;
-            uint256 endIndex = startIndex + maxBatchSize;
-            if (endIndex > recipients.length) {
-                endIndex = recipients.length;
-            }
+            for (
+                uint256 batchIndex = 0;
+                batchIndex < batchCount;
+                batchIndex++
+            ) {
+                uint256 startIndex = batchIndex * maxBatchSize;
+                uint256 endIndex = startIndex + maxBatchSize;
+                if (endIndex > recipients.length) {
+                    endIndex = recipients.length;
+                }
 
-            // Execute transfers for this batch
-            for (uint256 i = startIndex; i < endIndex; i++) {
-                require(
-                    recipients[i] != address(0),
-                    "Invalid recipient address"
+                // Execute transfers for this batch
+                for (uint256 i = startIndex; i < endIndex; i++) {
+                    require(
+                        recipients[i] != address(0),
+                        "Invalid recipient address"
+                    );
+
+                    tokenContract.safeTransfer(
+                        recipients[i],
+                        amountPerRecipient
+                    );
+                }
+
+                emit BatchTransferCompleted(
+                    token,
+                    batchIndex,
+                    endIndex - startIndex,
+                    (endIndex - startIndex) * amountPerRecipient
                 );
-                require(
-                    !hasReceivedDividend[currentDividendId][recipients[i]],
-                    "Recipient already received dividend"
-                );
-
-                tokenContract.safeTransfer(recipients[i], amountPerRecipient);
-                hasReceivedDividend[currentDividendId][recipients[i]] = true;
             }
-
-            emit BatchTransferCompleted(
-                token,
-                batchIndex,
-                endIndex - startIndex,
-                (endIndex - startIndex) * amountPerRecipient
-            );
         }
 
         // Mark dividend as completed
@@ -247,10 +349,38 @@ contract Dividend is
             currentDividendId,
             token,
             name,
-            totalAmount,
+            totalAmountNeeded,
+            feeAmount,
+            totalDividendAmount,
             recipients.length,
             block.timestamp
         );
+    }
+
+    /**
+     * @dev Updates the fee percentage
+     * @param _feePercentage New fee percentage in basis points (e.g., 250 = 2.5%)
+     */
+    function setFeePercentage(uint256 _feePercentage) external onlyOwner {
+        require(_feePercentage <= 10000, "Fee percentage cannot exceed 100%");
+
+        uint256 oldFeePercentage = feePercentage;
+        feePercentage = _feePercentage;
+
+        emit FeePercentageUpdated(oldFeePercentage, _feePercentage);
+    }
+
+    /**
+     * @dev Updates the fee address
+     * @param _feeAddress New address to receive fees
+     */
+    function setFeeAddress(address _feeAddress) external onlyOwner {
+        require(_feeAddress != address(0), "Invalid fee address");
+
+        address oldFeeAddress = feeAddress;
+        feeAddress = _feeAddress;
+
+        emit FeeAddressUpdated(oldFeeAddress, _feeAddress);
     }
 
     /**
@@ -309,16 +439,12 @@ contract Dividend is
     }
 
     /**
-     * @dev Checks if a recipient has received a specific dividend
-     * @param dividendId ID of the dividend
-     * @param recipient Address of the recipient
-     * @return True if recipient has received the dividend
+     * @dev Gets current fee configuration
+     * @return feePercentage Current fee percentage in basis points
+     * @return feeAddress Current fee address
      */
-    function hasReceivedDividendById(
-        uint256 dividendId,
-        address recipient
-    ) external view returns (bool) {
-        return hasReceivedDividend[dividendId][recipient];
+    function getFeeConfiguration() external view returns (uint256, address) {
+        return (feePercentage, feeAddress);
     }
 
     /**
