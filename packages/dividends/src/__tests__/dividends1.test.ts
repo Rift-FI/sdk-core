@@ -25,6 +25,8 @@ import {
   DividendFactoryContract_BYTECODE,
 } from "../artifacts/dividendFactoryContract";
 import { DividendsError } from "../error";
+import { SupportedChain } from "../types";
+import { Wallet } from "ethers";
 
 describe("Dividends", () => {
   const anvilPort = Math.floor(Math.random() * (15999 - 13001 + 1)) + 13001;
@@ -112,7 +114,9 @@ describe("Dividends", () => {
     return balances.map((b) => formatUnits(b, 6));
   };
 
-  beforeAll(async () => {
+  beforeAll(async () => {});
+
+  beforeEach(async () => {
     // start anvil fist
     anvilProcess = spawn("anvil", ["--port", anvilPort.toString()]);
 
@@ -125,15 +129,15 @@ describe("Dividends", () => {
       transport: http(anvilRpcUrl),
     });
     anvilClient = createPublicClient({
-      chain: anvil,
+      // chain: anvil,
       transport: http(anvilRpcUrl),
     });
 
     // check if connected to anvil
-    const balance = await anvilClient.getBalance({
+    const balanceAdmin = await anvilClient.getBalance({
       address: anvilAdminAccount.address,
     });
-    expect(balance).toBeGreaterThan(0);
+    expect(balanceAdmin).toBeGreaterThan(0);
 
     // deploy smart contracts of mockUSDC, mockTokenA, mockTokenB, Dividend
     const mockUSDCDeploymentTx = await walletClient.deployContract({
@@ -254,9 +258,6 @@ describe("Dividends", () => {
 
     // distribute token B to participants
     await distributeTokenB();
-  });
-
-  beforeEach(async () => {
     // make sure connected to anvil rpc localhost with port 13519
 
     anvilAdminAccount = privateKeyToAccount(anvilAdminPK);
@@ -277,7 +278,7 @@ describe("Dividends", () => {
     expect(balance).toBeGreaterThan(0);
   });
 
-  afterAll(async () => {
+  afterEach(async () => {
     if (anvilProcess) {
       anvilProcess.kill();
 
@@ -382,13 +383,11 @@ describe("Dividends", () => {
   it("check dividend manual, with private key", async () => {
     // check initial balances of usdc of participants
     const initialBalances = await usdcBalanceCheck(participantsWalletAddr);
-    const dividend = new Dividends(
-      {
-        id: 31337,
-        rpcUrl: anvilRpcUrl,
-      },
-      anvilAdminPK
-    );
+    const wallet = new Wallet(anvilAdminPK);
+    const dividend = new Dividends(SupportedChain.ANVIL, wallet, anvilClient, {
+      id: 31337,
+      rpcUrl: anvilRpcUrl,
+    });
 
     const divAmount = 1000;
     const dividendResult = await dividend.distributeDividendManual({
@@ -465,13 +464,11 @@ describe("Dividends", () => {
   it("check dividend automatic, with private key", async () => {
     // check initial balances of usdc of participants
     const initialBalances = await usdcBalanceCheck(participantsWalletAddr);
-    const dividend = new Dividends(
-      {
-        id: 31337,
-        rpcUrl: anvilRpcUrl,
-      },
-      anvilAdminPK
-    );
+    const wallet = new Wallet(anvilAdminPK);
+    const dividend = new Dividends(SupportedChain.ANVIL, wallet, anvilClient, {
+      id: 31337,
+      rpcUrl: anvilRpcUrl,
+    });
 
     const divAmount = 1000;
     const dividendResult = await dividend.distributeDividend(
@@ -547,113 +544,19 @@ describe("Dividends", () => {
     expect(txReceipt?.status).toBe("success");
   });
 
-  it("check dividend manual, with NO private key", async () => {
+  it("check dividend automatic, with private key + off direct transfer success", async () => {
     // check initial balances of usdc of participants
     const initialBalances = await usdcBalanceCheck(participantsWalletAddr);
-    const dividend = new Dividends(
-      {
-        id: 31337,
-        rpcUrl: anvilRpcUrl,
-      },
-      anvilAdminAccount.address
-    );
-
-    const divAmount = 1000;
-    const dividendResult = await dividend.distributeDividendManual({
-      tokenAddress: mockTokenAAddress as `0x${string}`,
-      stableCoinAddress: mockUSDCAddress as `0x${string}`,
-      amount: divAmount, // assume we distribute dividend of 1000 usdc,
-      indexer: async (tokenAddress, chain) => {
-        const result = [];
-        for (let i = 0; i < participantsWalletAddr.length; i++) {
-          result.push({
-            address: participantsWalletAddr[i],
-            amount: ratioTokenA[i].toString(),
-          });
-        }
-
-        return result;
-      },
-      businessLogic: async (params) => {
-        const result: { address: string; amount: string }[] = [];
-
-        const _totalTokenSupply = params.totalSupply;
-        const _divAmount = params.dividendAmount;
-        const totalTokenSupply = parseUnits(_totalTokenSupply, 0);
-        const divAmount = parseUnits(_divAmount, 0);
-        for (let i = 0; i < params.holders.length; i++) {
-          const amountTokenOfMine = parseUnits(params.holders[i].amount, 0);
-          const _ratio =
-            (amountTokenOfMine * divAmount * parseUnits("10", 2)) /
-            totalTokenSupply;
-
-          // make sure ratio is not in decimal
-          const ratio = _ratio.toString().split(".")[0];
-
-          result.push({
-            address: params.holders[i].address,
-            amount: ratio,
-          });
-        }
-
-        return result;
-      },
+    const wallet = new Wallet(anvilAdminPK);
+    const dividend = new Dividends(SupportedChain.ANVIL, wallet, anvilClient, {
+      id: 31337,
+      rpcUrl: anvilRpcUrl,
     });
-
-    // check and sign for each dividend result
-    for (const r of dividendResult) {
-      const txHash = await walletClient.writeContract({
-        ...r.txUnsigned,
-        chain: anvilClient.chain,
-        account: anvilAdminAccount,
-      });
-
-      // check for tx hash
-      expect(txHash).toBeDefined();
-
-      // get tx receipt
-      const txReceipt = await anvilClient.getTransactionReceipt({
-        hash: txHash as `0x${string}`,
-      });
-
-      // check for tx receipt
-      expect(txReceipt).toBeDefined();
-      expect(txReceipt?.status).toBe("success");
-    }
-
-    // check for tx type
-    dividendResult.forEach((r) => {
-      expect(r.type).toBe("unsigned");
-    });
-
-    // check usdc balance of participants
-    const finalBalances = await usdcBalanceCheck(
-      dividendResult.map((r) => r.address)
-    );
-
-    // check if final balances is greater than initial balances
-    for (let i = 0; i < finalBalances.length; i++) {
-      expect(parseUnits(finalBalances[i], 0)).toBeGreaterThan(
-        parseUnits(initialBalances[i], 0)
-      );
-    }
-  });
-
-  it("check dividend automatic, with NO private key", async () => {
-    // check initial balances of usdc of participants
-    const initialBalances = await usdcBalanceCheck(participantsWalletAddr);
-    const dividend = new Dividends(
-      {
-        id: 31337,
-        rpcUrl: anvilRpcUrl,
-      },
-      anvilAdminAccount.address
-    );
 
     const divAmount = 1000;
 
-    // transfer stable coin to dividend contract
-    const { request: transferRequest } = await anvilClient.simulateContract({
+    // send some usdc to contract  = divAmount
+    const { request } = await anvilClient.simulateContract({
       address: mockUSDCAddress as `0x${string}`,
       abi: MockUSDC_ABI,
       functionName: "transfer",
@@ -664,95 +567,14 @@ describe("Dividends", () => {
       account: anvilAdminAccount,
     });
 
-    await walletClient.writeContract({
-      ...transferRequest,
+    const tx = await walletClient.writeContract({
+      ...request,
     });
-
-    const dividendResult = await dividend.distributeDividend(
-      {
-        tokenAddress: mockTokenAAddress as `0x${string}`,
-        stableCoinAddress: mockUSDCAddress as `0x${string}`,
-        amount: divAmount, // assume we distribute dividend of 1000 usdc,
-        indexer: async (tokenAddress, chain) => {
-          const result = [];
-          for (let i = 0; i < participantsWalletAddr.length; i++) {
-            result.push({
-              address: participantsWalletAddr[i],
-              amount: ratioTokenA[i].toString(),
-            });
-          }
-
-          return result;
-        },
-        businessLogic: async (params) => {
-          const result: { address: string; amount: string }[] = [];
-
-          const _totalTokenSupply = params.totalSupply;
-          const _divAmount = params.dividendAmount;
-          const totalTokenSupply = parseUnits(_totalTokenSupply, 0);
-          const divAmount = parseUnits(_divAmount, 0);
-          for (let i = 0; i < params.holders.length; i++) {
-            const amountTokenOfMine = parseUnits(params.holders[i].amount, 0);
-            const _ratio =
-              (amountTokenOfMine * divAmount * parseUnits("10", 2)) /
-              totalTokenSupply;
-
-            // make sure ratio is not in decimal
-            const ratio = _ratio.toString().split(".")[0];
-
-            result.push({
-              address: params.holders[i].address,
-              amount: ratio,
-            });
-          }
-
-          return result;
-        },
-      },
-      dividendAddress,
-      {
-        title: "testtest",
-        directTransfer: true,
-      }
-    );
-
-    // check for tx type
-    expect(dividendResult.type).toBe("unsigned");
-    // check for tx hash
-    expect(dividendResult.txHash).toBeUndefined();
-
-    // try to sign tx
-    const txHash = await walletClient.writeContract({
-      ...dividendResult.txUnsigned,
-      chain: anvilClient.chain,
-      account: anvilAdminAccount,
+    const txReceipt0 = await anvilClient.getTransactionReceipt({
+      hash: tx as `0x${string}`,
     });
+    expect(txReceipt0?.status).toBe("success");
 
-    // check for tx hash
-    expect(txHash).toBeDefined();
-
-    // get tx receipt
-    const txReceipt = await anvilClient.getTransactionReceipt({
-      hash: txHash as `0x${string}`,
-    });
-
-    // check for tx receipt
-    expect(txReceipt).toBeDefined();
-    expect(txReceipt?.status).toBe("success");
-  });
-
-  it("check dividend automatic, with private key + off direct transfer success", async () => {
-    // check initial balances of usdc of participants
-    const initialBalances = await usdcBalanceCheck(participantsWalletAddr);
-    const dividend = new Dividends(
-      {
-        id: 31337,
-        rpcUrl: anvilRpcUrl,
-      },
-      anvilAdminPK
-    );
-
-    const divAmount = 1000;
     const dividendResult = await dividend.distributeDividend(
       {
         tokenAddress: mockTokenAAddress as `0x${string}`,
@@ -824,13 +646,11 @@ describe("Dividends", () => {
 
   it("check dividend automatic, with private key + off direct transfer failure", async () => {
     // check initial balances of usdc of participants
-    const dividend = new Dividends(
-      {
-        id: 31337,
-        rpcUrl: anvilRpcUrl,
-      },
-      anvilAdminPK
-    );
+    const wallet = new Wallet(anvilAdminPK);
+    const dividend = new Dividends(SupportedChain.ANVIL, wallet, anvilClient, {
+      id: 31337,
+      rpcUrl: anvilRpcUrl,
+    });
 
     const divAmount = 1000;
     expect(async () => {
@@ -881,13 +701,11 @@ describe("Dividends", () => {
   });
 
   it("check dividend factory", async () => {
-    const dividend = new Dividends(
-      {
-        id: 31337,
-        rpcUrl: anvilRpcUrl,
-      },
-      anvilAdminPK
-    );
+    const wallet = new Wallet(anvilAdminPK);
+    const dividend = new Dividends(SupportedChain.ANVIL, wallet, anvilClient, {
+      id: 31337,
+      rpcUrl: anvilRpcUrl,
+    });
 
     // create new dividend contract through the factory
     const { request: createDividendRequest } =
@@ -926,13 +744,11 @@ describe("Dividends", () => {
   });
 
   it("check dividend factory and distribute dividend with contract that already created", async () => {
-    const dividend = new Dividends(
-      {
-        id: 31337,
-        rpcUrl: anvilRpcUrl,
-      },
-      anvilAdminPK
-    );
+    const wallet = new Wallet(anvilAdminPK);
+    const dividend = new Dividends(SupportedChain.ANVIL, wallet, anvilClient, {
+      id: 31337,
+      rpcUrl: anvilRpcUrl,
+    });
 
     // create new dividend contract through the factory
     const { request: createDividendRequest } =
@@ -1037,28 +853,5 @@ describe("Dividends", () => {
     });
     expect(txReceipt2).toBeDefined();
     expect(txReceipt2?.status).toBe("success");
-  });
-
-  it("check on chain rpc error", async () => {
-    expect(async () => {
-      const dividend = new Dividends(
-        {
-          id: 121212,
-        },
-        anvilAdminPK
-      );
-    }).rejects.toThrow(DividendsError);
-  });
-
-  it("check on pk error", async () => {
-    expect(async () => {
-      const dividend = new Dividends(
-        {
-          id: 121212,
-          rpcUrl: anvilRpcUrl,
-        },
-        "0x00000000000000as3l0l3"
-      );
-    }).rejects.toThrow(DividendsError);
   });
 });

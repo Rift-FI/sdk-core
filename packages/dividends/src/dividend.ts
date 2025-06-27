@@ -8,54 +8,44 @@ import {
   SupportedChain,
 } from "./types";
 import {
-  Account,
-  createPublicClient,
   createWalletClient,
-  defineChain,
-  encodeFunctionData,
-  formatUnits,
   http,
-  isHex,
   parseUnits,
   PublicClient,
   WalletClient,
+  Chain as ViemChain,
 } from "viem";
-import { privateKeyToAccount } from "viem/accounts";
-import {
-  mainnet,
-  polygon,
-  sepolia,
-  base,
-  arbitrum,
-  optimism,
-  baseSepolia,
-  berachain,
-  berachainBepolia,
-} from "viem/chains";
 import { DividendABI } from "./abi/dividend.abi";
 import { ERC20Abi } from "./abi/erc20.abi";
 import { DividendFactoryABI } from "./abi/dividend-factory.abi";
-import { ethers, TransactionReceipt, Wallet } from "ethers";
-import { getChainFromSupportedChain } from "./utils";
+import { Wallet } from "ethers";
+import { getChain, getChainFromSupportedChain } from "./utils";
 
 export class Dividends {
-  private chain: SupportedChain;
+  private chain: ViemChain;
   private publicClient: PublicClient;
   private walletClient: WalletClient | null;
 
-  constructor(chain: SupportedChain, wallet: Wallet, viemClient: PublicClient) {
-    this.chain = chain;
-
+  constructor(
+    chain: SupportedChain,
+    wallet: Wallet,
+    viemClient: PublicClient,
+    customChain?: Chain
+  ) {
     // Use the injected viemClient as publicClient to avoid type conflicts
     this.publicClient = viemClient;
 
     // Initialize viem clients for blockchain interactions
-    const chainForUse = this.getChain(getChainFromSupportedChain(chain));
+    this.chain = getChain(
+      customChain ? customChain : getChainFromSupportedChain(chain)
+    );
 
     this.walletClient = createWalletClient({
       account: wallet.address as `0x${string}`,
-      chain: chainForUse,
-      transport: http(chainForUse.rpcUrls.default.http[0]),
+      chain: this.chain,
+      transport: http(
+        customChain?.rpcUrl ?? this.chain.rpcUrls.default.http[0]
+      ),
     });
   }
 
@@ -68,10 +58,10 @@ export class Dividends {
       params.stableCoinAddress
     );
 
-    const holders = await params.indexer(
-      tokenAddress,
-      getChainFromSupportedChain(this.chain)
-    );
+    const holders = await params.indexer(tokenAddress, {
+      id: this.chain.id,
+      rpcUrl: this.chain.rpcUrls.default.http[0],
+    });
 
     // proceed it to dividend logic
     const dividendPreResult = await params.businessLogic({
@@ -82,7 +72,10 @@ export class Dividends {
         stableCoinInfo.decimals
       ).toString(),
       tokenAddress: tokenAddress,
-      chain: getChainFromSupportedChain(this.chain),
+      chain: {
+        id: this.chain.id,
+        rpcUrl: this.chain.rpcUrls.default.http[0],
+      },
     });
 
     // iterate over holders and send tx
@@ -134,10 +127,10 @@ export class Dividends {
       params.stableCoinAddress
     );
 
-    const holders = await params.indexer(
-      tokenAddress,
-      getChainFromSupportedChain(this.chain)
-    );
+    const holders = await params.indexer(tokenAddress, {
+      id: this.chain.id,
+      rpcUrl: this.chain.rpcUrls.default.http[0],
+    });
 
     // proceed it to dividend logic
 
@@ -149,7 +142,10 @@ export class Dividends {
         stableCoinInfo.decimals
       ).toString(),
       tokenAddress: tokenAddress,
-      chain: getChainFromSupportedChain(this.chain),
+      chain: {
+        id: this.chain.id,
+        rpcUrl: this.chain.rpcUrls.default.http[0],
+      },
     });
 
     // perform dividend address stable coin availability first
@@ -335,49 +331,5 @@ export class Dividends {
       tokenInfo,
       stableCoinInfo,
     };
-  }
-
-  private getChain(chain: Chain) {
-    switch (chain.id) {
-      case 1:
-        return mainnet;
-      case 137:
-        return polygon;
-      case 8453:
-        return base;
-      case 42161:
-        return arbitrum;
-      case 10:
-        return optimism;
-      case 84532:
-        return baseSepolia;
-      case 288:
-        return berachain;
-      case 80069:
-        return berachainBepolia;
-      case 1313161554:
-        return sepolia;
-      default:
-        if (!chain.rpcUrl) {
-          throw new DividendsError(
-            "No id match for chain, RPC URL is required"
-          );
-        }
-
-        return defineChain({
-          id: chain.id,
-          name: "Custom",
-          nativeCurrency: {
-            decimals: 18,
-            name: "Ether",
-            symbol: "ETH",
-          },
-          rpcUrls: {
-            default: {
-              http: [chain.rpcUrl! as string],
-            },
-          },
-        });
-    }
   }
 }
