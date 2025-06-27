@@ -5,6 +5,7 @@ import {
   DistributeDivdendOnchainConfig,
   DistributeDividendIn,
   DistributeDividendOut,
+  SupportedChain,
 } from "./types";
 import {
   Account,
@@ -34,44 +35,26 @@ import {
 import { DividendABI } from "./abi/dividend.abi";
 import { ERC20Abi } from "./abi/erc20.abi";
 import { DividendFactoryABI } from "./abi/dividend-factory.abi";
+import { ethers, TransactionReceipt, Wallet } from "ethers";
+import { getChainFromSupportedChain } from "./utils";
 
 export class Dividends {
-  private chain: Chain;
+  private chain: SupportedChain;
   private publicClient: PublicClient;
   private walletClient: WalletClient | null;
-  private account: Account;
-  private isPrivateKey: boolean;
 
-  constructor(chain: Chain, privateKeyOrAddress: string) {
+  constructor(chain: SupportedChain, wallet: Wallet, viemClient: PublicClient) {
     this.chain = chain;
-    this.publicClient = {} as PublicClient;
-    this.walletClient = {} as WalletClient;
 
-    const chainForUse = this.getChain(chain);
-    if (isHex(privateKeyOrAddress)) {
-      if (privateKeyOrAddress.length >= 60) {
-        this.account = privateKeyToAccount(
-          privateKeyOrAddress as `0x${string}`
-        );
-        this.walletClient = createWalletClient({
-          account: this.account,
-          chain: chainForUse,
-          transport: http(chainForUse.rpcUrls.default.http[0]),
-        });
-        this.isPrivateKey = true;
-      } else {
-        this.isPrivateKey = false;
-        this.account = {
-          address: privateKeyOrAddress,
-          type: "json-rpc",
-        };
-        this.walletClient = null;
-      }
-    } else {
-      throw new DividendsError("Invalid private key or address");
-    }
+    // Use the injected viemClient as publicClient to avoid type conflicts
+    this.publicClient = viemClient;
 
-    this.publicClient = createPublicClient({
+    // Initialize viem clients for blockchain interactions
+    const chainForUse = this.getChain(getChainFromSupportedChain(chain));
+
+    this.walletClient = createWalletClient({
+      account: wallet.address as `0x${string}`,
+      chain: chainForUse,
       transport: http(chainForUse.rpcUrls.default.http[0]),
     });
   }
@@ -85,7 +68,10 @@ export class Dividends {
       params.stableCoinAddress
     );
 
-    const holders = await params.indexer(tokenAddress, this.chain);
+    const holders = await params.indexer(
+      tokenAddress,
+      getChainFromSupportedChain(this.chain)
+    );
 
     // proceed it to dividend logic
     const dividendPreResult = await params.businessLogic({
@@ -96,7 +82,7 @@ export class Dividends {
         stableCoinInfo.decimals
       ).toString(),
       tokenAddress: tokenAddress,
-      chain: this.chain,
+      chain: getChainFromSupportedChain(this.chain),
     });
 
     // iterate over holders and send tx
@@ -112,16 +98,16 @@ export class Dividends {
         abi: ERC20Abi,
         functionName: "transfer",
         args: [divPortion.address as `0x${string}`, parsedAmount],
-        account: this.account,
+        account: this.walletClient?.account,
       });
 
       // send tx
       let tx: string | undefined = undefined;
 
-      if (this.walletClient) {
+      if (this.walletClient && this.walletClient.account) {
         tx = await this.walletClient.writeContract({
           ...request,
-          account: this.account,
+          account: this.walletClient.account,
         });
       }
 
@@ -129,7 +115,7 @@ export class Dividends {
         address: divPortion.address,
         amount: divPortion.amount,
         txHash: tx,
-        type: this.isPrivateKey ? "signed" : "unsigned",
+        type: "signed",
         txUnsigned: request,
       });
     }
@@ -148,7 +134,10 @@ export class Dividends {
       params.stableCoinAddress
     );
 
-    const holders = await params.indexer(tokenAddress, this.chain);
+    const holders = await params.indexer(
+      tokenAddress,
+      getChainFromSupportedChain(this.chain)
+    );
 
     // proceed it to dividend logic
 
@@ -160,7 +149,7 @@ export class Dividends {
         stableCoinInfo.decimals
       ).toString(),
       tokenAddress: tokenAddress,
-      chain: this.chain,
+      chain: getChainFromSupportedChain(this.chain),
     });
 
     // perform dividend address stable coin availability first
@@ -172,14 +161,18 @@ export class Dividends {
           totalAmountRequired + parseUnits(divPortion.amount, 0);
       }
 
-      if (config?.directTransfer && this.walletClient) {
+      if (
+        config?.directTransfer &&
+        this.walletClient &&
+        this.walletClient.account
+      ) {
         // transfer stable coin to dividend contract
         const { request } = await this.publicClient.simulateContract({
           abi: ERC20Abi,
           address: params.stableCoinAddress as `0x${string}`,
           functionName: "transfer",
           args: [dividendContractAddress as `0x${string}`, totalAmountRequired],
-          account: this.account,
+          account: this.walletClient.account,
         });
 
         await this.walletClient.writeContract({
@@ -191,7 +184,7 @@ export class Dividends {
           abi: ERC20Abi,
           address: params.stableCoinAddress as `0x${string}`,
           functionName: "balanceOf",
-          args: [this.account?.address as `0x${string}`],
+          args: [this.walletClient?.account?.address as `0x${string}`],
         });
 
         if (adminBalance < totalAmountRequired) {
@@ -215,22 +208,22 @@ export class Dividends {
         dividendPreResult.map((dpr) => dpr.address),
         dividendPreResult.map((dpr) => parseUnits(dpr.amount, 0)), // we parse amount to 1 decimals, we assume that service will return amount in adjusted decimals
       ],
-      account: this.account,
+      account: this.walletClient?.account,
     });
 
     // send tx
     let tx: string | undefined = undefined;
-    if (this.account && this.walletClient) {
+    if (this.walletClient && this.walletClient.account) {
       tx = await this.walletClient.writeContract({
         ...request,
-        account: this.account,
+        account: this.walletClient?.account,
       });
     }
 
     return {
       txHash: tx,
       txUnsigned: request,
-      type: this.isPrivateKey ? "signed" : "unsigned",
+      type: "signed",
       dividendPortion: dividendPreResult,
     };
   }

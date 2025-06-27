@@ -57,3 +57,21 @@ export interface DistibuteDividendOutOnChain {
   txUnsigned?: any;
   dividendPortion: AddressAmount[];
 }
+
+export enum SupportedChain {
+  ETHEREUM_MAINNET = "ethereum-mainnet",
+  ETHEREUM_SEPOLIA = "ethereum-sepolia",
+  POLYGON_MAINNET = "polygon-mainnet",
+  POLYGON_MUMBAI = "polygon-mumbai",
+  BSC_MAINNET = "bsc-mainnet",
+  BSC_TESTNET = "bsc-testnet",
+  ARBITRUM_MAINNET = "arbitrum-mainnet",
+  ARBITRUM_SEPOLIA = "arbitrum-sepolia",
+  OPTIMISM_MAINNET = "optimism-mainnet",
+  OPTIMISM_SEPOLIA = "optimism-sepolia",
+  BASE_MAINNET = "base-mainnet",
+  BASE_SEPOLIA = "base-sepolia",
+  BERACHAIN_MAINNET = "berachain-mainnet",
+  BERACHAIN_TESTNET = "berachain-testnet",
+  ANVIL = "anvil",
+}
