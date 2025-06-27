@@ -143,6 +143,14 @@ export type DeleteUserRequest =
 export interface DeleteUserResponse {
   message: string;
 }
+
+// Get All Users Types
+export interface GetAllUsersResponse {
+  externalId: string[];
+  phoneNumber: string[];
+  email: string[];
+}
+
 // Project Types
 export interface Project {
   id: string;
@@ -174,18 +182,23 @@ export type ChainName =
   | "LISK"
   | "BNB"
   | "BERACHAIN"
-  | "POLYGON";
+  | "POLYGON"
+  | "BERACHAIN_TESTNET"
+  | "POLYGON_TESTNET";
+
 
 export type TokenSymbol =
   | "USDC"
   | "USDT"
+  | "DYU"
   | "ETH"
   | "BTC"
   | "WBERA"
   | "USDC.e"
   | "LSK"
   | "BNB"
-  | "MATIC";
+  | "MATIC"
+  | "SAIL";
 
 export interface Balance {
   amount: number;
@@ -235,6 +248,28 @@ export interface Transaction {
   token: string;
   recipient_address: string;
   created_at: string;
+}
+
+export interface TransactionHistory {
+  id: string;
+  userId: string;
+  transactionHash: string;
+  chain: string;
+  token: string;
+  currency?: string;
+  amount: number;
+  recipientAddress: string;
+  createdAt: string;
+}
+
+export interface TransactionHistoryResponse {
+  transactions: TransactionHistory[];
+  pagination: {
+    total: number;
+    pages: number;
+    currentPage: number;
+    perPage: number;
+  };
 }
 
 // Transaction Fee Types
@@ -450,31 +485,54 @@ export enum Platform {
 }
 
 // Redirect URL Registration
-export type RegisterRedirectUrlRequest =
-  | {
-      url: string;
-      email: string;
-      otpCode: string;
-      platform: Platform;
-      phoneNumber?: never;
-    }
-  | {
-      url: string;
-      phoneNumber: string;
-      otpCode: string;
-      platform: Platform;
-      email?: never;
-    };
+export interface RegisterRedirectUrlRequest {
+  url?: string;
+  phoneNumber?: string;
+  telegram_url?: string;
+  mobile_url?: string;
+  email?: string;
+  otpCode: string;
+  project_api_key: string;
+}
 
 export interface RegisterRedirectUrlResponse {
   message: string;
   data: {
     url: string;
+    telegram_url?: string;
+    mobile_url?: string;
     project_api_key: string;
     createdAt: Date;
     updatedAt: Date;
-    platform: Platform;
   };
+}
+
+// Redirect Link Models
+export interface RequestLinkRedirect {
+  url: string;
+  telegram_url?: string;
+  mobile_url?: string;
+  project_api_key: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface SendLinkRedirect {
+  url: string;
+  telegram_url?: string;
+  mobile_url?: string;
+  project_api_key: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface GetRedirectLinksResponse {
+  sendLinkRedirect: SendLinkRedirect | null;
+  requestRedirectLink: RequestLinkRedirect | null;
+}
+
+export interface GetRedirectLinksRequest {
+  project_api_key: string;
 }
 
 // Payment Request Creation

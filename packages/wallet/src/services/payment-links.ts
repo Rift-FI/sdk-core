@@ -15,6 +15,9 @@ import {
   SendOpenPaymentRequest,
   RegisterRedirectUrlRequest,
   RegisterRedirectUrlResponse,
+  GetAllUsersResponse,
+  GetRedirectLinksRequest,
+  GetRedirectLinksResponse,
 } from "../types";
 
 export class PaymentLinksService extends BaseService {
@@ -143,7 +146,7 @@ export class PaymentLinksService extends BaseService {
   ): Promise<RegisterRedirectUrlResponse> {
     return this.authenticatedRequest<RegisterRedirectUrlResponse>({
       method: "POST",
-      url: "/payment-links/register-request-link-redirect-url",
+      url: "/project/register-request-link-redirect-url",
       data: request,
     });
   }
@@ -153,7 +156,24 @@ export class PaymentLinksService extends BaseService {
   ): Promise<RegisterRedirectUrlResponse> {
     return this.authenticatedRequest<RegisterRedirectUrlResponse>({
       method: "POST",
-      url: "/payment-links/register-send-link-redirect-url",
+      url: "/project/register-send-link-redirect-url",
+      data: request,
+    });
+  }
+
+  async getAllUsers(): Promise<GetAllUsersResponse> {
+    return this.authenticatedRequest<GetAllUsersResponse>({
+      method: "GET",
+      url: "/user/all",
+    });
+  }
+
+  async getRedirectLinks(
+    request: GetRedirectLinksRequest
+  ): Promise<GetRedirectLinksResponse> {
+    return this.authenticatedRequest<GetRedirectLinksResponse>({
+      method: "POST",
+      url: "/project/get-redirect-links",
       data: request,
     });
   }
