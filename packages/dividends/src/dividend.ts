@@ -238,6 +238,100 @@ export class Dividends {
     return result as string;
   }
 
+  // Fee Management Methods
+
+  /**
+   * Set the fee percentage for dividend distributions
+   * @param dividendContractAddress Address of the dividend contract
+   * @param feePercentage Fee percentage in basis points (e.g., 250 = 2.5%)
+   * @returns Transaction hash if signed, transaction object if unsigned
+   */
+  async setFeePercentage(
+    dividendContractAddress: string,
+    feePercentage: number
+  ): Promise<{
+    txHash?: string;
+    txUnsigned?: any;
+    type: "signed" | "unsigned";
+  }> {
+    const { request } = await this.publicClient.simulateContract({
+      abi: DividendABI,
+      address: dividendContractAddress as `0x${string}`,
+      functionName: "setFeePercentage",
+      args: [BigInt(feePercentage)],
+      account: this.walletClient?.account,
+    });
+
+    let tx: string | undefined = undefined;
+    if (this.walletClient && this.walletClient.account) {
+      tx = await this.walletClient.writeContract({
+        ...request,
+        account: this.walletClient.account,
+      });
+    }
+
+    return {
+      txHash: tx,
+      txUnsigned: request,
+      type: tx ? "signed" : "unsigned",
+    };
+  }
+
+  /**
+   * Set the fee address for dividend distributions
+   * @param dividendContractAddress Address of the dividend contract
+   * @param feeAddress Address to receive fees
+   * @returns Transaction hash if signed, transaction object if unsigned
+   */
+  async setFeeAddress(
+    dividendContractAddress: string,
+    feeAddress: string
+  ): Promise<{
+    txHash?: string;
+    txUnsigned?: any;
+    type: "signed" | "unsigned";
+  }> {
+    const { request } = await this.publicClient.simulateContract({
+      abi: DividendABI,
+      address: dividendContractAddress as `0x${string}`,
+      functionName: "setFeeAddress",
+      args: [feeAddress as `0x${string}`],
+      account: this.walletClient?.account,
+    });
+
+    let tx: string | undefined = undefined;
+    if (this.walletClient && this.walletClient.account) {
+      tx = await this.walletClient.writeContract({
+        ...request,
+        account: this.walletClient.account,
+      });
+    }
+
+    return {
+      txHash: tx,
+      txUnsigned: request,
+      type: tx ? "signed" : "unsigned",
+    };
+  }
+
+  /**
+   * Get the current fee configuration
+   * @param dividendContractAddress Address of the dividend contract
+   * @returns Fee percentage (in basis points) and fee address
+   */
+  async getFeeConfiguration(
+    dividendContractAddress: string
+  ): Promise<{ feePercentage: bigint; feeAddress: string }> {
+    const result = await this.publicClient.readContract({
+      abi: DividendABI,
+      address: dividendContractAddress as `0x${string}`,
+      functionName: "getFeeConfiguration",
+    });
+
+    const [feePercentage, feeAddress] = result as [bigint, string];
+    return { feePercentage, feeAddress };
+  }
+
   private async setupToken(tokenAddress: string, stableCoinAddress: string) {
     const tokenContract = {
       abi: ERC20Abi,

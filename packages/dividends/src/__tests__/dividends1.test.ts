@@ -1009,4 +1009,90 @@ describe("Dividends", () => {
       });
     });
   });
+
+  // Test coverage for fee management methods
+  describe("Fee Management Methods", () => {
+    let wallet: Wallet;
+    let dividend: Dividends;
+
+    beforeEach(() => {
+      wallet = new Wallet(anvilAdminPK);
+      dividend = new Dividends(SupportedChain.ANVIL, wallet, anvilClient, {
+        id: 31337,
+        rpcUrl: anvilRpcUrl,
+      });
+    });
+
+    it("should get initial fee configuration", async () => {
+      const feeConfig = await dividend.getFeeConfiguration(dividendAddress);
+
+      expect(feeConfig).toBeDefined();
+      expect(typeof feeConfig.feePercentage).toBe("bigint");
+      expect(typeof feeConfig.feeAddress).toBe("string");
+      expect(feeConfig.feeAddress.startsWith("0x")).toBe(true);
+      expect(feeConfig.feeAddress).toHaveLength(42);
+    });
+
+    it("should set fee percentage successfully", async () => {
+      const newFeePercentage = 500; // 5% in basis points
+
+      const result = await dividend.setFeePercentage(
+        dividendAddress,
+        newFeePercentage
+      );
+
+      expect(result.type).toBe("signed");
+      expect(result.txHash).toBeDefined();
+
+      // Verify the transaction
+      const txReceipt = await anvilClient.getTransactionReceipt({
+        hash: result.txHash as `0x${string}`,
+      });
+      expect(txReceipt?.status).toBe("success");
+
+      // Verify the fee percentage was updated
+      const updatedConfig = await dividend.getFeeConfiguration(dividendAddress);
+      expect(updatedConfig.feePercentage).toBe(BigInt(newFeePercentage));
+    });
+
+    it("should set fee address successfully", async () => {
+      const newFeeAddress = anvilAnotherAccount.address;
+
+      const result = await dividend.setFeeAddress(
+        dividendAddress,
+        newFeeAddress
+      );
+
+      expect(result.type).toBe("signed");
+      expect(result.txHash).toBeDefined();
+
+      // Verify the transaction
+      const txReceipt = await anvilClient.getTransactionReceipt({
+        hash: result.txHash as `0x${string}`,
+      });
+      expect(txReceipt?.status).toBe("success");
+
+      // Verify the fee address was updated
+      const updatedConfig = await dividend.getFeeConfiguration(dividendAddress);
+      expect(updatedConfig.feeAddress.toLowerCase()).toBe(
+        newFeeAddress.toLowerCase()
+      );
+    });
+
+    it("should handle invalid fee percentage", async () => {
+      const invalidFeePercentage = 20000; // 200% - should fail
+
+      await expect(async () => {
+        await dividend.setFeePercentage(dividendAddress, invalidFeePercentage);
+      }).rejects.toThrow();
+    });
+
+    it("should handle invalid fee address", async () => {
+      const invalidFeeAddress = "0x0000000000000000000000000000000000000000";
+
+      await expect(async () => {
+        await dividend.setFeeAddress(dividendAddress, invalidFeeAddress);
+      }).rejects.toThrow();
+    });
+  });
 });
