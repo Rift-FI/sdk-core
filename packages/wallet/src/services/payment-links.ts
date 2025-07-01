@@ -110,7 +110,7 @@ export class PaymentLinksService extends BaseService {
   ): Promise<GetPaymentRequestsResult> {
     return this.authenticatedRequest<GetPaymentRequestsResult>({
       method: "GET",
-      url: "/payment-links/list-payments-requests",
+      url: "/payment-links/list-payment-requests",
       params: request,
     });
   }

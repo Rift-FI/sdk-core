@@ -23,9 +23,21 @@ const main = async () => {
     // } catch (error) {
     //     console.log(error);
     // }
+
+    // Test listPaymentRequests method
+    console.log("Testing listPaymentRequests...");
+    const paymentRequestsResponse =
+      await sphere.paymentLinks.listPaymentRequests();
+    console.log("Payment Requests:", paymentRequestsResponse);
+
+    // Test listSendLinks method
+    console.log("Testing listSendLinks...");
+    const sendLinksResponse = await sphere.paymentLinks.listSendLinks();
+    console.log("Send Links:", sendLinksResponse);
+
     //get user tokens
-    const response = await sphere.assets.getUserTokens();
-    console.log(response);
+    // const response = await sphere.assets.getUserTokens();
+    // console.log(response);
   } catch (error) {
     console.log(error);
   }
