@@ -4,7 +4,6 @@ import {
   TransactionResponse,
   TransactionHistoryRequest,
   Transaction,
-  TransactionHistoryResponse,
   TransactionFeeRequest,
   TransactionFeeResponse,
 } from "../types";
@@ -20,8 +19,8 @@ export class TransactionService extends BaseService {
 
   async getHistory(
     request?: TransactionHistoryRequest
-  ): Promise<TransactionHistoryResponse> {
-    return this.authenticatedRequest<TransactionHistoryResponse>({
+  ): Promise<Transaction[]> {
+    return this.authenticatedRequest<Transaction[]>({
       method: "POST",
       url: "/transaction/history",
       params: request,
