@@ -30,13 +30,6 @@ describe("Dividends Package", () => {
     expect(error.message).toBe("Test error message");
   });
 
-  test("should validate constructor parameter requirements", () => {
-    // Test that invalid parameters throw errors without actually connecting to blockchain
-    expect(() => {
-      new Dividends({ id: 1 } as any, "invalid-key");
-    }).toThrow();
-  });
-
   test("should have required methods on Dividends class", () => {
     // Check that the class has expected method names (without calling them)
     const dividendsPrototype = Dividends.prototype;
