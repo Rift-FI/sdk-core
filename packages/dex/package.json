@@ -1,6 +1,10 @@
 {
   "name": "@stratosphere-network/dex",
+<<<<<<< HEAD
+  "version": "2.0.0",
+=======
   "version": "1.0.0",
+>>>>>>> 100f9476288c6ad9f83dab9cb9d1c82328516195
   "description": "Stratosphere Network DEX",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",

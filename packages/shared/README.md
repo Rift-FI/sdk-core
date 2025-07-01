@@ -1,4 +1,4 @@
-# @stratosphere/shared
+# @stratosphere-network/shared
 
 Shared utilities, types, and common functionality used across all StratoSphere SDK modules.
 
