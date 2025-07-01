@@ -1870,7 +1870,6 @@ interface ProgressUpdate {
 ## Summary
 
 Sphere M-Pesa Onramp provides a powerful, easy-to-use solution for converting Kenyan Shillings to cryptocurrency. With comprehensive error handling, real-time monitoring, and flexible integration options, it's perfect for any application serving Kenyan users.
-The provided code snippet demonstrates how to integrate Sphere M-Pesa Onramp into a Kenyan cryptocurrency.
 
 ### Key Benefits
 

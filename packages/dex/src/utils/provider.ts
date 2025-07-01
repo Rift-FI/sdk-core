@@ -1,7 +1,7 @@
-import { JsonRpcProvider, Wallet } from 'ethers';
-import { SupportedChain } from '../types';
+import { ethers, JsonRpcProvider, Wallet } from 'ethers';
+import { SupportedChain, CHAIN_CONFIGS, ViemPublicClientChains } from '../types/chains';
 import { createPublicClient, http, PublicClient } from 'viem';
-import { CHAIN_CONFIGS, ViemPublicClientChains } from '../constants';
+import { mainnet } from 'viem/chains'
 
 /**
  * Creates a JSON RPC provider for the specified chain
@@ -10,7 +10,6 @@ import { CHAIN_CONFIGS, ViemPublicClientChains } from '../constants';
  */
 export function createProvider(chain: SupportedChain): JsonRpcProvider {
   const chainConfig = CHAIN_CONFIGS[chain];
-  
   if (!chainConfig) {
     throw new Error(`Unsupported chain: ${chain}`);
   }
