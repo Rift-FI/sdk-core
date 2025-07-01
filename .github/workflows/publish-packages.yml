@@ -16,6 +16,7 @@ on:
           - token
           - dividends
           - dex
+          - signature
       version:
         description: "Version bump type"
         required: true

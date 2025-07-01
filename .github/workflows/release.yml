@@ -11,9 +11,14 @@ on:
         required: true
         type: choice
         options:
-          - wallet
+          - all
           - core
+          - wallet
           - shared
+          - token
+          - dividends
+          - dex
+          - signature
       version:
         description: "Version to release"
         required: true
