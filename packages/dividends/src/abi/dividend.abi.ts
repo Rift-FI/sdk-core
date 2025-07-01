@@ -1,612 +1,538 @@
 export const DividendABI = [
   {
-    inputs: [
-      {
-        internalType: "address",
-        name: "target",
-        type: "address",
-      },
-    ],
-    name: "AddressEmptyCode",
-    type: "error",
-  },
-  {
-    inputs: [
-      {
-        internalType: "address",
-        name: "implementation",
-        type: "address",
-      },
-    ],
-    name: "ERC1967InvalidImplementation",
-    type: "error",
-  },
-  {
-    inputs: [],
-    name: "ERC1967NonPayable",
-    type: "error",
-  },
-  {
-    inputs: [],
-    name: "FailedCall",
-    type: "error",
-  },
-  {
-    inputs: [],
-    name: "InvalidInitialization",
-    type: "error",
-  },
-  {
-    inputs: [],
-    name: "NotInitializing",
-    type: "error",
-  },
-  {
-    inputs: [
-      {
-        internalType: "address",
-        name: "owner",
-        type: "address",
-      },
-    ],
-    name: "OwnableInvalidOwner",
-    type: "error",
-  },
-  {
-    inputs: [
-      {
-        internalType: "address",
-        name: "account",
-        type: "address",
-      },
-    ],
-    name: "OwnableUnauthorizedAccount",
-    type: "error",
-  },
-  {
-    inputs: [],
-    name: "ReentrancyGuardReentrantCall",
-    type: "error",
-  },
-  {
-    inputs: [
-      {
-        internalType: "address",
-        name: "token",
-        type: "address",
-      },
-    ],
-    name: "SafeERC20FailedOperation",
-    type: "error",
-  },
-  {
-    inputs: [],
-    name: "UUPSUnauthorizedCallContext",
-    type: "error",
-  },
-  {
-    inputs: [
-      {
-        internalType: "bytes32",
-        name: "slot",
-        type: "bytes32",
-      },
-    ],
-    name: "UUPSUnsupportedProxiableUUID",
-    type: "error",
-  },
-  {
-    anonymous: false,
-    inputs: [
-      {
-        indexed: true,
-        internalType: "address",
-        name: "token",
-        type: "address",
-      },
-      {
-        indexed: false,
-        internalType: "uint256",
-        name: "batchIndex",
-        type: "uint256",
-      },
-      {
-        indexed: false,
-        internalType: "uint256",
-        name: "recipientsInBatch",
-        type: "uint256",
-      },
-      {
-        indexed: false,
-        internalType: "uint256",
-        name: "amountPerBatch",
-        type: "uint256",
-      },
-    ],
-    name: "BatchTransferCompleted",
-    type: "event",
-  },
-  {
-    anonymous: false,
-    inputs: [
-      {
-        indexed: false,
-        internalType: "uint256",
-        name: "dividendId",
-        type: "uint256",
-      },
-      {
-        indexed: true,
-        internalType: "address",
-        name: "token",
-        type: "address",
-      },
-      {
-        indexed: false,
-        internalType: "string",
-        name: "dividendName",
-        type: "string",
-      },
-      {
-        indexed: false,
-        internalType: "uint256",
-        name: "totalAmount",
-        type: "uint256",
-      },
-      {
-        indexed: false,
-        internalType: "uint256",
-        name: "recipientCount",
-        type: "uint256",
-      },
-      {
-        indexed: false,
-        internalType: "uint256",
-        name: "timestamp",
-        type: "uint256",
-      },
-    ],
-    name: "DividendDistributed",
-    type: "event",
-  },
-  {
-    anonymous: false,
-    inputs: [
-      {
-        indexed: true,
-        internalType: "address",
-        name: "token",
-        type: "address",
-      },
-      {
-        indexed: true,
-        internalType: "address",
-        name: "to",
-        type: "address",
-      },
-      {
-        indexed: false,
-        internalType: "uint256",
-        name: "amount",
-        type: "uint256",
-      },
-    ],
-    name: "EmergencyWithdrawal",
-    type: "event",
-  },
-  {
-    anonymous: false,
-    inputs: [
-      {
-        indexed: false,
-        internalType: "uint64",
-        name: "version",
-        type: "uint64",
-      },
-    ],
-    name: "Initialized",
-    type: "event",
-  },
-  {
-    anonymous: false,
-    inputs: [
-      {
-        indexed: true,
-        internalType: "address",
-        name: "previousOwner",
-        type: "address",
-      },
-      {
-        indexed: true,
-        internalType: "address",
-        name: "newOwner",
-        type: "address",
-      },
-    ],
-    name: "OwnershipTransferred",
-    type: "event",
-  },
-  {
-    anonymous: false,
-    inputs: [
-      {
-        indexed: true,
-        internalType: "address",
-        name: "implementation",
-        type: "address",
-      },
-    ],
-    name: "Upgraded",
-    type: "event",
-  },
-  {
-    inputs: [],
-    name: "UPGRADE_INTERFACE_VERSION",
-    outputs: [
-      {
-        internalType: "string",
-        name: "",
-        type: "string",
-      },
-    ],
-    stateMutability: "view",
     type: "function",
+    name: "UPGRADE_INTERFACE_VERSION",
+    inputs: [],
+    outputs: [{ name: "", type: "string", internalType: "string" }],
+    stateMutability: "view",
   },
   {
+    type: "function",
+    name: "calculateFee",
+    inputs: [{ name: "totalAmount", type: "uint256", internalType: "uint256" }],
+    outputs: [{ name: "", type: "uint256", internalType: "uint256" }],
+    stateMutability: "view",
+  },
+  {
+    type: "function",
+    name: "distributeDividend",
     inputs: [
+      { name: "name", type: "string", internalType: "string" },
+      { name: "token", type: "address", internalType: "address" },
       {
-        internalType: "string",
-        name: "name",
-        type: "string",
-      },
-      {
-        internalType: "address",
-        name: "token",
-        type: "address",
-      },
-      {
-        internalType: "address[]",
         name: "recipients",
         type: "address[]",
+        internalType: "address[]",
       },
-      {
-        internalType: "uint256[]",
-        name: "amounts",
-        type: "uint256[]",
-      },
+      { name: "amounts", type: "uint256[]", internalType: "uint256[]" },
     ],
-    name: "distributeDividend",
     outputs: [],
     stateMutability: "nonpayable",
-    type: "function",
   },
   {
+    type: "function",
+    name: "distributeEqualDividend",
     inputs: [
+      { name: "name", type: "string", internalType: "string" },
+      { name: "token", type: "address", internalType: "address" },
       {
-        internalType: "string",
-        name: "name",
-        type: "string",
-      },
-      {
-        internalType: "address",
-        name: "token",
-        type: "address",
-      },
-      {
-        internalType: "address[]",
         name: "recipients",
         type: "address[]",
+        internalType: "address[]",
       },
       {
-        internalType: "uint256",
         name: "amountPerRecipient",
         type: "uint256",
+        internalType: "uint256",
       },
     ],
-    name: "distributeEqualDividend",
     outputs: [],
     stateMutability: "nonpayable",
-    type: "function",
   },
   {
-    inputs: [],
+    type: "function",
     name: "dividendCounter",
-    outputs: [
-      {
-        internalType: "uint256",
-        name: "",
-        type: "uint256",
-      },
-    ],
+    inputs: [],
+    outputs: [{ name: "", type: "uint256", internalType: "uint256" }],
     stateMutability: "view",
-    type: "function",
   },
   {
-    inputs: [
-      {
-        internalType: "uint256",
-        name: "",
-        type: "uint256",
-      },
-    ],
+    type: "function",
     name: "dividendHistory",
+    inputs: [{ name: "", type: "uint256", internalType: "uint256" }],
     outputs: [
+      { name: "name", type: "string", internalType: "string" },
+      { name: "token", type: "address", internalType: "address" },
+      { name: "totalAmount", type: "uint256", internalType: "uint256" },
+      { name: "feeAmount", type: "uint256", internalType: "uint256" },
+      { name: "netAmount", type: "uint256", internalType: "uint256" },
       {
-        internalType: "string",
-        name: "name",
-        type: "string",
-      },
-      {
-        internalType: "address",
-        name: "token",
-        type: "address",
-      },
-      {
-        internalType: "uint256",
-        name: "totalAmount",
-        type: "uint256",
-      },
-      {
-        internalType: "uint256",
         name: "recipientCount",
         type: "uint256",
-      },
-      {
         internalType: "uint256",
-        name: "timestamp",
-        type: "uint256",
       },
-      {
-        internalType: "bool",
-        name: "completed",
-        type: "bool",
-      },
+      { name: "timestamp", type: "uint256", internalType: "uint256" },
+      { name: "completed", type: "bool", internalType: "bool" },
     ],
     stateMutability: "view",
-    type: "function",
   },
   {
-    inputs: [
-      {
-        internalType: "address",
-        name: "token",
-        type: "address",
-      },
-      {
-        internalType: "address",
-        name: "to",
-        type: "address",
-      },
-      {
-        internalType: "uint256",
-        name: "amount",
-        type: "uint256",
-      },
-    ],
+    type: "function",
     name: "emergencyWithdraw",
+    inputs: [
+      { name: "token", type: "address", internalType: "address" },
+      { name: "to", type: "address", internalType: "address" },
+      { name: "amount", type: "uint256", internalType: "uint256" },
+    ],
     outputs: [],
     stateMutability: "nonpayable",
-    type: "function",
   },
   {
-    inputs: [
-      {
-        internalType: "uint256",
-        name: "dividendId",
-        type: "uint256",
-      },
-    ],
+    type: "function",
+    name: "feeAddress",
+    inputs: [],
+    outputs: [{ name: "", type: "address", internalType: "address" }],
+    stateMutability: "view",
+  },
+  {
+    type: "function",
+    name: "feePercentage",
+    inputs: [],
+    outputs: [{ name: "", type: "uint256", internalType: "uint256" }],
+    stateMutability: "view",
+  },
+  {
+    type: "function",
     name: "getDividendInfo",
+    inputs: [{ name: "dividendId", type: "uint256", internalType: "uint256" }],
     outputs: [
       {
-        components: [
-          {
-            internalType: "string",
-            name: "name",
-            type: "string",
-          },
-          {
-            internalType: "address",
-            name: "token",
-            type: "address",
-          },
-          {
-            internalType: "uint256",
-            name: "totalAmount",
-            type: "uint256",
-          },
-          {
-            internalType: "uint256",
-            name: "recipientCount",
-            type: "uint256",
-          },
-          {
-            internalType: "uint256",
-            name: "timestamp",
-            type: "uint256",
-          },
-          {
-            internalType: "bool",
-            name: "completed",
-            type: "bool",
-          },
-        ],
-        internalType: "struct Dividend.DividendInfo",
         name: "",
         type: "tuple",
+        internalType: "struct Dividend.DividendInfo",
+        components: [
+          { name: "name", type: "string", internalType: "string" },
+          { name: "token", type: "address", internalType: "address" },
+          {
+            name: "totalAmount",
+            type: "uint256",
+            internalType: "uint256",
+          },
+          {
+            name: "feeAmount",
+            type: "uint256",
+            internalType: "uint256",
+          },
+          {
+            name: "netAmount",
+            type: "uint256",
+            internalType: "uint256",
+          },
+          {
+            name: "recipientCount",
+            type: "uint256",
+            internalType: "uint256",
+          },
+          {
+            name: "timestamp",
+            type: "uint256",
+            internalType: "uint256",
+          },
+          { name: "completed", type: "bool", internalType: "bool" },
+        ],
       },
     ],
     stateMutability: "view",
-    type: "function",
   },
   {
-    inputs: [
-      {
-        internalType: "address",
-        name: "token",
-        type: "address",
-      },
+    type: "function",
+    name: "getFeeConfiguration",
+    inputs: [],
+    outputs: [
+      { name: "", type: "uint256", internalType: "uint256" },
+      { name: "", type: "address", internalType: "address" },
     ],
+    stateMutability: "view",
+  },
+  {
+    type: "function",
     name: "getTokenBalance",
-    outputs: [
-      {
-        internalType: "uint256",
-        name: "",
-        type: "uint256",
-      },
-    ],
+    inputs: [{ name: "token", type: "address", internalType: "address" }],
+    outputs: [{ name: "", type: "uint256", internalType: "uint256" }],
     stateMutability: "view",
-    type: "function",
   },
   {
-    inputs: [
-      {
-        internalType: "uint256",
-        name: "",
-        type: "uint256",
-      },
-      {
-        internalType: "address",
-        name: "",
-        type: "address",
-      },
-    ],
-    name: "hasReceivedDividend",
-    outputs: [
-      {
-        internalType: "bool",
-        name: "",
-        type: "bool",
-      },
-    ],
-    stateMutability: "view",
     type: "function",
-  },
-  {
-    inputs: [
-      {
-        internalType: "uint256",
-        name: "dividendId",
-        type: "uint256",
-      },
-      {
-        internalType: "address",
-        name: "recipient",
-        type: "address",
-      },
-    ],
-    name: "hasReceivedDividendById",
-    outputs: [
-      {
-        internalType: "bool",
-        name: "",
-        type: "bool",
-      },
-    ],
-    stateMutability: "view",
-    type: "function",
-  },
-  {
-    inputs: [
-      {
-        internalType: "uint256",
-        name: "_maxBatchSize",
-        type: "uint256",
-      },
-    ],
     name: "initialize",
-    outputs: [],
-    stateMutability: "nonpayable",
-    type: "function",
-  },
-  {
-    inputs: [],
-    name: "maxBatchSize",
-    outputs: [
-      {
-        internalType: "uint256",
-        name: "",
-        type: "uint256",
-      },
-    ],
-    stateMutability: "view",
-    type: "function",
-  },
-  {
-    inputs: [],
-    name: "owner",
-    outputs: [
-      {
-        internalType: "address",
-        name: "",
-        type: "address",
-      },
-    ],
-    stateMutability: "view",
-    type: "function",
-  },
-  {
-    inputs: [],
-    name: "proxiableUUID",
-    outputs: [
-      {
-        internalType: "bytes32",
-        name: "",
-        type: "bytes32",
-      },
-    ],
-    stateMutability: "view",
-    type: "function",
-  },
-  {
-    inputs: [],
-    name: "renounceOwnership",
-    outputs: [],
-    stateMutability: "nonpayable",
-    type: "function",
-  },
-  {
     inputs: [
       {
-        internalType: "uint256",
         name: "_maxBatchSize",
         type: "uint256",
+        internalType: "uint256",
+      },
+      {
+        name: "_feePercentage",
+        type: "uint256",
+        internalType: "uint256",
+      },
+      { name: "_feeAddress", type: "address", internalType: "address" },
+    ],
+    outputs: [],
+    stateMutability: "nonpayable",
+  },
+  {
+    type: "function",
+    name: "maxBatchSize",
+    inputs: [],
+    outputs: [{ name: "", type: "uint256", internalType: "uint256" }],
+    stateMutability: "view",
+  },
+  {
+    type: "function",
+    name: "owner",
+    inputs: [],
+    outputs: [{ name: "", type: "address", internalType: "address" }],
+    stateMutability: "view",
+  },
+  {
+    type: "function",
+    name: "proxiableUUID",
+    inputs: [],
+    outputs: [{ name: "", type: "bytes32", internalType: "bytes32" }],
+    stateMutability: "view",
+  },
+  {
+    type: "function",
+    name: "renounceOwnership",
+    inputs: [],
+    outputs: [],
+    stateMutability: "nonpayable",
+  },
+  {
+    type: "function",
+    name: "setFeeAddress",
+    inputs: [{ name: "_feeAddress", type: "address", internalType: "address" }],
+    outputs: [],
+    stateMutability: "nonpayable",
+  },
+  {
+    type: "function",
+    name: "setFeePercentage",
+    inputs: [
+      {
+        name: "_feePercentage",
+        type: "uint256",
+        internalType: "uint256",
       },
     ],
+    outputs: [],
+    stateMutability: "nonpayable",
+  },
+  {
+    type: "function",
     name: "setMaxBatchSize",
-    outputs: [],
-    stateMutability: "nonpayable",
-    type: "function",
-  },
-  {
     inputs: [
       {
-        internalType: "address",
-        name: "newOwner",
-        type: "address",
+        name: "_maxBatchSize",
+        type: "uint256",
+        internalType: "uint256",
       },
     ],
-    name: "transferOwnership",
     outputs: [],
     stateMutability: "nonpayable",
-    type: "function",
   },
   {
+    type: "function",
+    name: "transferOwnership",
+    inputs: [{ name: "newOwner", type: "address", internalType: "address" }],
+    outputs: [],
+    stateMutability: "nonpayable",
+  },
+  {
+    type: "function",
+    name: "upgradeToAndCall",
     inputs: [
       {
-        internalType: "address",
         name: "newImplementation",
         type: "address",
+        internalType: "address",
       },
-      {
-        internalType: "bytes",
-        name: "data",
-        type: "bytes",
-      },
+      { name: "data", type: "bytes", internalType: "bytes" },
     ],
-    name: "upgradeToAndCall",
     outputs: [],
     stateMutability: "payable",
-    type: "function",
+  },
+  {
+    type: "event",
+    name: "BatchTransferCompleted",
+    inputs: [
+      {
+        name: "token",
+        type: "address",
+        indexed: true,
+        internalType: "address",
+      },
+      {
+        name: "batchIndex",
+        type: "uint256",
+        indexed: false,
+        internalType: "uint256",
+      },
+      {
+        name: "recipientsInBatch",
+        type: "uint256",
+        indexed: false,
+        internalType: "uint256",
+      },
+      {
+        name: "amountPerBatch",
+        type: "uint256",
+        indexed: false,
+        internalType: "uint256",
+      },
+    ],
+    anonymous: false,
+  },
+  {
+    type: "event",
+    name: "DividendDistributed",
+    inputs: [
+      {
+        name: "dividendId",
+        type: "uint256",
+        indexed: false,
+        internalType: "uint256",
+      },
+      {
+        name: "token",
+        type: "address",
+        indexed: true,
+        internalType: "address",
+      },
+      {
+        name: "dividendName",
+        type: "string",
+        indexed: false,
+        internalType: "string",
+      },
+      {
+        name: "totalAmount",
+        type: "uint256",
+        indexed: false,
+        internalType: "uint256",
+      },
+      {
+        name: "feeAmount",
+        type: "uint256",
+        indexed: false,
+        internalType: "uint256",
+      },
+      {
+        name: "netAmount",
+        type: "uint256",
+        indexed: false,
+        internalType: "uint256",
+      },
+      {
+        name: "recipientCount",
+        type: "uint256",
+        indexed: false,
+        internalType: "uint256",
+      },
+      {
+        name: "timestamp",
+        type: "uint256",
+        indexed: false,
+        internalType: "uint256",
+      },
+    ],
+    anonymous: false,
+  },
+  {
+    type: "event",
+    name: "EmergencyWithdrawal",
+    inputs: [
+      {
+        name: "token",
+        type: "address",
+        indexed: true,
+        internalType: "address",
+      },
+      {
+        name: "to",
+        type: "address",
+        indexed: true,
+        internalType: "address",
+      },
+      {
+        name: "amount",
+        type: "uint256",
+        indexed: false,
+        internalType: "uint256",
+      },
+    ],
+    anonymous: false,
+  },
+  {
+    type: "event",
+    name: "FeeAddressUpdated",
+    inputs: [
+      {
+        name: "oldFeeAddress",
+        type: "address",
+        indexed: true,
+        internalType: "address",
+      },
+      {
+        name: "newFeeAddress",
+        type: "address",
+        indexed: true,
+        internalType: "address",
+      },
+    ],
+    anonymous: false,
+  },
+  {
+    type: "event",
+    name: "FeeCollected",
+    inputs: [
+      {
+        name: "dividendId",
+        type: "uint256",
+        indexed: false,
+        internalType: "uint256",
+      },
+      {
+        name: "token",
+        type: "address",
+        indexed: true,
+        internalType: "address",
+      },
+      {
+        name: "feeAddress",
+        type: "address",
+        indexed: true,
+        internalType: "address",
+      },
+      {
+        name: "feeAmount",
+        type: "uint256",
+        indexed: false,
+        internalType: "uint256",
+      },
+      {
+        name: "feePercentage",
+        type: "uint256",
+        indexed: false,
+        internalType: "uint256",
+      },
+    ],
+    anonymous: false,
+  },
+  {
+    type: "event",
+    name: "FeePercentageUpdated",
+    inputs: [
+      {
+        name: "oldFeePercentage",
+        type: "uint256",
+        indexed: false,
+        internalType: "uint256",
+      },
+      {
+        name: "newFeePercentage",
+        type: "uint256",
+        indexed: false,
+        internalType: "uint256",
+      },
+    ],
+    anonymous: false,
+  },
+  {
+    type: "event",
+    name: "Initialized",
+    inputs: [
+      {
+        name: "version",
+        type: "uint64",
+        indexed: false,
+        internalType: "uint64",
+      },
+    ],
+    anonymous: false,
+  },
+  {
+    type: "event",
+    name: "OwnershipTransferred",
+    inputs: [
+      {
+        name: "previousOwner",
+        type: "address",
+        indexed: true,
+        internalType: "address",
+      },
+      {
+        name: "newOwner",
+        type: "address",
+        indexed: true,
+        internalType: "address",
+      },
+    ],
+    anonymous: false,
+  },
+  {
+    type: "event",
+    name: "Upgraded",
+    inputs: [
+      {
+        name: "implementation",
+        type: "address",
+        indexed: true,
+        internalType: "address",
+      },
+    ],
+    anonymous: false,
+  },
+  {
+    type: "error",
+    name: "AddressEmptyCode",
+    inputs: [{ name: "target", type: "address", internalType: "address" }],
+  },
+  {
+    type: "error",
+    name: "ERC1967InvalidImplementation",
+    inputs: [
+      {
+        name: "implementation",
+        type: "address",
+        internalType: "address",
+      },
+    ],
+  },
+  { type: "error", name: "ERC1967NonPayable", inputs: [] },
+  { type: "error", name: "FailedCall", inputs: [] },
+  { type: "error", name: "InvalidInitialization", inputs: [] },
+  { type: "error", name: "NotInitializing", inputs: [] },
+  {
+    type: "error",
+    name: "OwnableInvalidOwner",
+    inputs: [{ name: "owner", type: "address", internalType: "address" }],
+  },
+  {
+    type: "error",
+    name: "OwnableUnauthorizedAccount",
+    inputs: [{ name: "account", type: "address", internalType: "address" }],
+  },
+  { type: "error", name: "ReentrancyGuardReentrantCall", inputs: [] },
+  {
+    type: "error",
+    name: "SafeERC20FailedOperation",
+    inputs: [{ name: "token", type: "address", internalType: "address" }],
+  },
+  { type: "error", name: "UUPSUnauthorizedCallContext", inputs: [] },
+  {
+    type: "error",
+    name: "UUPSUnsupportedProxiableUUID",
+    inputs: [{ name: "slot", type: "bytes32", internalType: "bytes32" }],
   },
 ];

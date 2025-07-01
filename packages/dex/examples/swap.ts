@@ -1,19 +1,13 @@
 import { SupportedChain } from "../../shared/src";
-import { createProvider, Dex, DexProvider } from "../src";
-import { MaxUint256, Wallet } from "ethers";
-import Sphere, { Environment } from "@stratosphere-network/wallet";
+import { Dex } from "../src";
+import { Wallet } from "ethers";
 
 async function main() {
   const privateKey = process.env.PRIVATE_KEY as string;
 
-
-  // console.log(signupWithPassword);
-  const provider = createProvider(SupportedChain.BERACHAIN_TESTNET);
-  const wallet = new Wallet(privateKey, provider);
-
   const dex = new Dex({
     chain: SupportedChain.BERACHAIN_TESTNET,
-    provider: DexProvider.SPHERE,
+    wallet: new Wallet(privateKey),
   });
 
   // Swap from COFFE to USDC
@@ -30,25 +24,18 @@ async function main() {
   // console.log(swap);
 
   // check if the token is approved
-  const isApproved = await dex.swap.checkApproval(swampFrom, wallet.address);
+  const isApproved = await dex.swap.checkApproval(swampFrom);
   console.log(`${swampFrom} is approved: ${isApproved}`);
 
   // approve the token if not approved
   if (!isApproved) {
-    const approveData = await dex.swap.approve(swampFrom, amount);
-    
-    // send the transaction
-    const tx = await wallet.sendTransaction(approveData);
-    console.log("Approve Transaction", tx);
+    const approved = await dex.swap.approve(swampFrom, amount);
+    console.log(`${swampFrom} approved: ${approved}`);
   }
 
-  // generate swap token transaction
-  const tx = await dex.swap.swap(swampFrom, swapTo, amount, wallet.address);
-
+  // swap the token
+  const tx = await dex.swap.swap(swampFrom, swapTo, amount);
   console.log("tx", tx);
-  // send the transaction
-  const txHash = await wallet.sendTransaction(tx);
-  console.log("txHash", txHash);
 }
 
 main().catch(console.error);

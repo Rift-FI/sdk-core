@@ -1,15 +1,15 @@
 import { SwapService } from "./services/swap";
-import { LiquidityService } from "./services/liquidity";
 import { Config } from "./types";
-import { createViemClient } from "./utils/provider";
+import { Wallet } from "ethers";
+import { createProvider, createViemClient } from "./utils/provider";
 
 export class Dex {
   private config: Config;
   private viemClient;
+  private wallet: Wallet;
 
   // Service instances
   public readonly swap: SwapService;
-  public readonly liquidity: LiquidityService;
 
   constructor(config: Config) {
     this.config = config;
@@ -17,20 +17,18 @@ export class Dex {
     // Initialize viem client
     this.viemClient = createViemClient(config.chain);
 
+    // If wallet missing provider, create one
+    this.wallet = config.wallet;
+    if (!this.wallet.provider) {
+      const provider = createProvider(this.config.chain);
+      this.wallet = this.wallet.connect(provider);
+    }
+
     // Initialize services
     this.swap = new SwapService(
       this.config.chain as any,
-      this.viemClient as any
-    );
-    
-    this.liquidity = new LiquidityService(
-      this.config.chain as any,
+      this.wallet,
       this.viemClient as any
     );
   }
 }
-
-// export types
-export * from "./types";
-export * from "./constants";
-export * from "./utils";

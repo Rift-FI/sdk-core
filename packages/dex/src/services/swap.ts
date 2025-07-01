@@ -1,4 +1,4 @@
-import { ethers } from "ethers";
+import { ethers, TransactionReceipt, Wallet } from "ethers";
 import {
   BigintIsh,
   Currency,
@@ -19,15 +19,17 @@ import { FeeAmount } from "@stratospherex/v3-sdk";
 import { hexToBigInt, parseAbi, PublicClient } from "viem";
 import { EstimatedSwap } from "../types";
 import { SMART_ROUTER_ADDRESS } from "../constants";
-import { SupportedChain, Tx } from "../types/chains";
-import { encodeFunctionData } from 'viem';
+import { SupportedChain } from "../types/chains";
+import { calculateGasMargin } from "../utils";
 
 export class SwapService {
+  private wallet: Wallet;
   private viemClient: PublicClient;
   private chain: SupportedChain;
 
-  constructor(chain: SupportedChain, viemClient: PublicClient) {
+  constructor(chain: SupportedChain, wallet: Wallet, viemClient: PublicClient) {
     this.chain = chain;
+    this.wallet = wallet;
     this.viemClient = viemClient;
   }
 
@@ -92,11 +94,9 @@ export class SwapService {
   }
 
   // Check approval for a token
-  async checkApproval(
-    tokenAddress: string,
-    walletAddress: string
-  ): Promise<boolean> {
+  async checkApproval(tokenAddress: string): Promise<boolean> {
     const token = await this.getToken(tokenAddress);
+    const walletAddress = await this.wallet.getAddress();
     const spender = SMART_ROUTER_ADDRESS[this.chain];
     const allowance = await this.viemClient.readContract({
       address: token.address,
@@ -110,34 +110,37 @@ export class SwapService {
     return allowance > 0;
   }
 
-  // generate approve token transaction
-  async approve(tokenAddress: string, amount: string): Promise<any> {
+  // Approve a token
+  async approve(tokenAddress: string, amount: string): Promise<boolean> {
     const token = await this.getToken(tokenAddress);
     const spender = SMART_ROUTER_ADDRESS[this.chain];
+    const isApproved = await this.checkApproval(tokenAddress);
+    if (isApproved) {
+      return true;
+    }
 
-    const data = encodeFunctionData({
-      abi: parseAbi([
-        "function approve(address, uint256) public returns (bool)",
-      ]),
-      functionName: "approve",
-      args: [spender as `0x${string}`, ethers.parseUnits(amount, token.decimals)],
-    });
-
-    return {
-      to: token.address,
-      data: data,
-    };
+    const erc20Contract = new ethers.Contract(
+      tokenAddress,
+      parseAbi(["function approve(address, uint256) public returns (bool)"]),
+      this.wallet
+    );
+    const tx = await erc20Contract.approve(
+      spender,
+      ethers.parseUnits(amount, token.decimals)
+    );
+    await tx.wait();
+    return true;
   }
 
   // Swap tokens
   async swap(
     tokenIn: string,
     tokenOut: string,
-    amount: string,
-    address: string
-  ): Promise<Tx> {
+    amount: string
+  ): Promise<TransactionReceipt | null> {
     const swapFrom = await this.getToken(tokenIn);
     const swapTo = await this.getToken(tokenOut);
+    const address = await this.wallet.getAddress();
 
     const trade = await this.getBestTrade(swapFrom, swapTo, amount);
     if (!trade) {
@@ -154,8 +157,13 @@ export class SwapService {
       data: calldata,
       value: hexToBigInt(value),
     };
+    const gasEstimation = await this.viemClient.estimateGas(tx);
 
-    return tx;
+    const trx = await this.wallet.sendTransaction({
+      ...tx,
+      gasLimit: calculateGasMargin(gasEstimation),
+    });
+    return await trx.wait();
   }
 
   // Get token details from chain

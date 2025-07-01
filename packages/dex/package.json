@@ -1,10 +1,6 @@
 {
   "name": "@stratosphere-network/dex",
-<<<<<<< HEAD
-  "version": "2.0.0",
-=======
   "version": "1.0.0",
->>>>>>> 100f9476288c6ad9f83dab9cb9d1c82328516195
   "description": "Stratosphere Network DEX",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
@@ -12,6 +8,7 @@
     "build": "tsc",
     "dev": "tsc --watch",
     "clean": "echo 'no cleanup needed for this package'",
+    "test": "jest",
     "prepublishOnly": "npm run clean && npm run build"
   },
   "dependencies": {
@@ -19,7 +16,13 @@
     "@stratospherex/smart-router": "^4.15.0",
     "viem": "1.19.11"
   },
-   "files": [
+  "devDependencies": {
+    "@types/jest": "^29.5.5",
+    "jest": "^29.7.0",
+    "ts-jest": "^29.1.1",
+    "typescript": "^5.2.2"
+  },
+  "files": [
     "dist"
   ],
   "publishConfig": {
