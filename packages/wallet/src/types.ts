@@ -1,3 +1,129 @@
+
+// Recovery System Types
+export interface RecoveryData {
+  id: string;
+  email?: string;
+  phoneNumber?: string;
+  createdAt: string;
+  updatedAt?: string;
+}
+
+export interface CreateRecoveryRequest {
+  externalId: string;
+  password: string;
+  emailRecovery?: string;
+  phoneRecovery?: string;
+}
+
+export interface CreateRecoveryResponse {
+  message: string;
+  recovery: RecoveryData;
+}
+
+export interface RecoveryOptionsResponse {
+  recoveryOptions: {
+    email?: string;
+    phone?: string;
+  };
+}
+
+export interface RequestPasswordResetRequest {
+  externalId: string;
+  method: "emailRecovery" | "phoneRecovery";
+}
+
+export interface RequestPasswordResetResponse {
+  message: string;
+  target: string;
+}
+
+export type ResetPasswordRequest =
+  | {
+      username: string;
+      newPassword: string;
+      email: string;
+      otpCode: string;
+      phoneNumber?: never;
+    }
+  | {
+      username: string;
+      newPassword: string;
+      phoneNumber: string;
+      otpCode: string;
+      email?: never;
+    };
+
+export interface ResetPasswordResponse {
+  message: string;
+}
+
+export interface UpdateRecoveryRequest {
+  externalId: string;
+  password: string;
+  emailRecovery?: string;
+  phoneRecovery?: string;
+}
+
+export interface UpdateRecoveryResponse {
+  message: string;
+  recovery: RecoveryData;
+}
+
+export interface AddRecoveryMethodRequest {
+  externalId: string;
+  password: string;
+  method: "emailRecovery" | "phoneRecovery";
+  value: string;
+}
+
+export interface AddRecoveryMethodResponse {
+  message: string;
+  recovery: RecoveryData;
+}
+
+export interface RemoveRecoveryMethodRequest {
+  externalId: string;
+  password: string;
+  method: "emailRecovery" | "phoneRecovery";
+}
+
+export interface RemoveRecoveryMethodResponse {
+  message: string;
+  recovery: RecoveryData;
+}
+
+export interface UpdateRecoveryMethodRequest {
+  externalId: string;
+  password: string;
+  method: "emailRecovery" | "phoneRecovery";
+  value: string;
+}
+
+export interface UpdateRecoveryMethodResponse {
+  message: string;
+  recovery: RecoveryData;
+}
+
+export interface GetMyRecoveryMethodsRequest {
+  externalId: string;
+  password: string;
+}
+
+export interface GetMyRecoveryMethodsResponse {
+  recovery: RecoveryData;
+}
+
+export interface DeleteAllRecoveryMethodsRequest {
+  externalId: string;
+  password: string;
+}
+
+export interface DeleteAllRecoveryMethodsResponse {
+  message: string;
+}
+
+
+
 export enum Environment { 
   DEVELOPMENT = "development", 
   PRODUCTION = "production", 

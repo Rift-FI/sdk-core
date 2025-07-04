@@ -1,4 +1,4 @@
-# StratoSphere SDK
+# StratoSphere SDK.
 
 A comprehensive multi-chain SDK for token deployment, staking, dividends, and DeFi operations.
 

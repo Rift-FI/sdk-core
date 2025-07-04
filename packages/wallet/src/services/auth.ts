@@ -11,6 +11,25 @@ import {
   LoginResponse,
   SignupResponse,
   DeleteUserResponse,
+  CreateRecoveryRequest,
+  CreateRecoveryResponse,
+  RecoveryOptionsResponse,
+  RequestPasswordResetRequest,
+  RequestPasswordResetResponse,
+  ResetPasswordRequest,
+  ResetPasswordResponse,
+  UpdateRecoveryRequest,
+  UpdateRecoveryResponse,
+  AddRecoveryMethodRequest,
+  AddRecoveryMethodResponse,
+  RemoveRecoveryMethodRequest,
+  RemoveRecoveryMethodResponse,
+  UpdateRecoveryMethodRequest,
+  UpdateRecoveryMethodResponse,
+  GetMyRecoveryMethodsRequest,
+  GetMyRecoveryMethodsResponse,
+  DeleteAllRecoveryMethodsRequest,
+  DeleteAllRecoveryMethodsResponse,
 } from "../types";
 
 export class AuthService extends BaseService {
@@ -81,5 +100,106 @@ export class AuthService extends BaseService {
 
   isAuthenticated(): boolean {
     return !!this.getBearerToken();
+  }
+
+  // Recovery System Methods
+
+  async createRecoveryMethods(
+    request: CreateRecoveryRequest
+  ): Promise<CreateRecoveryResponse> {
+    return this.authenticatedRequest<CreateRecoveryResponse>({
+      method: "POST",
+      url: "/recovery/create",
+      data: request,
+    });
+  }
+
+  async getRecoveryOptions(
+    externalId: string
+  ): Promise<RecoveryOptionsResponse> {
+    return this.publicRequest<RecoveryOptionsResponse>({
+      method: "GET",
+      url: `/recovery/options/${externalId}`,
+    });
+  }
+
+  async requestPasswordReset(
+    request: RequestPasswordResetRequest
+  ): Promise<RequestPasswordResetResponse> {
+    return this.publicRequest<RequestPasswordResetResponse>({
+      method: "POST",
+      url: "/recovery/request-reset",
+      data: request,
+    });
+  }
+
+  async resetPassword(
+    request: ResetPasswordRequest
+  ): Promise<ResetPasswordResponse> {
+    return this.publicRequest<ResetPasswordResponse>({
+      method: "POST",
+      url: "/recovery/reset-password",
+      data: request,
+    });
+  }
+
+  async updateRecoveryMethods(
+    request: UpdateRecoveryRequest
+  ): Promise<UpdateRecoveryResponse> {
+    return this.authenticatedRequest<UpdateRecoveryResponse>({
+      method: "PUT",
+      url: "/recovery/update",
+      data: request,
+    });
+  }
+
+  async addRecoveryMethod(
+    request: AddRecoveryMethodRequest
+  ): Promise<AddRecoveryMethodResponse> {
+    return this.authenticatedRequest<AddRecoveryMethodResponse>({
+      method: "POST",
+      url: "/recovery/add-method",
+      data: request,
+    });
+  }
+
+  async removeRecoveryMethod(
+    request: RemoveRecoveryMethodRequest
+  ): Promise<RemoveRecoveryMethodResponse> {
+    return this.authenticatedRequest<RemoveRecoveryMethodResponse>({
+      method: "DELETE",
+      url: "/recovery/remove-method",
+      data: request,
+    });
+  }
+
+  async updateRecoveryMethod(
+    request: UpdateRecoveryMethodRequest
+  ): Promise<UpdateRecoveryMethodResponse> {
+    return this.authenticatedRequest<UpdateRecoveryMethodResponse>({
+      method: "PUT",
+      url: "/recovery/update-method",
+      data: request,
+    });
+  }
+
+  async getMyRecoveryMethods(
+    request: GetMyRecoveryMethodsRequest
+  ): Promise<GetMyRecoveryMethodsResponse> {
+    return this.authenticatedRequest<GetMyRecoveryMethodsResponse>({
+      method: "POST",
+      url: "/recovery/my-methods",
+      data: request,
+    });
+  }
+
+  async deleteAllRecoveryMethods(
+    request: DeleteAllRecoveryMethodsRequest
+  ): Promise<DeleteAllRecoveryMethodsResponse> {
+    return this.authenticatedRequest<DeleteAllRecoveryMethodsResponse>({
+      method: "DELETE",
+      url: "/recovery/delete-all",
+      data: request,
+    });
   }
 }
