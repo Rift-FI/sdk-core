@@ -9,7 +9,6 @@ import { DeFiService } from "./services/defi";
 import { AssetsService } from "./services/assets";
 import { OnrampService } from "./services/onramp";
 import { NotificationService } from "./services/notifications";
-import { ProjectNotificationService } from "./services/project-notifications";
 
 export class Sphere {
   public readonly config: SphereConfig;
@@ -25,7 +24,6 @@ export class Sphere {
   public readonly assets: AssetsService;
   public readonly onramp: OnrampService;
   public readonly notifications: NotificationService;
-  public readonly projectNotifications: ProjectNotificationService;
 
   constructor(config: SphereConfig) {
     this.config = config;
@@ -41,7 +39,6 @@ export class Sphere {
     this.assets = new AssetsService(this.httpClient);
     this.onramp = new OnrampService(this.httpClient, config);
     this.notifications = new NotificationService(this.httpClient);
-    this.projectNotifications = new ProjectNotificationService(this.httpClient);
   }
 
   /**
@@ -63,7 +60,7 @@ export class Sphere {
     this.defi.setBearerToken(token);
     this.assets.setBearerToken(token);
     this.notifications.setBearerToken(token);
-    // Note: onramp and projectNotifications don't use bearer tokens
+    // Note: onramp doesn't use bearer tokens
   }
 
   /**
@@ -78,7 +75,7 @@ export class Sphere {
     this.defi.clearBearerToken();
     this.assets.clearBearerToken();
     this.notifications.clearBearerToken();
-    // Note: onramp and projectNotifications don't use bearer tokens
+    // Note: onramp doesn't use bearer tokens
   }
 
   /**
@@ -123,7 +120,6 @@ export { Environment };
 
 // Export service classes
 export { NotificationService } from "./services/notifications";
-export { ProjectNotificationService } from "./services/project-notifications";
 
 // Default export
 export default Sphere;
