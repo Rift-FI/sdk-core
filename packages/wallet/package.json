@@ -21,6 +21,7 @@
   ],
   "author": "StratoSphere team",
   "license": "MIT",
+
   "dependencies": {
     "socket.io-client": "^4.7.5"
   },
@@ -31,6 +32,11 @@
     "ts-jest": "^29.1.2",
     "typescript": "^5.0.0"
   },
+  "files": [
+    "dist",
+    "Readme.md"
+    
+  ],
   "publishConfig": {
     "access": "public"
   }
