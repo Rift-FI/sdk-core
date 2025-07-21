@@ -1233,29 +1233,15 @@ export interface NotificationSendRequest {
 }
 
 export interface NotificationSendResponse {
-  sent: number;
-  failed: number;
-  total: number;
+  summary: {
+    sent: number;
+    failed: number;
+    total: number;
+  };
   details: Array<{
     subscriberId: string;
     success: boolean;
     error?: string;
     requestId?: string;
   }>;
-}
-
-// Project notification types
-export interface ProjectNotificationConfig {
-  webpushrKey: string;
-  webpushrAuthToken: string;
-  enabled?: boolean;
-}
-
-export interface ProjectNotificationSettings {
-  projectId: string;
-  projectName: string;
-  notificationsEnabled: boolean;
-  webpushrKeyConfigured: boolean;
-  webpushrKey?: string;
-  activeSubscriptions: number;
 }

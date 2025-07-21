@@ -15,8 +15,10 @@ export class NotificationService extends BaseService {
    */
   async registerSubscription(
     request: NotificationSubscriptionRequest
-  ): Promise<ApiResponse<NotificationSubscription>> {
-    return this.authenticatedRequest<ApiResponse<NotificationSubscription>>({
+  ): Promise<ApiResponse<{ subscription: NotificationSubscription }>> {
+    return this.authenticatedRequest<
+      ApiResponse<{ subscription: NotificationSubscription }>
+    >({
       method: "POST",
       url: "/notifications/register",
       data: {
@@ -42,10 +44,18 @@ export class NotificationService extends BaseService {
    * Get all notification subscriptions for the current user
    */
   async getUserSubscriptions(): Promise<
-    ApiResponse<UserNotificationSubscription[]>
+    ApiResponse<{
+      subscriptions: UserNotificationSubscription[];
+      activeCount: number;
+      totalCount: number;
+    }>
   > {
     return this.authenticatedRequest<
-      ApiResponse<UserNotificationSubscription[]>
+      ApiResponse<{
+        subscriptions: UserNotificationSubscription[];
+        activeCount: number;
+        totalCount: number;
+      }>
     >({
       method: "GET",
       url: "/notifications/subscriptions",
