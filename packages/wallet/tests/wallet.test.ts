@@ -28,6 +28,7 @@ describe("Wallet Package", () => {
     expect(sphere.defi).toBeDefined();
     expect(sphere.assets).toBeDefined();
     expect(sphere.onramp).toBeDefined();
+    expect(sphere.notifications).toBeDefined();
   });
 
   test("should have API key functionality", () => {

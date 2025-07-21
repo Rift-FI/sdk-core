@@ -8,6 +8,7 @@ import { ProxyWalletService } from "./services/proxy-wallet";
 import { DeFiService } from "./services/defi";
 import { AssetsService } from "./services/assets";
 import { OnrampService } from "./services/onramp";
+import { NotificationService } from "./services/notifications";
 
 export class Sphere {
   public readonly config: SphereConfig;
@@ -22,6 +23,7 @@ export class Sphere {
   public readonly defi: DeFiService;
   public readonly assets: AssetsService;
   public readonly onramp: OnrampService;
+  public readonly notifications: NotificationService;
 
   constructor(config: SphereConfig) {
     this.config = config;
@@ -36,6 +38,7 @@ export class Sphere {
     this.defi = new DeFiService(this.httpClient);
     this.assets = new AssetsService(this.httpClient);
     this.onramp = new OnrampService(this.httpClient, config);
+    this.notifications = new NotificationService(this.httpClient);
   }
 
   /**
@@ -56,7 +59,8 @@ export class Sphere {
     this.proxyWallet.setBearerToken(token);
     this.defi.setBearerToken(token);
     this.assets.setBearerToken(token);
-    // Note: onramp service doesn't use bearer tokens
+    this.notifications.setBearerToken(token);
+    // Note: onramp doesn't use bearer tokens
   }
 
   /**
@@ -70,7 +74,8 @@ export class Sphere {
     this.proxyWallet.clearBearerToken();
     this.defi.clearBearerToken();
     this.assets.clearBearerToken();
-    // Note: onramp service doesn't use bearer tokens
+    this.notifications.clearBearerToken();
+    // Note: onramp doesn't use bearer tokens
   }
 
   /**
@@ -112,6 +117,9 @@ export class Sphere {
 // Export types and enums for consumers
 export * from "./types";
 export { Environment };
+
+// Export service classes
+export { NotificationService } from "./services/notifications";
 
 // Default export
 export default Sphere;
