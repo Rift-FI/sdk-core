@@ -348,6 +348,7 @@ export interface TransactionRequest {
   chain: ChainName;
   intent?: "unlock";
   type?: TransactionType;
+  [key: string]: any;
 }
 
 export interface TransactionResponse {
@@ -690,8 +691,9 @@ export type SendSpecificPaymentRequest =
       username: string;
       phoneNumber?: never;
       email?: never;
+      [key: string]: any;
     }
-  | {
+      | {
       time: string;
       value: string;
       token: TokenSymbol;
@@ -699,6 +701,7 @@ export type SendSpecificPaymentRequest =
       phoneNumber: string;
       username?: never;
       email?: never;
+      [key: string]: any;
     }
   | {
       time: string;
@@ -708,14 +711,18 @@ export type SendSpecificPaymentRequest =
       email: string;
       username?: never;
       phoneNumber?: never;
+      [key: string]: any;
     };
 
-export interface SendOpenPaymentRequest {
+export interface SendOpenPaymentRequest { 
   time: string;
   value: string;
   token: TokenSymbol;
   chain: ChainName;
+  [key: string]: any;
 }
+
+
 
 export interface SendPaymentResponse {
   data: string;
