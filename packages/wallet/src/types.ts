@@ -341,15 +341,36 @@ export interface ChainBalanceRequest {
 // Transaction Types
 export type TransactionType = "gasless" | "normal";
 
-export interface TransactionRequest {
+export type TransactionRequest = {
   to: string;
   value: string;
   token: TokenSymbol;
   chain: ChainName;
   intent?: "unlock";
   type?: TransactionType;
-  [key: string]: any;
-}
+} & (
+  | {
+      externalId: string;
+      password: string;
+      phoneNumber?: never;
+      otpCode?: never;
+      email?: never;
+    }
+  | {
+      phoneNumber: string;
+      otpCode: string;
+      externalId?: never;
+      password?: never;
+      email?: never;
+    }
+  | {
+      email: string;
+      otpCode: string;
+      externalId?: never;
+      password?: never;
+      phoneNumber?: never;
+    }
+);
 
 export interface TransactionResponse {
   message: string;
@@ -682,47 +703,80 @@ export interface PayPaymentRequestResponse {
 }
 
 // Send Payment Creation
-export type SendSpecificPaymentRequest =
-  | {
-      time: string;
-      value: string;
-      token: TokenSymbol;
-      chain: ChainName;
-      username: string;
-      phoneNumber?: never;
-      email?: never;
-      [key: string]: any;
-    }
-      | {
-      time: string;
-      value: string;
-      token: TokenSymbol;
-      chain: ChainName;
-      phoneNumber: string;
-      username?: never;
-      email?: never;
-      [key: string]: any;
-    }
-  | {
-      time: string;
-      value: string;
-      token: TokenSymbol;
-      chain: ChainName;
-      email: string;
-      username?: never;
-      phoneNumber?: never;
-      [key: string]: any;
-    };
-
-export interface SendOpenPaymentRequest { 
+export type SendSpecificPaymentRequest = {
   time: string;
   value: string;
   token: TokenSymbol;
   chain: ChainName;
-  [key: string]: any;
-}
+} & (
+  | {
+      recipientUsername: string;
+      recipientPhoneNumber?: never;
+      recipientEmail?: never;
+    }
+  | {
+      recipientPhoneNumber: string;
+      recipientUsername?: never;
+      recipientEmail?: never;
+    }
+  | {
+      recipientEmail: string;
+      recipientUsername?: never;
+      recipientPhoneNumber?: never;
+    }
+) &
+  (
+    | {
+        externalId: string;
+        password: string;
+        phoneNumber?: never;
+        otpCode?: never;
+        email?: never;
+      }
+    | {
+        phoneNumber: string;
+        otpCode: string;
+        externalId?: never;
+        password?: never;
+        email?: never;
+      }
+    | {
+        email: string;
+        otpCode: string;
+        externalId?: never;
+        password?: never;
+        phoneNumber?: never;
+      }
+  );
 
-
+export type SendOpenPaymentRequest = {
+  time: string;
+  value: string;
+  token: TokenSymbol;
+  chain: ChainName;
+} & (
+  | {
+      externalId: string;
+      password: string;
+      phoneNumber?: never;
+      otpCode?: never;
+      email?: never;
+    }
+  | {
+      phoneNumber: string;
+      otpCode: string;
+      externalId?: never;
+      password?: never;
+      email?: never;
+    }
+  | {
+      email: string;
+      otpCode: string;
+      externalId?: never;
+      password?: never;
+      phoneNumber?: never;
+    }
+);
 
 export interface SendPaymentResponse {
   data: string;
