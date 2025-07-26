@@ -7,7 +7,7 @@ This package provides a `Token` class to deploy and manage upgradeable ERC20 tok
 - **Upgradeable Tokens**: Deploy tokens as UUPS proxies, allowing you to upgrade the underlying contract logic later without requiring users to migrate.
 - **Role-Based Access Control**: Manage permissions with distinct roles (`MINTER_ROLE`, `BURNER_ROLE`, `PAUSER_ROLE`, `UPGRADER_ROLE`) instead of a single owner.
 - **Factory-Based Deployment**: A central factory contract deploys lightweight proxy contracts, saving significant gas fees for your users.
-- **Comprehensive SDK**: A simple SDK to handle deployment, role management, feature toggling, and upgrades.
+- **Comprehensive SDK**: A simple SDK to handle deployment, role management, feature toggling, minting, burning, and upgrades.
 
 ## Installation
 
@@ -19,9 +19,18 @@ npm install @stratosphere-network/token
 yarn add @stratosphere-network/token
 ```
 
-## Usage
+## Supported Chains
 
-# First, import the `Token` class and the necessary types from the package. If you plan to use an existing `ethers.Wallet` instance for deployment, you'll also need to import `ethers`:
+Token deployment is currently supported on the following chains:
+
+- **Berachain Mainnet** (`Chain.BERACHAIN_MAINNET`)
+- **Berachain Testnet** (`Chain.BERACHAIN_TESTNET`) 
+- **Ethereum Sepolia** (`Chain.ETHEREUM_SEPOLIA`)
+
+Additional chains are supported by the SDK but may not have factory contracts deployed yet:
+- Ethereum Mainnet, Polygon Mainnet, Base Mainnet, Arbitrum Mainnet, Optimism Mainnet
+
+## Usage
 
 First, import the `Token` class and the necessary types from the package. If you plan to use an existing `ethers.Wallet` instance, you'll also need to import `ethers`:
 
@@ -36,29 +45,11 @@ Next, create an instance of the `Token` class:
 const tokenClient = new Token();
 ```
 
-### Deploying a Token
-
-To deploy a new token, you'll need to provide a `tokenConfig` object. The deployer's credentials for the `deployToken` method can be supplied in one of the following ways:
-
-1.  `deployerPrivateKey` (string, optional): The private key of the deployer's account.
-2.  `walletInstance` (`ethers.Wallet`, optional): An existing `ethers.Wallet` object from the `ethers` library.
-
-You must provide at least one of these to the `deployToken` method.
-
-- If only `deployerPrivateKey` is provided, a new `ethers.Wallet` is created internally using a default provider for the specified chain.
-- If only `walletInstance` is provided, that instance is used directly for deploying.
-- # If both `deployerPrivateKey` and `walletInstance` are provided, a new `ethers.Wallet` is created using the `deployerPrivateKey` and the provider from the supplied `walletInstance`.
-  const sdk = new Token();
-
-````
-
 ### 1. Deploying an Upgradeable Token
 
 To deploy a new token, provide a `tokenConfig` object. The `deployToken` method returns an object containing the `transactionHash` and the `tokenAddress` of the newly created proxy contract.
 
 The address that deploys the token will automatically be granted the `DEFAULT_ADMIN_ROLE`, as well as the `MINTER_ROLE`, `BURNER_ROLE`, `PAUSER_ROLE`, and `UPGRADER_ROLE`.
-
-Currently, token deployment is **only supported on Berachain Mainnet**.
 
 ```typescript
 // Ensure tokenClient is instantiated as shown in the "Usage" section:
@@ -72,24 +63,21 @@ async function deployMyToken() {
     totalSupply: "1000000000000000000000000", // 1 million tokens with 18 decimals
     decimals: 18,
     chain: Chain.BERACHAIN_MAINNET, // Ensure this matches supported chains
-    isMintable: true, // Optional: Can the token supply be increased after deployment? Defaults to false.
-    isBurnable: true, // Optional: Can tokens be burned to reduce supply? Defaults to false.
-    isPausable: false, // Optional: Can token transfers be paused? Defaults to false.
   };
 
   // --- Option 1: Using deployerPrivateKey (simplest for quick start) ---
   const deployerPrivateKey = "YOUR_DEPLOYER_PRIVATE_KEY"; // Replace with actual private key
   try {
     console.log("Attempting to deploy with private key...");
-    const txHashPk = await tokenClient.deployToken(
+    const { transactionHash, tokenAddress } = await tokenClient.deployToken(
       tokenConfig,
       deployerPrivateKey
       // walletInstance is omitted or undefined here
     );
-    console.log(
-      "Token deployment with private key successful! Transaction Hash:",
-      txHashPk
-    );
+    console.log("Token deployment successful!");
+    console.log(`  - Transaction Hash: ${transactionHash}`);
+    console.log(`  - Token Proxy Address: ${tokenAddress}`);
+    return tokenAddress;
   } catch (error) {
     console.error("Error deploying token with private key:", error);
   }
@@ -99,22 +87,21 @@ async function deployMyToken() {
   // Example setup (replace with your actual provider and private key/mnemonic):
   /*
   // Ensure ethers is imported: import { ethers } from "ethers";
-  // const BERACHAIN_RPC_URL = "https://mainnet.rpc.berachain.com/"; // Replace with actual official RPC for Berachain
+  // const BERACHAIN_RPC_URL = "https://rpc.berachain.com/"; // Replace with actual official RPC for Berachain
   // const provider = new ethers.JsonRpcProvider(BERACHAIN_RPC_URL);
   // const existingWallet = new ethers.Wallet(deployerPrivateKey, provider); // Or from a connected wallet like MetaMask
 
   try {
     console.log("Attempting to deploy with wallet instance...");
     // Note: Pass undefined for deployerPrivateKey if primarily using walletInstance
-    const txHashWallet = await tokenClient.deployToken(
+    const { transactionHash, tokenAddress } = await tokenClient.deployToken(
       tokenConfig,
       undefined,
       existingWallet
     );
-    console.log(
-      "Token deployment with wallet instance successful! Transaction Hash:",
-      txHashWallet
-    );
+    console.log("Token deployment successful!");
+    console.log(`  - Transaction Hash: ${transactionHash}`);
+    console.log(`  - Token Proxy Address: ${tokenAddress}`);
   } catch (error) {
     console.error("Error deploying token with wallet instance:", error);
   }
@@ -122,51 +109,9 @@ async function deployMyToken() {
 }
 
 deployMyToken();
-````
+```
 
 **Note:** Ensure your deployer account has enough native currency (e.g., BERA on Berachain) to cover the gas fees for the deployment transaction.
-
-### TokenConfig Parameters
-
-- `name` (string): The name of your token (e.g., "My Awesome Token").
-- `symbol` (string): The symbol for your token (e.g., "MAT").
-- `totalSupply` (string): The total supply of your token, expressed as a string in its smallest unit (e.g., wei for an 18-decimal token).
-- `decimals` (number): The number of decimal places your token will have (typically 18).
-- `chain` (Chain): The chain to deploy the token on. Currently, only `Chain.BERACHAIN_MAINNET` is supported.
-- `isMintable` (boolean, optional): Determines if new tokens can be minted after initial deployment. Defaults to `false` if not specified.
-- `isBurnable` (boolean, optional): Determines if tokens can be burned (destroyed) after deployment. Defaults to `false` if not specified.
-- # `isPausable` (boolean, optional): Determines if token transfers and other operations can be paused. Defaults to `false` if not specified.
-  // Ensure sdk is instantiated as shown above.
-
-async function deployNewToken() {
-const tokenConfig: TokenConfig = {
-name: "My Upgradeable Token",
-symbol: "MUT",
-totalSupply: "1000000000000000000000000", // 1 million tokens with 18 decimals
-decimals: 18,
-chain: Chain.BERACHAIN_MAINNET,
-};
-
-// Provide the private key of the deployer's account.
-// Ensure this account has enough native currency (e.g., BERA) to pay for gas.
-const deployerPrivateKey = "YOUR_DEPLOYER_PRIVATE_KEY";
-
-try {
-console.log("Attempting to deploy token...");
-const { transactionHash, tokenAddress } = await sdk.deployToken(
-tokenConfig,
-deployerPrivateKey
-);
-console.log("Token deployment successful!");
-console.log(`  - Transaction Hash: ${transactionHash}`);
-console.log(`  - Token Proxy Address: ${tokenAddress}`); // This is the address to interact with
-return tokenAddress;
-} catch (error) {
-console.error("Error deploying token:", error);
-}
-}
-
-````
 
 ### 2. Managing the Token
 
@@ -183,7 +128,7 @@ const anotherAddress = "0x...someOtherAddress";
 const adminPrivateKey = "YOUR_DEPLOYER_PRIVATE_KEY"; // The key of an address with DEFAULT_ADMIN_ROLE
 
 // Grant the MINTER_ROLE
-await sdk.grantRole(
+await tokenClient.grantRole(
   Chain.BERACHAIN_MAINNET,
   tokenAddress,
   "MINTER_ROLE",
@@ -193,7 +138,7 @@ await sdk.grantRole(
 console.log("MINTER_ROLE granted.");
 
 // Check if an address has a role
-const hasRole = await sdk.hasRole(
+const hasRole = await tokenClient.hasRole(
   Chain.BERACHAIN_MAINNET,
   tokenAddress,
   "MINTER_ROLE",
@@ -202,7 +147,7 @@ const hasRole = await sdk.hasRole(
 console.log(`Does the address have MINTER_ROLE? ${hasRole}`); // true
 
 // Revoke the MINTER_ROLE
-await sdk.revokeRole(
+await tokenClient.revokeRole(
   Chain.BERACHAIN_MAINNET,
   tokenAddress,
   "MINTER_ROLE",
@@ -210,7 +155,22 @@ await sdk.revokeRole(
   adminPrivateKey
 );
 console.log("MINTER_ROLE revoked.");
-````
+```
+
+#### Token Minting and Burning
+
+**Note: The following mint and burn methods are not yet implemented in the current SDK but are available in the token contract. You can interact with these functions directly using ethers.js if needed.**
+
+```typescript
+// These methods need to be added to the SDK:
+// - mint(chain, tokenAddress, to, amount, privateKey/wallet)
+// - burn(chain, tokenAddress, account, amount, privateKey/wallet)
+
+// For now, you can use ethers.js directly to call these functions:
+// const tokenContract = new ethers.Contract(tokenAddress, TokenAbi, wallet);
+// await tokenContract.mint(recipientAddress, amount);
+// await tokenContract.burn(accountAddress, amount);
+```
 
 #### Feature Control
 
@@ -222,7 +182,7 @@ const pauserPrivateKey = "YOUR_DEPLOYER_PRIVATE_KEY"; // The key of an address w
 const adminPrivateKey = "YOUR_DEPLOYER_PRIVATE_KEY"; // The key of an address with DEFAULT_ADMIN_ROLE
 
 // Enable token transfers for all users
-await sdk.setTransferable(
+await tokenClient.setTransferable(
   Chain.BERACHAIN_MAINNET,
   tokenAddress,
   true,
@@ -231,15 +191,46 @@ await sdk.setTransferable(
 console.log("Token transfers are now enabled for everyone.");
 
 // Pause the contract
-await sdk.pause(Chain.BERACHAIN_MAINNET, tokenAddress, pauserPrivateKey);
+await tokenClient.pause(Chain.BERACHAIN_MAINNET, tokenAddress, pauserPrivateKey);
 console.log("Contract is paused.");
 
+// Note: Query methods like transferable() and paused() are not yet implemented in the SDK
+// You can check these directly using ethers.js:
+// const tokenContract = new ethers.Contract(tokenAddress, TokenAbi, provider);
+// const isTransferable = await tokenContract.transferable();
+// const isPaused = await tokenContract.paused();
+
 // Unpause the contract
-await sdk.unpause(Chain.BERACHAIN_MAINNET, tokenAddress, pauserPrivateKey);
+await tokenClient.unpause(Chain.BERACHAIN_MAINNET, tokenAddress, pauserPrivateKey);
 console.log("Contract is unpaused.");
 ```
 
-### 3. Upgrading the Token
+### 3. Token Information Queries
+
+**Note: The following query methods are not yet implemented in the current SDK but are available in the token contract. You can access them directly using ethers.js:**
+
+```typescript
+import { TokenAbi } from "@stratosphere-network/token/dist/utils/token";
+import { ethers } from "ethers";
+
+const tokenAddress = "0xYourTokenProxyAddress";
+const provider = new ethers.JsonRpcProvider("https://rpc.berachain.com");
+const tokenContract = new ethers.Contract(tokenAddress, TokenAbi, provider);
+
+// Get token information
+const name = await tokenContract.name();
+const symbol = await tokenContract.symbol();
+const decimals = await tokenContract.decimals();
+const totalSupply = await tokenContract.totalSupply();
+const balance = await tokenContract.balanceOf("0xAccountAddress");
+
+console.log(`Token: ${name} (${symbol})`);
+console.log(`Decimals: ${decimals}`);
+console.log(`Total Supply: ${totalSupply.toString()}`);
+console.log(`Balance: ${balance.toString()}`);
+```
+
+### 4. Upgrading the Token
 
 If you deploy a new version of the `Token.sol` implementation contract, you can upgrade your proxies to point to the new logic.
 
@@ -248,7 +239,7 @@ const tokenAddress = "0xYourTokenProxyAddress";
 const newImplementationAddress = "0x...addressOfNewTokenImplementation";
 const upgraderPrivateKey = "YOUR_DEPLOYER_PRIVATE_KEY"; // The key of an address with UPGRADER_ROLE
 
-await sdk.upgradeTo(
+await tokenClient.upgradeTo(
   Chain.BERACHAIN_MAINNET,
   tokenAddress,
   newImplementationAddress,
@@ -261,15 +252,32 @@ console.log("Token proxy has been upgraded to the new implementation!");
 
 ### `TokenConfig` Parameters
 
-- `name` (string): The name of your token (e.g., "My Upgradeable Token").
-- `symbol` (string): The symbol for your token (e.g., "MUT").
+- `name` (string): The name of your token (e.g., "My Awesome Token").
+- `symbol` (string): The symbol for your token (e.g., "MAT").
 - `totalSupply` (string): The initial supply of your token, expressed as a string in its smallest unit (e.g., wei for an 18-decimal token). This supply is minted to the deployer.
 - `decimals` (number): The number of decimal places your token will have (typically 18).
-- `chain` (Chain): The chain to deploy the token on. Currently, only `Chain.BERACHAIN_MAINNET` is supported.
+- `chain` (Chain): The chain to deploy the token on. Currently supported: `Chain.BERACHAIN_MAINNET`, `Chain.BERACHAIN_TESTNET`, `Chain.ETHEREUM_SEPOLIA`.
+
+### Supported Chains
+
+```typescript
+enum Chain {
+  ETHEREUM_MAINNET = "ethereum-mainnet",
+  ETHEREUM_SEPOLIA = "ethereum-sepolia", 
+  POLYGON_MAINNET = "polygon-mainnet",
+  BERACHAIN_MAINNET = "berachain-mainnet",
+  BERACHAIN_TESTNET = "berachain-testnet",
+  BASE_MAINNET = "base-mainnet",
+  ARBITRUM_MAINNET = "arbitrum-mainnet",
+  OPTIMISM_MAINNET = "optimism-mainnet",
+}
+```
 
 ### SDK Methods
 
 All methods that perform on-chain transactions require either a `deployerPrivateKey` or a `walletInstance` to be passed as the final argument.
+
+#### Currently Implemented Methods
 
 - `deployToken(config, privateKey?, wallet?)`: Deploys a new token proxy. Returns `{ transactionHash, tokenAddress }`.
 - `grantRole(chain, tokenAddress, role, toAddress, ...)`: Grants a role to an address.
@@ -280,6 +288,43 @@ All methods that perform on-chain transactions require either a `deployerPrivate
 - `unpause(chain, tokenAddress, ...)`: Resumes a paused contract.
 - `upgradeTo(chain, tokenAddress, newImplementation, ...)`: Upgrades the token proxy to a new implementation contract.
 
+#### Methods Available in Contract (Not Yet in SDK)
+
+The following methods are available in the token contract but not yet implemented in the SDK. You can access them directly using ethers.js with the TokenAbi:
+
+- `mint(to, amount)`: Mints new tokens to a specified address (requires MINTER_ROLE).
+- `burn(account, amount)`: Burns tokens from a specified address (requires BURNER_ROLE).
+- `transferable()`: Returns whether transfers are enabled for non-admins.
+- `paused()`: Returns whether the contract is paused.
+- `name()`: Returns the token name.
+- `symbol()`: Returns the token symbol.
+- `decimals()`: Returns the number of decimals.
+- `totalSupply()`: Returns the total supply of tokens.
+- `balanceOf(account)`: Returns the balance of a specific account.
+
+### Role Types
+
 `role` parameter must be one of: `"MINTER_ROLE"`, `"BURNER_ROLE"`, `"PAUSER_ROLE"`, `"UPGRADER_ROLE"`.
 
-> > > > > > > 5efa2a7fe3f1a6bd0d3e705d1dd6bdc7f677cdb2
+### Key Features
+
+- **Transfers Disabled by Default**: New tokens have transfers disabled by default. Only admins can transfer tokens until `setTransferable(true)` is called.
+- **Role-Based Permissions**: Different operations require different roles, providing fine-grained access control.
+- **Upgradeable**: Tokens can be upgraded to new implementations while preserving state and balances.
+- **Pausable**: Token operations can be paused in emergency situations by accounts with the `PAUSER_ROLE`.
+
+### Gas Optimization
+
+The factory pattern significantly reduces deployment costs by deploying lightweight proxy contracts that delegate to a shared implementation contract, rather than deploying the full contract code for each token.
+
+## Development Notes
+
+The current SDK provides the essential functionality for token deployment and management. Additional methods like minting, burning, and query functions are available in the smart contract but not yet exposed through the SDK. 
+
+For advanced use cases requiring these functions, you can interact with the contract directly using ethers.js and the exported TokenAbi. This allows full access to all contract functionality while we work on expanding the SDK coverage.
+
+### Accessing Token ABI
+
+```typescript
+import { TokenAbi } from "@stratosphere-network/token/dist/utils/token";
+```
