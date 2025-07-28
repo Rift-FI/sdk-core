@@ -1,0 +1,48 @@
+{
+  "name": "@stratosphere-network/stake",
+  "version": "1.0.0",
+  "description": "Staking module for StratoSphere SDK - PST staking and yield functionality",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "scripts": {
+    "build": "tsc",
+    "dev": "tsc --watch",
+    "clean": "echo 'skip clean'",
+    "prepublishOnly": "npm run clean && npm run build",
+    "test": "jest",
+    "test:watch": "jest --watch",
+    "test:coverage": "jest --coverage"
+  },
+  "keywords": [
+    "stratosphere",
+    "staking",
+    "pst",
+    "yield",
+    "defi",
+    "blockchain"
+  ],
+  "author": "StratoSphere team",
+  "license": "MIT",
+  "files": [
+    "dist/**/*",
+    "README.md"
+  ],
+  "dependencies": {
+    "@nomicfoundation/hardhat-toolbox": "^6.1.0",
+    "@openzeppelin/contracts": "^5.3.0",
+    "@openzeppelin/contracts-upgradeable": "^5.3.0",
+    "@stratosphere-network/shared": "^1.0.0",
+    "ethers": "^6.0.0",
+    "hardhat": "^2.26.1"
+  },
+  "devDependencies": {
+    "@types/jest": "^29.5.12",
+    "@types/node": "^20.0.0",
+    "jest": "^29.7.0",
+    "ts-jest": "^29.1.2",
+    "typescript": "^5.0.0"
+  },
+  "publishConfig": {
+    "access": "public"
+  }
+}
