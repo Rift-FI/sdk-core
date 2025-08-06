@@ -49,9 +49,7 @@ jobs:
 
       - name: Check TypeScript compilation for all packages
         run: |
-          echo "Checking shared package..."
-          npx tsc --noEmit -p packages/shared/tsconfig.json
           echo "Checking wallet package..."
           npx tsc --noEmit -p packages/wallet/tsconfig.json
-          echo "Checking core package..."
-          npx tsc --noEmit -p packages/core/tsconfig.json
+          echo "Checking token package..."
+          npx tsc --noEmit -p packages/token/tsconfig.json

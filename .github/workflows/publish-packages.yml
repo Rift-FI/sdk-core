@@ -4,7 +4,7 @@ on:
   workflow_dispatch:
     inputs:
       package:
-        description: "Package to publish (core, wallet, shared, or all)"
+        description: "Package to publish (token, wallet, or all)"
         required: true
         default: "all"
         type: choice
@@ -102,9 +102,9 @@ jobs:
       - name: Version bump - Specific package
         if: github.event.inputs.package != 'all'
         run: |
-          npm version ${{ github.event.inputs.version }} -w @stratosphere-network/${{ github.event.inputs.package }} --no-git-tag-version
+          npm version ${{ github.event.inputs.version }} -w @rift-finance/${{ github.event.inputs.package }} --no-git-tag-version
           git add .
-          git commit -m "chore: bump @stratosphere-network/${{ github.event.inputs.package }} to ${{ github.event.inputs.version }}"
+          git commit -m "chore: bump @rift-finance/${{ github.event.inputs.package }} to ${{ github.event.inputs.version }}"
 
       - name: Publish all packages
         if: github.event.inputs.package == 'all'
@@ -114,6 +114,6 @@ jobs:
 
       - name: Publish specific package
         if: github.event.inputs.package != 'all'
-        run: npm publish -w @stratosphere-network/${{ github.event.inputs.package }} --access ${{ github.event.inputs.access }} --tag ${{ github.event.inputs.tag }}
+        run: npm publish -w @rift-finance/${{ github.event.inputs.package }} --access ${{ github.event.inputs.access }} --tag ${{ github.event.inputs.tag }}
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
