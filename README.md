@@ -4,26 +4,26 @@ A comprehensive multi-chain SDK for token deployment, staking, dividends, and De
 
 ## 📦 Packages
 
-- **[@stratosphere-network/core](./packages/core)** - Core SDK orchestrator
-- **[@stratosphere-network/wallet](./packages/wallet)** - Wallet functionality
-- **[@stratosphere-network/shared](./packages/shared)** - Shared utilities and chain configurations
-- **[@stratosphere-network/token](./packages/token)** - ✅ **Token deployment and management**
-- **[@stratosphere-network/staking](./packages/staking)** - Staking module (coming soon)
-- **[@stratosphere-network/dividends](./packages/dividends)** - Dividends module (coming soon)
-- **[@stratosphere-network/dex](./packages/dex)** - DEX module (coming soon)
+- **[@rift-finance/core](./packages/core)** - Core SDK orchestrator
+- **[@rift-finance/wallet](./packages/wallet)** - Wallet functionality
+- **[@rift-finance/shared](./packages/shared)** - Shared utilities and chain configurations
+- **[@rift-finance/token](./packages/token)** - ✅ **Token deployment and management**
+- **[@rift-finance/staking](./packages/staking)** - Staking module (coming soon)
+- **[@rift-finance/dividends](./packages/dividends)** - Dividends module (coming soon)
+- **[@rift-finance/dex](./packages/dex)** - DEX module (coming soon)
 
 ## 🚀 Quick Start
 
 ### Install the Token Module
 
 ```bash
-npm install @stratosphere-network/token @stratosphere-network/shared
+npm install @rift-finance/token @rift-finance/shared
 ```
 
 ### Deploy Your First Token
 
 ```typescript
-import { Token, SupportedChain } from "@stratosphere-network/token";
+import { Token, SupportedChain } from "@rift-finance/token";
 
 const tokenAddress = await Token.deployToken({
   name: "My Awesome Token",
@@ -89,7 +89,7 @@ mkdir -p packages/new-module/src
 
 ```json
 {
-  "name": "@stratosphere-network/new-module",
+  "name": "@rift-finance/new-module",
   "version": "1.0.0",
   "description": "Description of your module",
   "main": "dist/index.js",
@@ -101,7 +101,7 @@ mkdir -p packages/new-module/src
     "prepublishOnly": "npm run clean && npm run build"
   },
   "dependencies": {
-    "@stratosphere-network/shared": "^1.0.0"
+    "@rift-finance/shared": "^1.0.0"
   },
   "publishConfig": {
     "access": "public"
@@ -138,7 +138,7 @@ mkdir -p packages/new-module/src
 
 5. Update the core package to include your module, only do this after your package is published to npm. Like shown below.
 ```typescript
-import Sphere, { SphereConfig } from "@stratosphere-network/wallet";
+import Sphere, { SphereConfig } from "@rift-finance/wallet";
 
 export class StratoSphere {
   public Wallet: Sphere | null = null;

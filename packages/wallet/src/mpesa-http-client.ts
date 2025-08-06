@@ -1,10 +1,10 @@
-import { HttpClient, RequestConfig, ApiError, SphereConfig } from "./types";
+import { HttpClient, RequestConfig, ApiError, RiftConfig } from "./types";
 
 export class MpesaHttpClient implements HttpClient {
-  private config: SphereConfig;
+  private config: RiftConfig;
   private baseUrl: string;
 
-  constructor(config: SphereConfig) {
+  constructor(config: RiftConfig) {
     this.config = config;
     this.baseUrl = this.getMpesaBaseUrl();
   }

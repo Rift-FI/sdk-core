@@ -10,13 +10,9 @@ on:
         type: choice
         options:
           - all
-          - core
-          - wallet
-          - shared
           - token
-          - dividends
-          - dex
-          - signature
+          - wallet
+
       version:
         description: "Version bump type"
         required: true

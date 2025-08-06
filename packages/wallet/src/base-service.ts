@@ -1,11 +1,11 @@
-import { SphereHttpClient } from "./http-client";
+import { RiftHttpClient } from "./http-client";
 import { RequestConfig } from "./types";
 
 export abstract class BaseService {
-  protected httpClient: SphereHttpClient;
+    protected httpClient: RiftHttpClient;
   private bearerToken?: string;
 
-  constructor(httpClient: SphereHttpClient) {
+  constructor(httpClient: RiftHttpClient) {
     this.httpClient = httpClient;
   }
 

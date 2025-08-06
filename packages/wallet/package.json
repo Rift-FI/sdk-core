@@ -1,7 +1,7 @@
 {
-  "name": "@stratosphere-network/wallet",
-  "version": "11.5.0",
-  "description": "Wallet module for StratoSphere SDK",
+  "name": "@rift-finance/wallet",
+  "version": "0.0.1",
+  "description": "Wallet module for Rift Finance SDK",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
   "scripts": {
@@ -14,12 +14,12 @@
     "test:coverage": "jest --coverage"
   },
   "keywords": [
-    "stratosphere",
+    "rift-finance",
     "wallet",
     "blockchain",
     "defi"
   ],
-  "author": "StratoSphere team",
+  "author": "Rift Finance team",
   "license": "MIT",
 
   "dependencies": {

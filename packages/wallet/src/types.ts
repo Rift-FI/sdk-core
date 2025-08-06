@@ -126,7 +126,7 @@ export enum Environment {
   PRODUCTION = "production",
 }
 
-export interface SphereConfig {
+export interface RiftConfig {
   apiKey?: string;
   environment: Environment;
   baseUrl?: string;

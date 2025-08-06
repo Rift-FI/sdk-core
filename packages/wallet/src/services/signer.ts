@@ -10,7 +10,7 @@ import {
   SignMessageResponse,
 } from "../types";
 
-export class ProxyWalletService extends BaseService {
+export class SignerService extends BaseService {
  
 
   /**

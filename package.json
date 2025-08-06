@@ -1,8 +1,8 @@
 {
-  "name": "@stratosphere-network/monorepo",
-  "version": "1.0.0",
+  "name": "@rift-finance/monorepo",
+  "version": "0.0.1",
   "private": true,
-  "description": "StratoSphere  network Monorepo",
+  "description": "Rift Finance Monorepo",
   "workspaces": [
     "packages/*"
   ],
@@ -25,6 +25,6 @@
     "node": ">=18.0.0"
   },
   "dependencies": {
-    "@stratosphere-network/wallet": "^6.0.0"
+    "@rift-finance/wallet": "^0.0.1"
   }
 }

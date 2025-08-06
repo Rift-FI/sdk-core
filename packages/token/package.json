@@ -1,7 +1,7 @@
 {
-  "name": "@stratosphere-network/token",
+  "name": "@rift-finance/token",
   "version": "4.0.0",
-  "description": "Token module for StratoSphere SDK - ERC20 token minting and factory functionality",
+  "description": "Token module for Rift Finance SDK - ERC20 token minting and factory functionality",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
   "scripts": {
@@ -14,7 +14,7 @@
     "test:coverage": "jest --coverage"
   },
   "keywords": [
-    "stratosphere",
+    "rift-finance",
     "token",
     "erc20",
     "minting",
@@ -22,7 +22,7 @@
     "blockchain",
     "defi"
   ],
-  "author": "StratoSphere team",
+  "author": "Rift Finance team",
   "license": "MIT",
   "files": [
     "dist/**/*",
@@ -31,7 +31,7 @@
   "dependencies": {
     "@openzeppelin/contracts": "^5.3.0",
     "@openzeppelin/contracts-upgradeable": "^5.3.0",
-    "@stratosphere-network/shared": "^1.0.0",
+ 
     "ethers": "^6.0.0"
   },
   "devDependencies": {
