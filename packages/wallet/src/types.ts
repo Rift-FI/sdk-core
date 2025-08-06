@@ -176,13 +176,19 @@ export type SignupRequest =
       password: string;
       phoneNumber?: string;
       email?: string;
+      displayName: string;
+      paymentAccount?: string;
     }
   | {
       externalId?: never;
       password?: never;
       phoneNumber?: string;
       email?: string;
+      displayName: string;
+      paymentAccount?: string;
     };
+
+
 export interface SignupResponse {
   message: string;
   userId: string;
