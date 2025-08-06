@@ -7,13 +7,13 @@ import {
   MpesaTransactionStatusResponse,
   MpesaTransactionHistoryRequest,
   MpesaTransactionHistoryResponse,
-  SphereConfig,
+  RiftConfig,
 } from "../types";
 
 export class OnrampService extends BaseService {
   private mpesaClient: MpesaHttpClient;
 
-  constructor(httpClient: any, config: SphereConfig) {
+  constructor(httpClient: any, config: RiftConfig) {
     super(httpClient);
     // Create separate client for M-Pesa operations
     this.mpesaClient = new MpesaHttpClient(config);

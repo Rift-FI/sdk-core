@@ -1,40 +1,40 @@
-import { Environment, SphereConfig } from "./types";
-import { SphereHttpClient } from "./http-client";
+import { Environment, RiftConfig } from "./types";
+import { RiftHttpClient } from "./http-client";
 import { AuthService } from "./services/auth";
 import { WalletService } from "./services/wallet";
 import { TransactionService } from "./services/transactions";
 import { PaymentLinksService } from "./services/payment-links";
-import { ProxyWalletService } from "./services/proxy-wallet";
+import { SignerService  } from "./services/signer";
 import { DeFiService } from "./services/defi";
 import { AssetsService } from "./services/assets";
 import { OnrampService } from "./services/onramp";
 import { NotificationService } from "./services/notifications";
 
-export class Sphere {
-  public readonly config: SphereConfig;
-  private readonly httpClient: SphereHttpClient;
+export class Rift {
+  public readonly config: RiftConfig;
+  private readonly httpClient: RiftHttpClient;
 
   // Service instances
   public readonly auth: AuthService;
   public readonly wallet: WalletService;
   public readonly transactions: TransactionService;
   public readonly paymentLinks: PaymentLinksService;
-  public readonly proxyWallet: ProxyWalletService;
+  public readonly signer: SignerService;
   public readonly defi: DeFiService;
   public readonly assets: AssetsService;
   public readonly onramp: OnrampService;
   public readonly notifications: NotificationService;
 
-  constructor(config: SphereConfig) {
+  constructor(config: RiftConfig) {
     this.config = config;
-    this.httpClient = new SphereHttpClient(config);
+    this.httpClient = new RiftHttpClient(config);
 
     // Initialize all services
     this.auth = new AuthService(this.httpClient);
     this.wallet = new WalletService(this.httpClient);
     this.transactions = new TransactionService(this.httpClient);
     this.paymentLinks = new PaymentLinksService(this.httpClient);
-    this.proxyWallet = new ProxyWalletService(this.httpClient);
+    this.signer = new SignerService(this.httpClient);
     this.defi = new DeFiService(this.httpClient);
     this.assets = new AssetsService(this.httpClient);
     this.onramp = new OnrampService(this.httpClient, config);
@@ -56,10 +56,10 @@ export class Sphere {
     this.wallet.setBearerToken(token);
     this.transactions.setBearerToken(token);
     this.paymentLinks.setBearerToken(token);
-    this.proxyWallet.setBearerToken(token);
+    this.signer.setBearerToken(token);
     this.defi.setBearerToken(token);
     this.assets.setBearerToken(token);
-    this.notifications.setBearerToken(token);
+    this.notifications.setBearerToken(token)  ;
     // Note: onramp doesn't use bearer tokens
   }
 
@@ -71,7 +71,7 @@ export class Sphere {
     this.wallet.clearBearerToken();
     this.transactions.clearBearerToken();
     this.paymentLinks.clearBearerToken();
-    this.proxyWallet.clearBearerToken();
+    this.signer.clearBearerToken();
     this.defi.clearBearerToken();
     this.assets.clearBearerToken();
     this.notifications.clearBearerToken();
@@ -122,4 +122,4 @@ export { Environment };
 export { NotificationService } from "./services/notifications";
 
 // Default export
-export default Sphere;
+export default Rift;

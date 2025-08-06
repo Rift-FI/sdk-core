@@ -1,10 +1,10 @@
-import { HttpClient, RequestConfig, ApiError, SphereConfig } from "./types";
+import { HttpClient, RequestConfig, ApiError, RiftConfig } from "./types";
 
-export class SphereHttpClient implements HttpClient {
-  private config: SphereConfig;
+export class RiftHttpClient implements HttpClient {
+  private config: RiftConfig;
   private baseUrl: string;
 
-  constructor(config: SphereConfig) {
+  constructor(config: RiftConfig) {
     this.config = config;
     this.baseUrl = config.baseUrl || this.getDefaultBaseUrl();
   }
@@ -12,11 +12,11 @@ export class SphereHttpClient implements HttpClient {
   private getDefaultBaseUrl(): string {
     switch (this.config.environment) {
       case "production":
-        return "https://stratosphere-network-tendermint-production.up.railway.app";
+        return "https://api.rift.finance";
       case "development":
-        return "https://stratosphere-network-tendermint-production.up.railway.app";
+        return "https://dev.rift.finance";
       default:
-        return "https://stratosphere-network-tendermint-production.up.railway.app";
+        return "https://dev.rift.finance";
     }
   }
 
