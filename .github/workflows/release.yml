@@ -3,22 +3,17 @@ name: Release
 on:
   push:
     tags:
-      - "stratosphere-*-v*"
+      - "rift-*-v*"
   workflow_dispatch:
     inputs:
       package:
-        description: "Package to release (wallet, core, shared)"
+        description: "Package to release (wallet, token)"
         required: true
         type: choice
         options:
           - all
-          - core
           - wallet
-          - shared
           - token
-          - dividends
-          - dex
-          - signature
       version:
         description: "Version to release"
         required: true
@@ -45,14 +40,14 @@ jobs:
             # Manual trigger - use inputs
             PACKAGE_NAME="${{ github.event.inputs.package }}"
             VERSION="${{ github.event.inputs.version }}"
-            PACKAGE_FULL="@stratosphere/$PACKAGE_NAME"
+            PACKAGE_FULL="@rift-finance/$PACKAGE_NAME"
           else
             # Tag trigger - extract from tag name
             TAG="${{ github.ref_name }}"
-            # Extract package name and version from tag like stratosphere-wallet-v1.0.1
-            PACKAGE_NAME=$(echo $TAG | sed 's/stratosphere-\(.*\)-v.*/\1/')
+            # Extract package name and version from tag like rift-wallet-v1.0.1
+            PACKAGE_NAME=$(echo $TAG | sed 's/rift-\(.*\)-v.*/\1/')
             VERSION=$(echo $TAG | sed 's/.*-v\(.*\)/\1/')
-            PACKAGE_FULL="@stratosphere/$PACKAGE_NAME"
+            PACKAGE_FULL="@rift-finance/$PACKAGE_NAME"
           fi
           echo "package_full=$PACKAGE_FULL" >> $GITHUB_OUTPUT
           echo "package_name=$PACKAGE_NAME" >> $GITHUB_OUTPUT
