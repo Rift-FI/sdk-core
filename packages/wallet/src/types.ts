@@ -188,7 +188,6 @@ export type SignupRequest =
       paymentAccount?: string;
     };
 
-
 export interface SignupResponse {
   message: string;
   userId: string;
@@ -945,6 +944,61 @@ export interface ApiError {
   message: string;
   error?: string;
   status?: number;
+}
+
+// Merchant Types
+export enum InvoiceStatus {
+  PENDING = "PENDING",
+  COMPLETED = "COMPLETED",
+  EXPIRED = "EXPIRED",
+}
+
+export interface Invoice {
+  id: string;
+  description: string;
+  chain: string;
+  token: string;
+  amount: number;
+  recipientEmail?: string;
+  recipientPhone?: string;
+  status: InvoiceStatus;
+  url: string;
+  createdAt: string;
+  updatedAt: string;
+  paidAt?: string;
+  expiresAt?: string;
+  userId: string;
+}
+
+export interface CreateInvoiceRequest {
+  description: string;
+  chain: ChainName;
+  token: TokenSymbol;
+  amount: number;
+  recipientEmail?: string;
+  recipientPhone?: string;
+}
+
+export interface CreateInvoiceResponse {
+  invoice: Invoice;
+}
+
+export interface GetInvoicesRequest {
+  status?: InvoiceStatus;
+  sortBy?: "createdAt" | "updatedAt" | "paidAt";
+  sortOrder?: "asc" | "desc";
+  startDate?: string; // ISO date string
+  endDate?: string; // ISO date string
+}
+
+export interface GetInvoicesResponse {
+  invoices: Invoice[];
+}
+
+export interface MerchantServiceError {
+  message: string;
+  code: string;
+  details?: any;
 }
 
 // HTTP Client Types
