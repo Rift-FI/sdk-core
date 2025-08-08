@@ -4,11 +4,12 @@ import { AuthService } from "./services/auth";
 import { WalletService } from "./services/wallet";
 import { TransactionService } from "./services/transactions";
 import { PaymentLinksService } from "./services/payment-links";
-import { SignerService  } from "./services/signer";
+import { SignerService } from "./services/signer";
 import { DeFiService } from "./services/defi";
 import { AssetsService } from "./services/assets";
 import { OnrampService } from "./services/onramp";
 import { NotificationService } from "./services/notifications";
+import { MerchantService } from "./services/merchant";
 
 export class Rift {
   public readonly config: RiftConfig;
@@ -24,6 +25,7 @@ export class Rift {
   public readonly assets: AssetsService;
   public readonly onramp: OnrampService;
   public readonly notifications: NotificationService;
+  public readonly merchant: MerchantService;
 
   constructor(config: RiftConfig) {
     this.config = config;
@@ -39,6 +41,7 @@ export class Rift {
     this.assets = new AssetsService(this.httpClient);
     this.onramp = new OnrampService(this.httpClient, config);
     this.notifications = new NotificationService(this.httpClient);
+    this.merchant = new MerchantService(this.httpClient);
   }
 
   /**
@@ -59,7 +62,8 @@ export class Rift {
     this.signer.setBearerToken(token);
     this.defi.setBearerToken(token);
     this.assets.setBearerToken(token);
-    this.notifications.setBearerToken(token)  ;
+    this.notifications.setBearerToken(token);
+    this.merchant.setBearerToken(token);
     // Note: onramp doesn't use bearer tokens
   }
 
@@ -75,6 +79,7 @@ export class Rift {
     this.defi.clearBearerToken();
     this.assets.clearBearerToken();
     this.notifications.clearBearerToken();
+    this.merchant.clearBearerToken();
     // Note: onramp doesn't use bearer tokens
   }
 
