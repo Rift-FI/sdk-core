@@ -134,12 +134,146 @@ export interface RiftConfig {
   retries?: number;
 }
 
+
+export interface ExchangeRateRequest {
+  from: string;
+  to: string;
+}
+
+export interface ExchangeRateResponse {
+  from: string;
+  to: string;
+  rate: number;
+}
+
+// Offramp Types
+export enum OfframpCurrency {
+  NGN = "NGN",
+  KES = "KES",
+}
+
+export enum OfframpChain {
+  POLYGON = "polygon",
+}
+
+export enum OfframpToken {
+  USDC = "USDC",
+}
+
+export interface Recipient {
+  name: string;
+  bankCode: string;
+  accountNumber: string;
+  email?: string;
+  phoneNumber?: string;
+}
+
+export interface PreviewExchangeRateRequest {
+  token: OfframpToken;
+  amount: number;
+  currency: OfframpCurrency;
+  chain: OfframpChain;
+}
+
+export interface PreviewExchangeRateResponse {
+  rate: number;
+}
+
+export interface CreateOfframpOrderRequest {
+  token: OfframpToken;
+  amount: number;
+  currency: OfframpCurrency;
+  chain: OfframpChain;
+  recipient: string; // JSON stringified Recipient object
+}
+
+export interface OfframpOrder {
+  id?: string;
+  receiveAddress?: string;
+  validUntil?: string;
+  senderFee?: number;
+  transactionFee?: number;
+  amount?: number;
+  currency?: OfframpCurrency;
+  network?: OfframpChain;
+  token?: OfframpToken;
+  rate?: string;
+  recipient?: Recipient;
+  reference?: string;
+  returnAddress?: string;
+}
+
+export interface CreateOfframpOrderResponse {
+  order: OfframpOrder;
+}
+
+export interface PollOfframpOrderRequest {
+  order_id: string;
+}
+
+export interface PollOfframpOrderResponse {
+  order: OfframpOrder;
+}
+
+export interface GetOfframpOrdersResponse {
+  orders: OfframpOrder[];
+}
+
+// Onramp Types (existing order types - updated naming for clarity)
+export interface CreateOrderRequest {
+  amount: number;
+  currency: string;
+  paymentMethod: string;
+  callbackUrl: string;
+  cancelUrl: string;
+  successUrl: string;
+}
+
+export interface CreateOrderResponse {
+  orderId: string;
+  amount: number;
+  currency: string;
+  paymentMethod: string;
+  callbackUrl: string;
+  cancelUrl: string;
+  successUrl: string;
+}
+
+export interface PollOrderRequest {
+  orderId: string;
+}
+
+export interface PollOrderResponse {
+  orderId: string;
+  amount: number;
+  currency: string;
+  paymentMethod: string;
+  callbackUrl: string;
+  cancelUrl: string;
+  successUrl: string;
+}
+
+export interface allOrdersRequest {
+  page: number;
+  limit: number;
+}
+
+export interface allOrdersResponse {
+  orders: CreateOrderResponse[];
+  total: number;
+  page: number;
+  limit: number;
+}
+
 export interface ApiResponse<T = any> {
   success?: boolean;
   message?: string;
   data?: T;
   error?: string;
 }
+
+
+
 export interface LoginResponse {
   user: string;
   address: string;
