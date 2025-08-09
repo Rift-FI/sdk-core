@@ -207,12 +207,18 @@ export interface CreateOfframpOrderResponse {
   order: OfframpOrder;
 }
 
+export interface UpdateUserResponse {
+  message: string;
+  user:any
+}
+
+
 export interface PollOfframpOrderRequest {
   order_id: string;
 }
 
 export interface PollOfframpOrderResponse {
-  order: OfframpOrder;
+  status: string;
 }
 
 export interface GetOfframpOrdersResponse {
