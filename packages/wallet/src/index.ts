@@ -8,6 +8,7 @@ import { SignerService } from "./services/signer";
 import { DeFiService } from "./services/defi";
 import { AssetsService } from "./services/assets";
 import { OnrampService } from "./services/onramp";
+import { OfframpService } from "./services/offramp";
 import { NotificationService } from "./services/notifications";
 import { MerchantService } from "./services/merchant";
 
@@ -24,6 +25,7 @@ export class Rift {
   public readonly defi: DeFiService;
   public readonly assets: AssetsService;
   public readonly onramp: OnrampService;
+  public readonly offramp: OfframpService;
   public readonly notifications: NotificationService;
   public readonly merchant: MerchantService;
 
@@ -40,6 +42,7 @@ export class Rift {
     this.defi = new DeFiService(this.httpClient);
     this.assets = new AssetsService(this.httpClient);
     this.onramp = new OnrampService(this.httpClient, config);
+    this.offramp = new OfframpService(this.httpClient);
     this.notifications = new NotificationService(this.httpClient);
     this.merchant = new MerchantService(this.httpClient);
   }
@@ -125,6 +128,7 @@ export { Environment };
 
 // Export service classes
 export { NotificationService } from "./services/notifications";
+export { OfframpService } from "./services/offramp";
 
 // Default export
 export default Rift;
