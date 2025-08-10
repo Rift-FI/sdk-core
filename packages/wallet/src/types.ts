@@ -380,6 +380,10 @@ export interface User {
   telegramId?: string;
   phoneNumber?: string;
   address?: string;
+  displayName?: string;
+  paymentAccount?: string;
+  notificationEmail?: string;
+  [key: string]: any;
 }
 
 export interface UserResponse {
