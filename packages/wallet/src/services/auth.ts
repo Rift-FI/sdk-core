@@ -32,6 +32,7 @@ import {
   DeleteAllRecoveryMethodsResponse,
   UpdateUserResponse,
   User,
+  UpdateUserRequest,
 } from "../types";
 
 export class AuthService extends BaseService {
@@ -57,13 +58,14 @@ export class AuthService extends BaseService {
     return response;
   }
 
-  async updateUser(request: User): Promise<UpdateUserResponse> {
+  async updateUser(request: UpdateUserRequest): Promise<UpdateUserResponse> {
     return this.authenticatedRequest<UpdateUserResponse>({
       method: "PUT",
       url: "/user/update",
       data: request,
     });
   }
+
 
   async sendOtp(request: OtpRequest): Promise<OtpResponse> {
     return this.publicRequest<OtpResponse>({

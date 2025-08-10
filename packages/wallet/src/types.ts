@@ -385,6 +385,22 @@ export interface User {
   notificationEmail?: string;
   [key: string]: any;
 }
+export interface UpdateUserRequest {
+  id?: string;
+  externalId?: string;
+  referrer?: string;
+  createdAt?: string;
+  updatedAt?: string;
+  email?: string;
+  telegramId?: string;
+  phoneNumber?: string;
+  address?: string;
+  displayName?: string;
+  paymentAccount?: string;
+  notificationEmail?: string;
+  [key: string]: any;
+}
+
 
 export interface UserResponse {
   user: User;
