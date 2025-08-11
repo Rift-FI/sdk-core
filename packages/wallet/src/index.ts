@@ -67,6 +67,7 @@ export class Rift {
     this.assets.setBearerToken(token);
     this.notifications.setBearerToken(token);
     this.merchant.setBearerToken(token);
+    this.offramp.setBearerToken(token);
     // Note: onramp doesn't use bearer tokens
   }
 
@@ -83,6 +84,7 @@ export class Rift {
     this.assets.clearBearerToken();
     this.notifications.clearBearerToken();
     this.merchant.clearBearerToken();
+    this.offramp.clearBearerToken();
     // Note: onramp doesn't use bearer tokens
   }
 
