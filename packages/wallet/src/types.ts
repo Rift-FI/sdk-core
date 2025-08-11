@@ -383,6 +383,7 @@ export interface User {
   displayName?: string;
   paymentAccount?: string;
   notificationEmail?: string;
+  instantWithdrawals?: boolean;
   [key: string]: any;
 }
 export interface UpdateUserRequest {
