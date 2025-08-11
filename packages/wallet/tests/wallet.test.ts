@@ -7,6 +7,7 @@ describe("Wallet Package", () => {
     apiKey: "test-api-key",
   };
 
+
   beforeEach(() => {
     rift = new Rift(mockConfig);
   });
@@ -15,6 +16,7 @@ describe("Wallet Package", () => {
     expect(true).toBe(true);
   });
 
+
   test("should create a Rift instance", () => {
     expect(rift).toBeInstanceOf(Rift);
   });
@@ -22,6 +24,7 @@ describe("Wallet Package", () => {
   test("should have required services", () => {
     expect(rift.auth).toBeDefined();
     expect(rift.wallet).toBeDefined();
+    
     expect(rift.transactions).toBeDefined();
     expect(rift.paymentLinks).toBeDefined();
     expect(rift.signer).toBeDefined();

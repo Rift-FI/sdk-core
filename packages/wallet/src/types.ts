@@ -398,6 +398,7 @@ export interface UpdateUserRequest {
   displayName?: string;
   paymentAccount?: string;
   notificationEmail?: string;
+  instantWithdrawals?: boolean;
   [key: string]: any;
 }
 
