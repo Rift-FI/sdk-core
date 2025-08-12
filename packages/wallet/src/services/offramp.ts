@@ -55,7 +55,7 @@ export class OfframpService extends BaseService {
     request: PollOfframpOrderRequest
   ): Promise<PollOfframpOrderResponse> {
     return this.authenticatedRequest<PollOfframpOrderResponse>({
-      method: "POST",
+      method: "GET",
       url: "/offramp/poll_order_status",
       data: request,
     });
