@@ -57,7 +57,8 @@ export class OfframpService extends BaseService {
     return this.authenticatedRequest<PollOfframpOrderResponse>({
       method: "GET",
       url: "/offramp/poll_order_status",
-      params: request,
+      params: request
+      
     });
   }
 

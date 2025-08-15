@@ -474,7 +474,11 @@ export type ChainName =
   | "BERACHAIN"
   | "POLYGON"
   | "BERACHAIN_TESTNET"
-  | "POLYGON_TESTNET";
+  | "POLYGON_TESTNET"
+  | "AVAX"
+  |"BSC"
+
+
 
 export type TokenSymbol =
   | "USDC"
