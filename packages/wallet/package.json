@@ -1,6 +1,6 @@
 {
   "name": "@rift-finance/wallet",
-  "version": "1.3.6",
+  "version": "1.3.7",
   "description": "Wallet module for Rift Finance SDK",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
@@ -41,4 +41,5 @@
     "access": "public"
   }
 }
+
 
