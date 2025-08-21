@@ -154,6 +154,7 @@ export enum OfframpCurrency {
 
 export enum OfframpChain {
   POLYGON = "polygon",
+  BASE = "base",
 }
 
 export enum OfframpToken {
