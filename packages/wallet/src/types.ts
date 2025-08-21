@@ -240,6 +240,7 @@ export interface OfframpOrder {
   status: string;
   transactionCode: string;
   amount: number;
+  createdAt: string;
   
 }
 
