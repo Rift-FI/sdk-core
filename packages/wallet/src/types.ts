@@ -134,7 +134,6 @@ export interface RiftConfig {
   retries?: number;
 }
 
-
 export interface ExchangeRateRequest {
   from: string;
   to: string;
@@ -247,9 +246,8 @@ export interface CreateOfframpOrderResponse {
 
 export interface UpdateUserResponse {
   message: string;
-  user:any
+  user: any;
 }
-
 
 export interface PollOfframpOrderRequest {
  transactionCode: string;
@@ -318,8 +316,6 @@ export interface ApiResponse<T = any> {
   data?: T;
   error?: string;
 }
-
-
 
 export interface LoginResponse {
   user: string;
@@ -444,7 +440,6 @@ export interface UpdateUserRequest {
   [key: string]: any;
 }
 
-
 export interface UserResponse {
   user: User;
 }
@@ -517,9 +512,7 @@ export type ChainName =
   | "BERACHAIN_TESTNET"
   | "POLYGON_TESTNET"
   | "AVAX"
-  |"BSC"
-
-
+  | "BSC";
 
 export type TokenSymbol =
   | "USDC"
@@ -1572,4 +1565,36 @@ export interface NotificationSendResponse {
     error?: string;
     requestId?: string;
   }>;
+}
+
+// Request type for getting merchant status
+export interface GetMerchantStatusRequest {
+  user?: string; // Optional: specific user ID to check
+}
+
+// Response type for merchant status
+export interface GetMerchantStatusResponse {
+  success: boolean;
+  data: {
+    userId: string;
+    email: string | null;
+    phoneNumber: string | null;
+    externalId: string | null;
+    displayName: string | null;
+    merchantApproved: boolean;
+    approvedAt: string | null; // ISO date string
+    approvedBy: string | null; // Email or phone of approver
+    kybNotes: string | null; // KYB verification notes
+  };
+}
+
+// Error response for unapproved merchants
+export interface MerchantNotApprovedError {
+  error: string;
+  message: string;
+  merchantStatus: {
+    approved: false;
+    userId: string;
+    identifier: string | null;
+  };
 }
