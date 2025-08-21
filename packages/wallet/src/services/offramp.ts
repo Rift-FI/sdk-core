@@ -48,7 +48,7 @@ export class OfframpService extends BaseService {
   async sendPaymentLink(request: SendPaymentLinkRequest): Promise<SendPaymentLinkResponse> {
     return this.authenticatedRequest<SendPaymentLinkResponse>({
       method: "POST",
-      url: "/offramp/send_payment_link",
+      url: "/offramp/send-payment-link",
       data: request,
     });
   }
