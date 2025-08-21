@@ -153,6 +153,7 @@ export enum OfframpCurrency {
 
 export enum OfframpChain {
   POLYGON = "polygon",
+  BASE = "base",
 }
 
 export enum OfframpToken {
@@ -239,6 +240,7 @@ export interface OfframpOrder {
   status: string;
   transactionCode: string;
   amount: number;
+  createdAt: string;
   
 }
 
