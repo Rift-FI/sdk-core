@@ -8,6 +8,10 @@ import {
   PollOfframpOrderRequest,
   PollOfframpOrderResponse,
   GetOfframpOrdersResponse,
+  GetSupportedInstitutionsResponse,
+  SendPaymentLinkRequest,
+  SendPaymentLinkResponse,
+  OfframpCurrency,
 
 } from "../types";
 
@@ -27,6 +31,23 @@ export class OfframpService extends BaseService {
     return this.authenticatedRequest<PreviewExchangeRateResponse>({
       method: "POST",
       url: "/offramp/preview_exchange_rate",
+      data: request,
+    });
+  }
+
+
+  async getSupportedInstitutions(currency: OfframpCurrency): Promise<GetSupportedInstitutionsResponse> {
+    return this.authenticatedRequest<GetSupportedInstitutionsResponse>({
+      method: "GET",
+      url: `/offramp/payment_methods/${currency}`,
+    });
+  }
+
+
+  async sendPaymentLink(request: SendPaymentLinkRequest): Promise<SendPaymentLinkResponse> {
+    return this.authenticatedRequest<SendPaymentLinkResponse>({
+      method: "POST",
+      url: "/offramp/send_payment_link",
       data: request,
     });
   }

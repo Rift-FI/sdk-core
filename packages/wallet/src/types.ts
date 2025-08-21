@@ -168,10 +168,55 @@ export interface Recipient {
 }
 
 export interface PreviewExchangeRateRequest {
-  token: OfframpToken;
-  amount: number;
+ 
+
   currency: OfframpCurrency;
-  chain: OfframpChain;
+ 
+}
+
+
+export interface PaymentType {
+  type: string;
+  name: string;
+  description: string;
+  requires_account_number: boolean;
+}
+
+export type SendPaymentLinkRequest = {
+  paymentLink: string;
+  message: string;
+} & (
+  | { recipientPhone: string; recipientEmail?: string }
+  | { recipientPhone?: string; recipientEmail: string }
+  | { recipientPhone: string; recipientEmail: string }
+);
+
+export interface SendPaymentLinkResults {
+  emailSent: boolean;
+  smsSent: boolean;
+  totalSent: number;
+  errors: string[];
+}
+
+export interface SendPaymentLinkResponse {
+  message: string;
+  results?: SendPaymentLinkResults;
+  error?: string;
+}
+
+export interface SupportedInstitutionsMetadata {
+  country: string;
+  currency_symbol: string;
+  supports_banks: boolean;
+  supports_mobile_money: boolean;
+}
+
+export interface GetSupportedInstitutionsResponse {
+  currency: string;
+  institutions: string[];
+  payment_types: PaymentType[];
+  mobile_networks: string[];
+  metadata: SupportedInstitutionsMetadata;
 }
 
 export interface PreviewExchangeRateResponse {
@@ -183,23 +228,16 @@ export interface CreateOfframpOrderRequest {
   amount: number;
   currency: OfframpCurrency;
   chain: OfframpChain;
+  transactionHash: string;
   recipient: string; // JSON stringified Recipient object
 }
 
 export interface OfframpOrder {
-  id?: string;
-  receiveAddress?: string;
-  validUntil?: string;
-  senderFee?: number;
-  transactionFee?: number;
-  amount?: number;
-  currency?: OfframpCurrency;
-  network?: OfframpChain;
-  token?: OfframpToken;
-  rate?: string;
-  recipient?: Recipient;
-  reference?: string;
-  returnAddress?: string;
+  id: string;
+  status: string;
+  transactionCode: string;
+  amount: number;
+  
 }
 
 export interface CreateOfframpOrderResponse {
@@ -212,11 +250,14 @@ export interface UpdateUserResponse {
 }
 
 export interface PollOfframpOrderRequest {
-  order_id: string;
+ transactionCode: string;
+ currency: OfframpCurrency;
 }
 
 export interface PollOfframpOrderResponse {
   status: string;
+  transactionCode: string;
+  receipt_number: string;
 }
 
 export interface GetOfframpOrdersResponse {
