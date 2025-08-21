@@ -11,6 +11,7 @@ import {
   GetSupportedInstitutionsResponse,
   SendPaymentLinkRequest,
   SendPaymentLinkResponse,
+  GetWithdrawalFeeResponse,
   OfframpCurrency,
 
 } from "../types";
@@ -64,6 +65,14 @@ export class OfframpService extends BaseService {
       method: "POST",
       url: "/offramp/offramp",
       data: request,
+    });
+  }
+
+  async getWithdrawalFee(amount: number): Promise<GetWithdrawalFeeResponse> {
+    return this.authenticatedRequest<GetWithdrawalFeeResponse>({
+      method: "POST",
+      url: "/offramp/get-withdrawal-fee",
+      data:{amount}
     });
   }
 

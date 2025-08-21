@@ -197,7 +197,9 @@ export interface SendPaymentLinkResults {
   totalSent: number;
   errors: string[];
 }
-
+export interface GetWithdrawalFeeResponse {
+  fee: number;
+}
 export interface SendPaymentLinkResponse {
   message: string;
   results?: SendPaymentLinkResults;
