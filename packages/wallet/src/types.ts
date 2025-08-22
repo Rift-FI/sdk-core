@@ -232,7 +232,7 @@ export interface CreateOfframpOrderRequest {
   amount: number;
   currency: OfframpCurrency;
   chain: OfframpChain;
-  transactionHash: string;
+ 
   recipient: string; // JSON stringified Recipient object
 }
 
