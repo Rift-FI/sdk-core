@@ -11,6 +11,7 @@ import { OnrampService } from "./services/onramp";
 import { OfframpService } from "./services/offramp";
 import { NotificationService } from "./services/notifications";
 import { MerchantService } from "./services/merchant";
+import { OnrampServiceV2 } from "./services/onramp_v2";
 
 export class Rift {
   public readonly config: RiftConfig;
@@ -28,6 +29,7 @@ export class Rift {
   public readonly offramp: OfframpService;
   public readonly notifications: NotificationService;
   public readonly merchant: MerchantService;
+  public readonly onrampV2: OnrampServiceV2;
 
   constructor(config: RiftConfig) {
     this.config = config;
@@ -43,6 +45,7 @@ export class Rift {
     this.assets = new AssetsService(this.httpClient);
     this.onramp = new OnrampService(this.httpClient, config);
     this.offramp = new OfframpService(this.httpClient);
+    this.onrampV2 = new OnrampServiceV2(this.httpClient);
     this.notifications = new NotificationService(this.httpClient);
     this.merchant = new MerchantService(this.httpClient);
   }
@@ -68,6 +71,7 @@ export class Rift {
     this.notifications.setBearerToken(token);
     this.merchant.setBearerToken(token);
     this.offramp.setBearerToken(token);
+    this.onrampV2.setBearerToken(token);
     // Note: onramp doesn't use bearer tokens
   }
 
@@ -85,6 +89,7 @@ export class Rift {
     this.notifications.clearBearerToken();
     this.merchant.clearBearerToken();
     this.offramp.clearBearerToken();
+    this.onrampV2.clearBearerToken();
     // Note: onramp doesn't use bearer tokens
   }
 

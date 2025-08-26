@@ -152,12 +152,12 @@ export enum OfframpCurrency {
   KES = "KES",
 }
 
-export enum OfframpChain {
+export enum RampChain {
   POLYGON = "polygon",
   BASE = "base",
 }
 
-export enum OfframpToken {
+export enum RampToken {
   USDC = "USDC",
 }
 
@@ -228,10 +228,10 @@ export interface PreviewExchangeRateResponse {
 }
 
 export interface CreateOfframpOrderRequest {
-  token: OfframpToken;
+  token: RampToken;
   amount: number;
   currency: OfframpCurrency;
-  chain: OfframpChain;
+  chain: RampChain;
  
   recipient: string; // JSON stringified Recipient object
 }
@@ -245,6 +245,67 @@ export interface OfframpOrder {
   
 }
 
+
+// const { token, amount, currency, chain, recipient} = req.body;
+export interface PayRequest {
+ 
+  token: RampToken;
+  amount: number;
+  currency: OfframpCurrency;
+  chain: RampChain;
+  recipient: string; // JSON stringified Recipient object
+}
+
+//const { shortcode, amount, chain, asset,  mobile_network, country_code} = req.body;
+export interface BuyRequest {
+  shortcode: string;
+  amount: number;
+  chain: RampChain;
+  asset: RampToken;
+  mobile_network: string;
+  country_code: string;
+}
+
+// //{
+//   code: 200,
+//   message: 'Collection status',
+//   data: {
+//     transaction_code: 'e44419a6-88f3-4754-b7d4-e4f09aa82916',
+//     status: 'PENDING',
+//     message: 'Success, kindly accept prompt sent.'
+//   }
+// }
+
+export interface BuyResponse {
+    transaction_code: string;
+    status: string;
+    message: string;
+
+}
+
+// //const order: {
+//   id: string;
+//   createdAt: Date;
+//   userId: string;
+//   status: string;
+//   transactionCode: string;
+//   receipt_number: string | null;
+// }
+
+export interface OnrampStatusResponse {
+ 
+  status: string;
+  transactionCode: string;
+  receipt_number: string | null;
+ 
+}
+
+
+export interface PayResponse {
+  order: OfframpOrder;
+
+
+}
 export interface CreateOfframpOrderResponse {
   order: OfframpOrder;
 }
