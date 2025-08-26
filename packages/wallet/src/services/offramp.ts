@@ -13,6 +13,8 @@ import {
   SendPaymentLinkResponse,
   GetWithdrawalFeeResponse,
   OfframpCurrency,
+  PayRequest,
+  PayResponse,
 
 } from "../types";
 
@@ -49,6 +51,14 @@ export class OfframpService extends BaseService {
     return this.authenticatedRequest<SendPaymentLinkResponse>({
       method: "POST",
       url: "/offramp/send-payment-link",
+      data: request,
+    });
+  }
+
+  async pay (request: PayRequest): Promise<PayResponse> {
+    return this.authenticatedRequest<PayResponse>({
+      method: "POST",
+      url: "/offramp/pay",
       data: request,
     });
   }
