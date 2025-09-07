@@ -12,11 +12,11 @@ export class RiftHttpClient implements HttpClient {
   private getDefaultBaseUrl(): string {
     switch (this.config.environment) {
       case "production":
-        return "https://rift-backend.onrender.com";
+        return "https://app.riftfi.xyz";
       case "development":
-        return "https://rift-backend.onrender.com";
+        return "https://app.riftfi.xyz";
       default:
-        return "https://rift-backend.onrender.com";
+        return "https://app.riftfi.xyz";
     }
   }
 
@@ -199,3 +199,4 @@ export class RiftHttpClient implements HttpClient {
     // This will be handled by individual service methods
   }
 }
+
