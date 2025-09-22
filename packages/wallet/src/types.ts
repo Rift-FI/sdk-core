@@ -241,6 +241,8 @@ export interface OfframpOrder {
   transactionCode: string;
   amount: number;
   createdAt: string;
+  transaction_hash?: string;
+  receipt_number?: string;
   
 }
 
@@ -295,7 +297,8 @@ export interface OnrampStatusResponse {
  
   status: string;
   transactionCode: string;
-  receipt_number: string | null;
+  receipt_number?: string | null;
+  transaction_hash?: string | null;
  
 }
 
@@ -1662,4 +1665,30 @@ export interface MerchantNotApprovedError {
     userId: string;
     identifier: string | null;
   };
+}
+
+// Deposit Types
+export interface Deposit {
+  id: string;
+  userId: string;
+  transactionHash: string;
+  blockNumber: string;
+  blockTimestamp: string;
+  fromAddress: string;
+  toAddress: string;
+  amount: string;
+  rawAmount: string;
+  exchangeRate: number;
+  kesAmount: number;
+  processed: boolean;
+  createdAt: string;
+  updatedAt: string;
+  user: {
+    email: string;
+    phoneNumber: string;
+  };
+}
+
+export interface GetAllDepositsResponse {
+  deposits: Deposit[];
 }
