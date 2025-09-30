@@ -224,6 +224,7 @@ export interface GetSupportedInstitutionsResponse {
 
 export interface PreviewExchangeRateResponse {
   rate: number;
+  selling_rate: number;
 }
 
 export interface CreateOfframpOrderRequest {
