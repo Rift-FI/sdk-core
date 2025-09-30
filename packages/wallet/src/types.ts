@@ -299,6 +299,7 @@ export interface OnrampStatusResponse {
   transactionCode: string;
   receipt_number?: string | null;
   transaction_hash?: string | null;
+  amount?:string | null;
  
 }
 
