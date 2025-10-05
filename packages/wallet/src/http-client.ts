@@ -12,11 +12,11 @@ export class RiftHttpClient implements HttpClient {
   private getDefaultBaseUrl(): string {
     switch (this.config.environment) {
       case "production":
-        return "https://app.riftfi.xyz";
+        return "https://dapp.riftfi.xyz";
       case "development":
-        return "https://app.riftfi.xyz";
+        return "https://dapp.riftfi.xyz";
       default:
-        return "https://app.riftfi.xyz";
+        return "https://dapp.riftfi.xyz";
     }
   }
 
@@ -199,4 +199,5 @@ export class RiftHttpClient implements HttpClient {
     // This will be handled by individual service methods
   }
 }
+
 
