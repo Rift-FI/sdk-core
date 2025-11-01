@@ -147,8 +147,12 @@ export interface ExchangeRateResponse {
 
 // Offramp Types
 export enum OfframpCurrency {
-  NGN = "NGN",
-  KES = "KES",
+  KES = "KES",  // Kenya
+  NGN = "NGN",  // Nigeria
+  UGX = "UGX",  // Uganda
+  CDF = "CDF",  // Democratic Republic of Congo
+  ETB = "ETB",  // Ethiopia
+  GHS = "GHS",  // Ghana
 }
 
 export enum RampChain {
