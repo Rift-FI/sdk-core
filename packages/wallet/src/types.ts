@@ -254,7 +254,7 @@ export interface OfframpOrder {
   createdAt: string;
   transaction_hash?: string;
   receipt_number?: string;
-  
+  currency?: string;
 }
 
 
@@ -328,6 +328,7 @@ export interface OnrampStatusResponse {
   chain?: string;
   asset?: string;
   account_number?: string;
+  currency?: string;
 }
 
 

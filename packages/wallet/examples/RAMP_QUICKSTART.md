@@ -210,6 +210,7 @@ orders.orders.forEach(order => {
   console.log('ID:', order.id);
   console.log('Status:', order.status);
   console.log('Amount:', order.amount);
+  console.log('Currency:', order.currency);      // NEW
   console.log('Transaction Code:', order.transactionCode);
   console.log('Created:', order.createdAt);
 });
@@ -225,6 +226,7 @@ onrampOrders.forEach(order => {
   console.log('Status:', order.status);
   console.log('Transaction Code:', order.transactionCode);
   console.log('Amount:', order.amount);
+  console.log('Currency:', order.currency);  // NEW
 });
 ```
 
