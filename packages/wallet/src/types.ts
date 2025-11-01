@@ -224,7 +224,9 @@ export interface GetSupportedInstitutionsResponse {
 
 export interface PreviewExchangeRateResponse {
   rate: number;
+  buying_rate: number;
   selling_rate: number;
+  quoted_rate: number;
 }
 
 export interface CreateOfframpOrderRequest {
@@ -232,8 +234,12 @@ export interface CreateOfframpOrderRequest {
   amount: number;
   currency: OfframpCurrency;
   chain: RampChain;
- 
   recipient: string; // JSON stringified Recipient object
+  // New optional utility payment fields
+  utilities?: boolean;
+  service_code?: string;
+  contact_number?: string;
+  shortcode?: string;
 }
 
 export interface OfframpOrder {
@@ -250,12 +256,16 @@ export interface OfframpOrder {
 
 // const { token, amount, currency, chain, recipient} = req.body;
 export interface PayRequest {
- 
   token: RampToken;
   amount: number;
   currency: OfframpCurrency;
   chain: RampChain;
   recipient: string; // JSON stringified Recipient object
+  // New optional utility payment fields
+  utilities?: boolean;
+  service_code?: string;
+  contact_number?: string;
+  shortcode?: string;
 }
 
 //const { shortcode, amount, chain, asset,  mobile_network, country_code} = req.body;
@@ -279,10 +289,19 @@ export interface BuyRequest {
 // }
 
 export interface BuyResponse {
-    transaction_code: string;
-    status: string;
-    message: string;
-
+  success?: boolean;
+  message: string;
+  transaction_code?: string;
+  status?: string;
+  data?: {
+    id?: string;
+    shortcode?: string;
+    amount?: string;
+    chain?: string;
+    asset?: string;
+    status?: string;
+    account_number?: string;
+  };
 }
 
 // //const order: {
@@ -295,13 +314,16 @@ export interface BuyResponse {
 // }
 
 export interface OnrampStatusResponse {
- 
+  id?: string;
   status: string;
   transactionCode: string;
   receipt_number?: string | null;
   transaction_hash?: string | null;
-  amount?:string | null;
- 
+  amount?: string | null;
+  shortcode?: string;
+  chain?: string;
+  asset?: string;
+  account_number?: string;
 }
 
 
@@ -327,7 +349,9 @@ export interface PollOfframpOrderRequest {
 export interface PollOfframpOrderResponse {
   status: string;
   transactionCode: string;
-  receipt_number: string;
+  receipt_number?: string;
+  amount?: string;
+  currency?: string;
 }
 
 export interface GetOfframpOrdersResponse {
@@ -1667,6 +1691,36 @@ export interface MerchantNotApprovedError {
     userId: string;
     identifier: string | null;
   };
+}
+
+// Ramp Balance Error Types
+export interface InsufficientFloatBalanceError {
+  error: "Insufficient float balance";
+  message: string;
+  required: number;
+  available: number;
+  currency: string;
+}
+
+export interface InsufficientUsdcBalanceError {
+  error: "Insufficient USDC balance";
+  message: string;
+  required: number;
+  available: number;
+  asset: string;
+  chain: string;
+}
+
+export interface UsdcTransferFailedError {
+  error: "USDC transfer failed";
+  message: string;
+  provider: string;
+  transferError: string;
+}
+
+export interface RampTimeoutError {
+  error: string; // e.g., "timeout of 30000ms exceeded"
+  message?: string;
 }
 
 // Deposit Types
