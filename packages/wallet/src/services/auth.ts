@@ -90,7 +90,7 @@ export class AuthService extends BaseService {
   async signup(request: SignupRequest): Promise<SignupResponse> {
     return this.publicRequest<SignupResponse>({
       method: "POST",
-      url: "/auth/signup",
+      url: "/api/auth/signup",
       data: this.transformAuthRequest(request),
     });
   }
@@ -98,7 +98,7 @@ export class AuthService extends BaseService {
   async login(request: LoginRequest): Promise<LoginResponse> {
     const response = await this.publicRequest<LoginResponse>({
       method: "POST",
-      url: "/auth/login",
+      url: "/api/auth/login",
       data: this.transformAuthRequest(request),
     });
 
