@@ -38,7 +38,7 @@ export class Rift {
     this.httpClient = new RiftHttpClient(config);
 
     // Initialize all services
-    this.auth = new AuthService(this.httpClient, config);
+    this.auth = new AuthService(this.httpClient);
     this.deposits = new DepositsService(this.httpClient);
     this.wallet = new WalletService(this.httpClient);
     this.transactions = new TransactionService(this.httpClient);

@@ -1,5 +1,4 @@
 import { BaseService } from "../base-service";
-import { RiftHttpClient } from "../http-client";
 import {
   LoginRequest,
   SignupRequest,
@@ -32,74 +31,23 @@ import {
   DeleteAllRecoveryMethodsRequest,
   DeleteAllRecoveryMethodsResponse,
   UpdateUserResponse,
-  User,
   UpdateUserRequest,
-  RiftConfig,
-  RequestConfig,
 } from "../types";
 
 export class AuthService extends BaseService {
-  private authHttpClient: RiftHttpClient;
-
-  constructor(httpClient: RiftHttpClient, config: RiftConfig) {
-    super(httpClient);
-    
-    // Create a separate HTTP client for auth with different base URL
-    const authConfig = {
-      ...config,
-      baseUrl: config.environment === "production" 
-        ? "https://authentication.riftfi.xyz"
-        : "https://authentication.riftfi.xyz"
-    };
-    this.authHttpClient = new RiftHttpClient(authConfig);
-  }
-
-  // Override the request methods to use authHttpClient
-  protected async authenticatedRequest<T>(config: RequestConfig): Promise<T> {
-    const headers = { ...config.headers };
-
-    if (this.getBearerToken()) {
-      headers.Authorization = `Bearer ${this.getBearerToken()}`;
-    }
-
-    return this.authHttpClient.request<T>({
-      ...config,
-      headers,
-    });
-  }
-
-  protected async publicRequest<T>(config: RequestConfig): Promise<T> {
-    return this.authHttpClient.request<T>(config);
-  }
-
-  // Helper to convert snake_case to camelCase for auth requests
-  private transformAuthRequest(data: any): any {
-    const transformed: any = {};
-    
-    for (const [key, value] of Object.entries(data)) {
-      if (value !== undefined && value !== null) {
-        // Convert snake_case keys to camelCase
-        const camelKey = key.replace(/_([a-z])/g, (_, letter) => letter.toUpperCase());
-        transformed[camelKey] = value;
-      }
-    }
-    
-    return transformed;
-  }
-
   async signup(request: SignupRequest): Promise<SignupResponse> {
     return this.publicRequest<SignupResponse>({
       method: "POST",
-      url: "/api/auth/signup",
-      data: this.transformAuthRequest(request),
+      url: "/auth/signup",
+      data: request,
     });
   }
 
   async login(request: LoginRequest): Promise<LoginResponse> {
     const response = await this.publicRequest<LoginResponse>({
       method: "POST",
-      url: "/api/auth/login",
-      data: this.transformAuthRequest(request),
+      url: "/auth/login",
+      data: request,
     });
 
     if (response.accessToken) {
@@ -113,7 +61,7 @@ export class AuthService extends BaseService {
     return this.authenticatedRequest<UpdateUserResponse>({
       method: "PUT",
       url: "/user/update",
-      data: this.transformAuthRequest(request),
+      data: request,
     });
   }
 
@@ -122,7 +70,7 @@ export class AuthService extends BaseService {
     return this.publicRequest<OtpResponse>({
       method: "POST",
       url: "/otp/send",
-      data: this.transformAuthRequest(request),
+      data: request,
     });
   }
 
@@ -130,7 +78,7 @@ export class AuthService extends BaseService {
     return this.publicRequest<OtpResponse>({
       method: "POST",
       url: "/otp/verify",
-      data: this.transformAuthRequest(request),
+      data: request,
     });
   }
 
@@ -149,7 +97,7 @@ export class AuthService extends BaseService {
     >({
       method: "DELETE",
       url: "/user/delete",
-      data: this.transformAuthRequest(request),
+      data: request,
     });
 
     this.clearBearerToken();
@@ -173,7 +121,7 @@ export class AuthService extends BaseService {
     return this.authenticatedRequest<CreateRecoveryResponse>({
       method: "POST",
       url: "/recovery/create",
-      data: this.transformAuthRequest(request),
+      data: request,
     });
   }
 
@@ -192,7 +140,7 @@ export class AuthService extends BaseService {
     return this.publicRequest<RequestPasswordResetResponse>({
       method: "POST",
       url: "/recovery/request-reset",
-      data: this.transformAuthRequest(request),
+      data: request,
     });
   }
 
@@ -202,7 +150,7 @@ export class AuthService extends BaseService {
     return this.publicRequest<ResetPasswordResponse>({
       method: "POST",
       url: "/recovery/reset-password",
-      data: this.transformAuthRequest(request),
+      data: request,
     });
   }
 
@@ -212,7 +160,7 @@ export class AuthService extends BaseService {
     return this.authenticatedRequest<UpdateRecoveryResponse>({
       method: "PUT",
       url: "/recovery/update",
-      data: this.transformAuthRequest(request),
+      data: request,
     });
   }
 
@@ -222,7 +170,7 @@ export class AuthService extends BaseService {
     return this.authenticatedRequest<AddRecoveryMethodResponse>({
       method: "POST",
       url: "/recovery/add-method",
-      data: this.transformAuthRequest(request),
+      data: request,
     });
   }
 
@@ -232,7 +180,7 @@ export class AuthService extends BaseService {
     return this.authenticatedRequest<RemoveRecoveryMethodResponse>({
       method: "DELETE",
       url: "/recovery/remove-method",
-      data: this.transformAuthRequest(request),
+      data: request,
     });
   }
 
@@ -242,7 +190,7 @@ export class AuthService extends BaseService {
     return this.authenticatedRequest<UpdateRecoveryMethodResponse>({
       method: "PUT",
       url: "/recovery/update-method",
-      data: this.transformAuthRequest(request),
+      data: request,
     });
   }
 
@@ -252,7 +200,7 @@ export class AuthService extends BaseService {
     return this.authenticatedRequest<GetMyRecoveryMethodsResponse>({
       method: "POST",
       url: "/recovery/my-methods",
-      data: this.transformAuthRequest(request),
+      data: request,
     });
   }
 
@@ -262,7 +210,7 @@ export class AuthService extends BaseService {
     return this.authenticatedRequest<DeleteAllRecoveryMethodsResponse>({
       method: "DELETE",
       url: "/recovery/delete-all",
-      data: this.transformAuthRequest(request),
+      data: request,
     });
   }
 }
