@@ -134,6 +134,21 @@ Comprehensive TypeScript examples with full error handling.
 
 **Best for:** Production implementations and learning best practices.
 
+### [UTILITY_PAYMENTS_GUIDE.md](./UTILITY_PAYMENTS_GUIDE.md) 🆕
+Complete guide for integrating utility payments (airtime, bills).
+
+**Best for:** Frontend developers integrating airtime purchases.
+
+### [UTILITY_PAYMENTS_QUICK_REF.md](./UTILITY_PAYMENTS_QUICK_REF.md) 🆕
+Ultra-quick reference for utility payments in 3 steps.
+
+**Best for:** Quick integration and troubleshooting.
+
+### [SUPPORTED_COUNTRIES.md](./SUPPORTED_COUNTRIES.md)
+Country-specific documentation and payment methods.
+
+**Best for:** Understanding what's available in each country.
+
 **Includes:**
 - ✅ 50+ working examples
 - ✅ Complete error handling
