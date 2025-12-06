@@ -4,9 +4,15 @@ Complete, production-ready examples for all Rift Ramp API operations.
 
 ## 🚀 Quick Links
 
+### Ramp (Offramp/Onramp)
 - **[Quick Start Guide](./RAMP_QUICKSTART.md)** - Copy-paste examples for all operations
 - **[Complete Examples](./ramp-api-examples.ts)** - Full TypeScript examples with error handling
 - **[Type Definitions](../src/types.ts)** - All TypeScript interfaces
+
+### SAIL.R Trading 🆕
+- **[SAIL.R Quick Start](./SAILR_QUICKSTART.md)** - Buy/sell SAIL.R tokens guide
+- **[SAIL.R Examples](./sailr-trading-examples.ts)** - Complete trading examples
+- **[OpenAPI Spec](../sail.json)** - Full API specification
 
 ## 📋 What's Included
 
@@ -44,6 +50,13 @@ Complete, production-ready examples for all Rift Ramp API operations.
 - ✅ End-to-end onramp flow
 - ✅ Airtime purchase flow
 - ✅ Batch operations
+
+### 7. SAIL.R Trading Examples 🆕
+- ✅ Buy SAIL.R with USDC
+- ✅ Sell SAIL.R for USDC
+- ✅ Get buy/sell quotes
+- ✅ Gasless transactions
+- ✅ Cross-chain swaps (Base ↔ Berachain)
 
 ## 🎯 Quick Start
 
@@ -122,6 +135,40 @@ const onramp = await rift.onrampV2.buy({
 console.log('Transaction Code:', onramp.transaction_code);
 ```
 
+### 6. Buy SAIL.R Tokens (NEW!) 🆕
+
+```typescript
+// Get a quote first
+const quote = await rift.sailr.getBuyQuote("1000000"); // 1 USDC
+console.log('Total Cost:', quote.quote.totalUsdcNeededFormatted);
+console.log("You'll receive:", quote.quote.estimatedSailRFormatted);
+
+// Execute the buy
+const result = await rift.sailr.buy({
+  amount: "1000000" // 1 USDC (6 decimals)
+});
+
+console.log('SAIL.R sent to:', result.eoaAddress);
+console.log('Swap TX:', result.swapTransactions[0]);
+```
+
+### 7. Sell SAIL.R Tokens (NEW!) 🆕
+
+```typescript
+// Get a quote first
+const quote = await rift.sailr.getSellQuote("5000000000000000"); // 0.005 SAIL.R
+console.log('Net USDC:', quote.quote.estimatedUsdcNetFormatted);
+
+// Execute the sell
+const result = await rift.sailr.sell({
+  amount: "5000000000000000", // 0.005 SAIL.R (18 decimals)
+  returnToSmartWallet: true
+});
+
+console.log('USDC received:', result.estimatedUsdc);
+console.log('Swap TX:', result.swapTransactions[0]);
+```
+
 ## 📖 Example Files
 
 ### [RAMP_QUICKSTART.md](./RAMP_QUICKSTART.md)
@@ -149,6 +196,16 @@ Country-specific documentation and payment methods.
 
 **Best for:** Understanding what's available in each country.
 
+### [SAILR_QUICKSTART.md](./SAILR_QUICKSTART.md) 🆕
+Quick start guide for buying and selling SAIL.R tokens.
+
+**Best for:** Integrating SAIL.R trading in your app.
+
+### [sailr-trading-examples.ts](./sailr-trading-examples.ts) 🆕
+Complete TypeScript examples for SAIL.R trading with error handling.
+
+**Best for:** Production implementations of SAIL.R trading.
+
 **Includes:**
 - ✅ 50+ working examples
 - ✅ Complete error handling
@@ -158,6 +215,48 @@ Country-specific documentation and payment methods.
 - ✅ Real-world scenarios
 
 ## 🆕 What's New
+
+### New SAIL.R Trading Service 🎉
+
+Trade SAIL.R tokens with gasless transactions across Base and Berachain!
+
+**Features:**
+- ✅ Buy SAIL.R with USDC
+- ✅ Sell SAIL.R for USDC
+- ✅ Gasless transactions (no gas fees!)
+- ✅ Cross-chain swaps (Base ↔ Berachain)
+- ✅ Automatic gas funding and refunds
+- ✅ Smart wallet integration
+
+**See:** [SAILR_QUICKSTART.md](./SAILR_QUICKSTART.md) for complete guide.
+
+### New Chain & Token Support
+
+**Chains:**
+- ✅ `polygon` (existing)
+- ✅ `base` (existing)
+- ✅ `berachain` 🆕
+
+**Tokens:**
+- ✅ `USDC` (existing)
+- ✅ `USDE` 🆕
+- ✅ `SAIL` 🆕
+
+```typescript
+import { RampChain, RampToken } from '@rift/wallet';
+
+// New chain
+const chain = RampChain.BERACHAIN;
+
+// New tokens
+const usde = RampToken.USDE;
+const sail = RampToken.SAIL;
+
+// Get balances for Berachain
+const balances = await rift.wallet.getChainBalance({
+  chain: "berachain"
+});
+```
 
 ### Updated Type Definitions
 
@@ -270,6 +369,9 @@ await rift.offramp.createOrder({
 | **Exchange Rate** | `rift.offramp.previewExchangeRate()` | All | Get rates |
 | **Status** | `rift.offramp.pollOrderStatus()` | All | Check status |
 | **Orders** | `rift.offramp.getOrders()` | All | List orders |
+| **Buy SAIL.R** 🆕 | `rift.sailr.buy()` | USDC | Buy SAIL.R tokens |
+| **Sell SAIL.R** 🆕 | `rift.sailr.sell()` | USDC | Sell SAIL.R tokens |
+| **SAIL.R Quote** 🆕 | `rift.sailr.getBuyQuote()` / `getSellQuote()` | USDC | Get trading quotes |
 
 ## 🚨 Important Notes
 

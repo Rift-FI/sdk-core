@@ -158,10 +158,13 @@ export enum OfframpCurrency {
 export enum RampChain {
   POLYGON = "polygon",
   BASE = "base",
+  BERACHAIN = "berachain",
 }
 
 export enum RampToken {
   USDC = "USDC",
+  USDE = "USDE",
+  SAIL = "SAIL",
 }
 
 export interface Recipient {
@@ -1752,4 +1755,116 @@ export interface Deposit {
 
 export interface GetAllDepositsResponse {
   deposits: Deposit[];
+}
+
+// SAIL.R Trading Types
+
+export interface SailRFees {
+  gasRefund: number;
+  gasRefundFormatted: string;
+  ethGas: string;
+  beraGas: string;
+}
+
+export interface SailRBuyBalances {
+  smartWallet: number;
+  smartWalletFormatted: string;
+  eoa: number;
+  eoaFormatted: string;
+  needsTransfer: boolean;
+  transferAmount: number;
+  transferAmountFormatted: string;
+}
+
+export interface SailRSellBalances {
+  sailrInEoa: string;
+  sailrInEoaFormatted: string;
+  hasSufficientSailr: boolean;
+}
+
+export interface SailRRouteInfo {
+  isMultiHop: boolean;
+  steps: number;
+  provider: "enso" | "lifi";
+}
+
+export interface SailRPriceInfo {
+  usdcPerSailR?: number;
+  sailrPerUsdc?: number;
+  effectiveRate: string;
+}
+
+export interface SailRBuyQuote {
+  usdcToSwap: number;
+  usdcToSwapFormatted: string;
+  fees: SailRFees;
+  totalUsdcNeeded: number;
+  totalUsdcNeededFormatted: string;
+  balances: SailRBuyBalances;
+  estimatedSailR: string;
+  estimatedSailRFormatted: string;
+  route: SailRRouteInfo;
+  canExecute: boolean;
+  warnings: string[];
+}
+
+export interface SailRSellQuote {
+  sailrToSell: string;
+  sailrToSellFormatted: string;
+  estimatedUsdcGross: number;
+  estimatedUsdcGrossFormatted: string;
+  fees: SailRFees;
+  estimatedUsdcNet: number;
+  estimatedUsdcNetFormatted: string;
+  balances: SailRSellBalances;
+  route: SailRRouteInfo;
+  canExecute: boolean;
+  warnings: string[];
+}
+
+export interface SailRBuyQuoteResponse {
+  success: boolean;
+  quote: SailRBuyQuote;
+  priceInfo: SailRPriceInfo;
+}
+
+export interface SailRSellQuoteResponse {
+  success: boolean;
+  quote: SailRSellQuote;
+  priceInfo: SailRPriceInfo;
+}
+
+export interface SailRBuyRequest {
+  amount: string; // USDC amount in wei (6 decimals)
+}
+
+export interface SailRSellRequest {
+  amount: string; // SAIL.R amount in wei (18 decimals)
+  returnToSmartWallet?: boolean; // Default: true
+}
+
+export interface SailRRefundInfo {
+  ethSent: string;
+  beraSent: string;
+  refundTxHash: string;
+}
+
+export interface SailRBuyResponse {
+  success: boolean;
+  message: string;
+  smartWalletToEOA?: string;
+  swapTransactions: string[];
+  refund?: SailRRefundInfo;
+  estimatedSailR: string;
+  eoaAddress: string;
+}
+
+export interface SailRSellResponse {
+  success: boolean;
+  message: string;
+  swapTransactions: string[];
+  refund?: SailRRefundInfo;
+  eoaToSmartWallet?: string;
+  estimatedUsdc: string;
+  eoaAddress: string;
 }
