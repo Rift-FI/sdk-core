@@ -319,6 +319,138 @@ async function errorHandlingExample() {
   }
 }
 
+/**
+ * Example 8: Get USDe sell quote
+ * Get estimate for selling USDe tokens for USDC
+ */
+async function getUSDeSellQuoteExample() {
+  try {
+    const usdeAmount = "5000000000000000000"; // 5 USDe (18 decimals)
+    
+    const response = await rift.sailr.getUSDeSellQuote(usdeAmount);
+    
+    console.log("=== USDe Sell Quote ===");
+    console.log("Success:", response.success);
+    console.log("\n--- Quote Details ---");
+    console.log("USDe to Sell:", response.quote.usdeToSellFormatted);
+    console.log("Estimated USDC (Gross):", response.quote.estimatedUsdcGrossFormatted);
+    console.log("Estimated USDC (Net):", response.quote.estimatedUsdcNetFormatted);
+    console.log("Can Execute:", response.quote.canExecute);
+    
+    console.log("\n--- Fees ---");
+    console.log("Gas Refund:", response.quote.fees.gasRefundFormatted);
+    console.log("ETH Gas:", response.quote.fees.ethGas);
+    console.log("BERA Gas:", response.quote.fees.beraGas);
+    
+    console.log("\n--- Balances ---");
+    console.log("USDe in EOA:", response.quote.balances.usdeInEoaFormatted);
+    console.log("Has Sufficient USDe:", response.quote.balances.hasSufficientUSDe);
+    
+    console.log("\n--- Route Info ---");
+    console.log("Multi-Hop:", response.quote.route.isMultiHop);
+    console.log("Steps:", response.quote.route.steps);
+    console.log("Provider:", response.quote.route.provider);
+    
+    console.log("\n--- Price Info ---");
+    console.log("USDe per USDC:", response.priceInfo.usdePerUsdc);
+    console.log("Effective Rate:", response.priceInfo.effectiveRate);
+    
+    if (response.quote.warnings.length > 0) {
+      console.log("\n--- Warnings ---");
+      response.quote.warnings.forEach((warning) => console.log(`⚠️  ${warning}`));
+    }
+    
+    return response;
+  } catch (error) {
+    console.error("Error getting USDe sell quote:", error);
+    throw error;
+  }
+}
+
+/**
+ * Example 9: Sell USDe tokens
+ * Execute a sell transaction to exchange USDe for USDC
+ */
+async function sellUSDeExample() {
+  try {
+    const response = await rift.sailr.sellUSDe({
+      amount: "5000000000000000000", // 5 USDe (18 decimals)
+      returnToSmartWallet: true, // Optional, defaults to true
+    });
+    
+    console.log("=== USDe Sell Transaction ===");
+    console.log("Success:", response.success);
+    console.log("Message:", response.message);
+    console.log("\n--- Transaction Details ---");
+    console.log("EOA Address:", response.eoaAddress);
+    console.log("Estimated USDC:", response.estimatedUsdc);
+    
+    console.log("\n--- Swap Transactions ---");
+    response.swapTransactions.forEach((txHash, index) => {
+      console.log(`Step ${index + 1}:`, txHash);
+    });
+    
+    if (response.refund) {
+      console.log("\n--- Gas Refund ---");
+      console.log("ETH Sent:", response.refund.ethSent);
+      console.log("BERA Sent:", response.refund.beraSent);
+      console.log("Refund TX Hash:", response.refund.refundTxHash);
+    }
+    
+    if (response.eoaToSmartWallet) {
+      console.log("\n--- EOA to Smart Wallet Transfer ---");
+      console.log("TX Hash:", response.eoaToSmartWallet);
+    }
+    
+    return response;
+  } catch (error) {
+    console.error("Error selling USDe:", error);
+    throw error;
+  }
+}
+
+/**
+ * Example 10: Complete USDe sell workflow
+ * Get quote, check if executable, then execute
+ */
+async function completeUSDeSellWorkflow() {
+  try {
+    console.log("Step 1: Getting USDe sell quote...");
+    const quote = await rift.sailr.getUSDeSellQuote("5000000000000000000"); // 5 USDe
+    
+    if (!quote.quote.canExecute) {
+      console.error("❌ Cannot execute USDe sell:");
+      if (quote.quote.warnings.length > 0) {
+        quote.quote.warnings.forEach((warning) => console.log(`  - ${warning}`));
+      }
+      return;
+    }
+    
+    console.log("✅ Quote looks good!");
+    console.log(`You'll receive approximately: ${quote.quote.estimatedUsdcNetFormatted} (net)`);
+    console.log(`Gross USDC: ${quote.quote.estimatedUsdcGrossFormatted}`);
+    console.log(`Gas refund: ${quote.quote.fees.gasRefundFormatted}`);
+    
+    console.log("\nStep 2: Executing USDe sell transaction...");
+    const sellResult = await rift.sailr.sellUSDe({
+      amount: "5000000000000000000",
+      returnToSmartWallet: true,
+    });
+    
+    console.log("✅ USDe sell completed successfully!");
+    console.log(`USDC will be in your smart wallet`);
+    console.log("\nSwap transaction(s):");
+    sellResult.swapTransactions.forEach((txHash) => {
+      console.log(`  ${txHash}`);
+    });
+    
+    return sellResult;
+  } catch (error) {
+    console.error("Error in USDe sell workflow:", error);
+    throw error;
+  }
+}
+
 // Export all examples
 export {
   getBuyQuoteExample,
@@ -328,6 +460,9 @@ export {
   completeBuyWorkflow,
   completeSellWorkflow,
   errorHandlingExample,
+  getUSDeSellQuoteExample,
+  sellUSDeExample,
+  completeUSDeSellWorkflow,
 };
 
 // Run examples if this file is executed directly
@@ -335,17 +470,25 @@ if (require.main === module) {
   (async () => {
     try {
       console.log("=".repeat(60));
-      console.log("SAIL.R Trading Examples");
+      console.log("SAIL.R & USDe Trading Examples");
       console.log("=".repeat(60));
       
       // Uncomment the example you want to run:
       
+      // SAIL.R Examples
       // await getBuyQuoteExample();
       // await buyExample();
       // await getSellQuoteExample();
       // await sellExample();
       // await completeBuyWorkflow();
       // await completeSellWorkflow();
+      
+      // USDe Examples
+      // await getUSDeSellQuoteExample();
+      // await sellUSDeExample();
+      // await completeUSDeSellWorkflow();
+      
+      // Error Handling
       // await errorHandlingExample();
       
       console.log("\n✅ Examples completed successfully!");

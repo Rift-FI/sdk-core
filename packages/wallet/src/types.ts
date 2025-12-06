@@ -1868,3 +1868,51 @@ export interface SailRSellResponse {
   estimatedUsdc: string;
   eoaAddress: string;
 }
+
+// USDe Trading Types
+
+export interface USDeSellBalances {
+  usdeInEoa: string;
+  usdeInEoaFormatted: string;
+  hasSufficientUSDe: boolean;
+}
+
+export interface USDePriceInfo {
+  usdePerUsdc: number;
+  effectiveRate: string;
+}
+
+export interface USDeSellQuote {
+  usdeToSell: string;
+  usdeToSellFormatted: string;
+  estimatedUsdcGross: number;
+  estimatedUsdcGrossFormatted: string;
+  fees: SailRFees;
+  estimatedUsdcNet: number;
+  estimatedUsdcNetFormatted: string;
+  balances: USDeSellBalances;
+  route: SailRRouteInfo;
+  canExecute: boolean;
+  warnings: string[];
+}
+
+export interface USDeSellQuoteResponse {
+  success: boolean;
+  quote: USDeSellQuote;
+  priceInfo: USDePriceInfo;
+}
+
+export interface USDeSellRequest {
+  amount: string; // USDe amount in wei (18 decimals)
+  returnToSmartWallet?: boolean; // Default: true
+}
+
+export interface USDeSellResponse {
+  success: boolean;
+  message: string;
+  swapTransactions: string[];
+  refund?: SailRRefundInfo;
+  eoaToSmartWallet?: string;
+  estimatedUsdc: string;
+  eoaAddress: string;
+}

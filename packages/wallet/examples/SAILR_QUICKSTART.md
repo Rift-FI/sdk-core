@@ -1,12 +1,12 @@
-# 🚀 SAIL.R Trading Quick Start Guide
+# 🚀 SAIL.R & USDe Trading Quick Start Guide
 
-Complete guide for buying and selling SAIL.R tokens using the Rift SDK.
+Complete guide for trading SAIL.R and USDe tokens using the Rift SDK.
 
 ---
 
 ## 📋 Overview
 
-The SAIL.R service enables gasless trading of SAIL.R tokens with USDC across Base and Berachain networks. The system automatically handles:
+The trading service enables gasless trading of SAIL.R and USDe tokens with USDC across Base and Berachain networks. The system automatically handles:
 
 - ✅ USDC transfers between smart wallet and EOA
 - ✅ Gas funding on both chains
@@ -205,6 +205,91 @@ console.log("Swap TX:", result.swapTransactions[0]);
 
 ---
 
+## 🪙 Selling USDe
+
+### 1. Get a Quote
+
+```typescript
+const quote = await rift.sailr.getUSDeSellQuote("5000000000000000000"); // 5 USDe (18 decimals)
+
+console.log("Gross USDC:", quote.quote.estimatedUsdcGrossFormatted);
+console.log("Net USDC:", quote.quote.estimatedUsdcNetFormatted);
+console.log("Can execute:", quote.quote.canExecute);
+```
+
+**Response Structure:**
+
+```typescript
+{
+  success: true,
+  quote: {
+    usdeToSell: "5000000000000000000",
+    usdeToSellFormatted: "5.0 USDe",
+    estimatedUsdcGross: 5000000,
+    estimatedUsdcGrossFormatted: "5.0 USDC",
+    fees: {
+      gasRefund: 2300000,
+      gasRefundFormatted: "2.3 USDC",
+      ethGas: "0.000658590156052938",
+      beraGas: "1.0"
+    },
+    estimatedUsdcNet: 2700000,
+    estimatedUsdcNetFormatted: "2.7 USDC",
+    balances: {
+      usdeInEoa: "10000000000000000000",
+      usdeInEoaFormatted: "10.0 USDe",
+      hasSufficientUSDe: true
+    },
+    route: {
+      isMultiHop: false,
+      steps: 1,
+      provider: "enso"
+    },
+    canExecute: true,
+    warnings: []
+  },
+  priceInfo: {
+    usdePerUsdc: 1.0,
+    effectiveRate: "1 USDC ≈ 1.000000 USDe"
+  }
+}
+```
+
+---
+
+### 2. Execute Sell
+
+```typescript
+const result = await rift.sailr.sellUSDe({
+  amount: "5000000000000000000", // 5 USDe (18 decimals)
+  returnToSmartWallet: true, // Optional, defaults to true
+});
+
+console.log("Success:", result.success);
+console.log("USDC received:", result.estimatedUsdc);
+console.log("Swap TX:", result.swapTransactions[0]);
+```
+
+**Response Structure:**
+
+```typescript
+{
+  success: true,
+  message: "USDe sold successfully",
+  swapTransactions: ["0x7471e83315195f0db621cfb03e222cad20ae4e7d..."],
+  refund: {
+    ethSent: "0.000658590156052938",
+    beraSent: "1.0",
+    refundTxHash: "0x9876543210fedcba..."
+  },
+  eoaToSmartWallet: "0x1234567890abcdef...", // If returnToSmartWallet: true
+  estimatedUsdc: "5000000",
+  eoaAddress: "0xC9AA473460C6b9A1f502e1488d4A9A35E6014efb"
+}
+```
+
+---
+
 ## 🔄 Complete Workflows
 
 ### Buy Workflow with Validation
@@ -269,6 +354,39 @@ async function sellWithValidation(sailrAmount: string) {
 
 ---
 
+### USDe Sell Workflow with Validation
+
+```typescript
+async function sellUSDeWithValidation(usdeAmount: string) {
+  // Step 1: Get quote
+  const quote = await rift.sailr.getUSDeSellQuote(usdeAmount);
+  
+  // Step 2: Check if executable
+  if (!quote.quote.canExecute) {
+    console.error("Cannot execute USDe sell:", quote.quote.warnings);
+    return;
+  }
+  
+  // Step 3: Show earnings to user
+  console.log(`Gross USDC: ${quote.quote.estimatedUsdcGrossFormatted}`);
+  console.log(`Gas refund: ${quote.quote.fees.gasRefundFormatted}`);
+  console.log(`Net USDC: ${quote.quote.estimatedUsdcNetFormatted}`);
+  
+  // Step 4: Execute
+  const result = await rift.sailr.sellUSDe({
+    amount: usdeAmount,
+    returnToSmartWallet: true,
+  });
+  
+  console.log("✅ USDe sell completed!");
+  console.log("TX:", result.swapTransactions[0]);
+  
+  return result;
+}
+```
+
+---
+
 ## 🔢 Amount Formats
 
 ### USDC (6 decimals)
@@ -287,6 +405,14 @@ async function sellWithValidation(sailrAmount: string) {
 "1000000000000000"      // 0.001 SAIL.R
 ```
 
+### USDe (18 decimals)
+```typescript
+"1000000000000000000"   // 1 USDe
+"5000000000000000000"   // 5 USDe
+"100000000000000000"    // 0.1 USDe
+"1000000000000000"      // 0.001 USDe
+```
+
 **Helper function:**
 
 ```typescript
@@ -297,6 +423,9 @@ const usdcAmount = ethers.parseUnits("1", 6).toString(); // "1000000"
 
 // For SAIL.R (18 decimals)
 const sailrAmount = ethers.parseUnits("0.005", 18).toString(); // "5000000000000000"
+
+// For USDe (18 decimals)
+const usdeAmount = ethers.parseUnits("5", 18).toString(); // "5000000000000000000"
 ```
 
 ---
@@ -329,20 +458,28 @@ try {
 1. **Decimals Matter**
    - USDC: 6 decimals
    - SAIL.R: 18 decimals
+   - USDe: 18 decimals
    - Always use wei format (smallest unit)
 
 2. **Gas Costs**
    - System automatically calculates gas refund
-   - Included in `totalUsdcNeeded` for buys
+   - Included in `totalUsdcNeeded` for SAIL.R buys
    - Deducted from `estimatedUsdcNet` for sells
 
-3. **SAIL.R Location**
-   - After buying: SAIL.R goes to your **EOA on Berachain**
-   - For selling: SAIL.R must be in your **EOA on Berachain**
+3. **Token Locations**
+   - **SAIL.R:**
+     - After buying: Goes to your **EOA on Berachain**
+     - For selling: Must be in your **EOA on Berachain**
+   - **USDe:**
+     - For selling: Must be in your **EOA on Berachain**
+   - **USDC:**
+     - For buying SAIL.R: Comes from your **smart wallet on Base**
+     - After selling: Goes to your **smart wallet on Base** (if `returnToSmartWallet: true`)
 
-4. **USDC Location**
-   - For buying: USDC comes from your **smart wallet on Base**
-   - After selling: USDC goes to your **smart wallet on Base** (if `returnToSmartWallet: true`)
+4. **Trading Options**
+   - **Buy SAIL.R:** Convert USDC → SAIL.R
+   - **Sell SAIL.R:** Convert SAIL.R → USDC
+   - **Sell USDe:** Convert USDe → USDC
 
 5. **Always Get Quote First**
    - Check `canExecute` before executing

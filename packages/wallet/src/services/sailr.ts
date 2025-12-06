@@ -6,6 +6,9 @@ import {
   SailRSellRequest,
   SailRBuyResponse,
   SailRSellResponse,
+  USDeSellQuoteResponse,
+  USDeSellRequest,
+  USDeSellResponse,
 } from "../types";
 
 export class SailRService extends BaseService {
@@ -53,6 +56,30 @@ export class SailRService extends BaseService {
     return this.authenticatedRequest<SailRSellResponse>({
       method: "POST",
       url: "/api/sailr/sell",
+      data: request,
+    });
+  }
+
+  /**
+   * Get a quote for selling USDe tokens for USDC
+   * @param amount - USDe amount in wei (18 decimals). Example: "5000000000000000000" = 5 USDe
+   */
+  async getUSDeSellQuote(amount: string): Promise<USDeSellQuoteResponse> {
+    return this.authenticatedRequest<USDeSellQuoteResponse>({
+      method: "GET",
+      url: "/api/sailr/sell-usde/quote",
+      params: { amount },
+    });
+  }
+
+  /**
+   * Execute a sell transaction to exchange USDe tokens for USDC
+   * @param request - Sell request containing USDe amount and optional returnToSmartWallet flag
+   */
+  async sellUSDe(request: USDeSellRequest): Promise<USDeSellResponse> {
+    return this.authenticatedRequest<USDeSellResponse>({
+      method: "POST",
+      url: "/api/sailr/sell-usde",
       data: request,
     });
   }
