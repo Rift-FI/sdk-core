@@ -158,13 +158,10 @@ export enum OfframpCurrency {
 export enum RampChain {
   POLYGON = "polygon",
   BASE = "base",
-  BERACHAIN = "berachain",
 }
 
 export enum RampToken {
   USDC = "USDC",
-  USDE = "USDE",
-  SAIL = "SAIL",
 }
 
 export interface Recipient {
@@ -609,9 +606,7 @@ export type ChainName =
   | "ETHEREUM"
   | "LISK"
   | "BNB"
-  | "BERACHAIN"
   | "POLYGON"
-  | "BERACHAIN_TESTNET"
   | "POLYGON_TESTNET"
   | "AVAX"
   | "BSC";
@@ -626,8 +621,7 @@ export type TokenSymbol =
   | "USDC.e"
   | "LSK"
   | "BNB"
-  | "MATIC"
-  | "SAIL";
+  | "MATIC";
 
 export interface Balance {
   amount: number;
@@ -1757,162 +1751,111 @@ export interface GetAllDepositsResponse {
   deposits: Deposit[];
 }
 
-// SAIL.R Trading Types
+// Vault Types
 
-export interface SailRFees {
-  gasRefund: number;
-  gasRefundFormatted: string;
-  ethGas: string;
-  beraGas: string;
+// Protocol Statistics
+export interface ProtocolStats {
+  tvl: string;
+  totalDeposits: string;
+  pendingRewards: string;
+  rewardsDistributed: string;
+  pendingClaimersCount: number;
+  pendingWithdrawersCount: number;
+  version: string;
+  stablecoin: string;
+  admin: string;
 }
 
-export interface SailRBuyBalances {
-  smartWallet: number;
-  smartWalletFormatted: string;
-  eoa: number;
-  eoaFormatted: string;
-  needsTransfer: boolean;
-  transferAmount: number;
-  transferAmountFormatted: string;
+export interface VaultTvlResponse {
+  tvl: string;
 }
 
-export interface SailRSellBalances {
-  sailrInEoa: string;
-  sailrInEoaFormatted: string;
-  hasSufficientSailr: boolean;
+export interface VaultTotalDepositsResponse {
+  totalDeposits: string;
 }
 
-export interface SailRRouteInfo {
-  isMultiHop: boolean;
-  steps: number;
-  provider: "enso" | "lifi";
+export interface VaultPendingRewardsResponse {
+  pendingRewards: string;
 }
 
-export interface SailRPriceInfo {
-  usdcPerSailR?: number;
-  sailrPerUsdc?: number;
-  effectiveRate: string;
+export interface VaultRewardsDistributedResponse {
+  rewardsDistributed: string;
 }
 
-export interface SailRBuyQuote {
-  usdcToSwap: number;
-  usdcToSwapFormatted: string;
-  fees: SailRFees;
-  totalUsdcNeeded: number;
-  totalUsdcNeededFormatted: string;
-  balances: SailRBuyBalances;
-  estimatedSailR: string;
-  estimatedSailRFormatted: string;
-  route: SailRRouteInfo;
-  canExecute: boolean;
-  warnings: string[];
+export interface VaultPendingClaimersResponse {
+  pendingClaimersCount: number;
 }
 
-export interface SailRSellQuote {
-  sailrToSell: string;
-  sailrToSellFormatted: string;
-  estimatedUsdcGross: number;
-  estimatedUsdcGrossFormatted: string;
-  fees: SailRFees;
-  estimatedUsdcNet: number;
-  estimatedUsdcNetFormatted: string;
-  balances: SailRSellBalances;
-  route: SailRRouteInfo;
-  canExecute: boolean;
-  warnings: string[];
+export interface VaultPendingWithdrawersResponse {
+  pendingWithdrawersCount: number;
 }
 
-export interface SailRBuyQuoteResponse {
+// Contract Information
+export interface VaultVersionResponse {
+  version: string;
+}
+
+export interface VaultStablecoinResponse {
+  stablecoin: string;
+}
+
+export interface VaultAdminResponse {
+  admin: string;
+}
+
+// User Data
+export interface UserVaultData {
+  address: string;
+  balance: string;
+  rewards: string;
+  hasPendingClaim: boolean;
+  pendingWithdrawal: string;
+  hasPendingWithdrawal: boolean;
+}
+
+export interface UserVaultBalanceResponse {
+  balance: string;
+}
+
+export interface UserVaultRewardsResponse {
+  rewards: string;
+}
+
+export interface UserVaultWhitelistResponse {
+  address: string;
+  isWhitelisted: boolean;
+}
+
+// User Operations
+export interface VaultDepositRequest {
+  amount: string;
+}
+
+export interface VaultApprovalInfo {
   success: boolean;
-  quote: SailRBuyQuote;
-  priceInfo: SailRPriceInfo;
+  userOperationHash: string;
 }
 
-export interface SailRSellQuoteResponse {
+export interface VaultDepositInfo {
   success: boolean;
-  quote: SailRSellQuote;
-  priceInfo: SailRPriceInfo;
+  transactionHash: string;
 }
 
-export interface SailRBuyRequest {
-  amount: string; // USDC amount in wei (6 decimals)
-}
-
-export interface SailRSellRequest {
-  amount: string; // SAIL.R amount in wei (18 decimals)
-  returnToSmartWallet?: boolean; // Default: true
-}
-
-export interface SailRRefundInfo {
-  ethSent: string;
-  beraSent: string;
-  refundTxHash: string;
-}
-
-export interface SailRBuyResponse {
-  success: boolean;
+export interface VaultDepositResponse {
   message: string;
-  smartWalletToEOA?: string;
-  swapTransactions: string[];
-  refund?: SailRRefundInfo;
-  estimatedSailR: string;
-  eoaAddress: string;
+  ownerEOA: string;
+  smartWalletAddress: string;
+  approvalPerformed: boolean;
+  approval: VaultApprovalInfo | null;
+  deposit: VaultDepositInfo;
 }
 
-export interface SailRSellResponse {
-  success: boolean;
+export interface VaultWithdrawRequest {
+  amount: string;
+}
+
+export interface VaultTransactionResponse {
   message: string;
-  swapTransactions: string[];
-  refund?: SailRRefundInfo;
-  eoaToSmartWallet?: string;
-  estimatedUsdc: string;
-  eoaAddress: string;
-}
-
-// USDe Trading Types
-
-export interface USDeSellBalances {
-  usdeInEoa: string;
-  usdeInEoaFormatted: string;
-  hasSufficientUSDe: boolean;
-}
-
-export interface USDePriceInfo {
-  usdePerUsdc: number;
-  effectiveRate: string;
-}
-
-export interface USDeSellQuote {
-  usdeToSell: string;
-  usdeToSellFormatted: string;
-  estimatedUsdcGross: number;
-  estimatedUsdcGrossFormatted: string;
-  fees: SailRFees;
-  estimatedUsdcNet: number;
-  estimatedUsdcNetFormatted: string;
-  balances: USDeSellBalances;
-  route: SailRRouteInfo;
-  canExecute: boolean;
-  warnings: string[];
-}
-
-export interface USDeSellQuoteResponse {
   success: boolean;
-  quote: USDeSellQuote;
-  priceInfo: USDePriceInfo;
-}
-
-export interface USDeSellRequest {
-  amount: string; // USDe amount in wei (18 decimals)
-  returnToSmartWallet?: boolean; // Default: true
-}
-
-export interface USDeSellResponse {
-  success: boolean;
-  message: string;
-  swapTransactions: string[];
-  refund?: SailRRefundInfo;
-  eoaToSmartWallet?: string;
-  estimatedUsdc: string;
-  eoaAddress: string;
+  transactionHash: string;
 }

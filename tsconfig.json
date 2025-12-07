@@ -15,13 +15,6 @@
     "composite": true,
     "incremental": true,
     "resolveJsonModule": true
-  },
-  "references": [
-    { "path": "./packages/shared" },
-    { "path": "./packages/core" },
-    { "path": "./packages/dex" },
-    { "path": "./packages/dividends" },
-    { "path": "./packages/token" },
+  }
 
-  ]
 } 

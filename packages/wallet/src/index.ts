@@ -13,7 +13,7 @@ import { NotificationService } from "./services/notifications";
 import { MerchantService } from "./services/merchant";
 import { OnrampServiceV2 } from "./services/onramp_v2";
 import { DepositsService } from "./services/Deposits";
-import { SailRService } from "./services/sailr";
+import { VaultService } from "./services/vault";
 
 export class Rift {
   public readonly config: RiftConfig;
@@ -33,7 +33,7 @@ export class Rift {
   public readonly merchant: MerchantService;
   public readonly deposits: DepositsService;
   public readonly onrampV2: OnrampServiceV2;
-  public readonly sailr: SailRService;
+  public readonly vault: VaultService;
 
   constructor(config: RiftConfig) {
     this.config = config;
@@ -53,7 +53,7 @@ export class Rift {
     this.onrampV2 = new OnrampServiceV2(this.httpClient);
     this.notifications = new NotificationService(this.httpClient);
     this.merchant = new MerchantService(this.httpClient);
-    this.sailr = new SailRService(this.httpClient);
+    this.vault = new VaultService(this.httpClient);
   }
 
   /**
@@ -79,7 +79,7 @@ export class Rift {
     this.offramp.setBearerToken(token);
     this.onrampV2.setBearerToken(token);
     this.deposits.setBearerToken(token);
-    this.sailr.setBearerToken(token);
+    this.vault.setBearerToken(token);
     // Note: onramp doesn't use bearer tokens
   }
 
@@ -99,7 +99,7 @@ export class Rift {
     this.offramp.clearBearerToken();
     this.onrampV2.clearBearerToken();
     this.deposits.clearBearerToken();
-    this.sailr.clearBearerToken();
+    this.vault.clearBearerToken();
     // Note: onramp doesn't use bearer tokens
   }
 
@@ -146,7 +146,7 @@ export { Environment };
 // Export service classes
 export { NotificationService } from "./services/notifications";
 export { OfframpService } from "./services/offramp";
-export { SailRService } from "./services/sailr";
+export { VaultService } from "./services/vault";
 
 // Default export
 export default Rift;

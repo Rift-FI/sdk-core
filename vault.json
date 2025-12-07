@@ -1,0 +1,947 @@
+{
+    "openapi": "3.0.3",
+    "info": {
+      "title": "RiftFi Vault API",
+      "description": "API endpoints for interacting with the RiftFi Yield Vault on Base network. Users can deposit USDC, earn yield rewards, request withdrawals, and claim rewards. All user write operations are executed gaslessly via smart wallet abstraction.\n\n## Authentication\n\n### API Key (Required for all endpoints)\nAll endpoints require an API key passed in the `X-API-Key` header.\n\n### JWT Token (Required for user endpoints)\nUser-specific endpoints (`/vault/user/*`) require a valid JWT token in the `Authorization: Bearer <token>` header. The JWT contains the user's encrypted private key which is used to sign transactions.\n\n## Flow Overview\n\n### Deposit Flow\n1. User calls `POST /vault/user/deposit` with amount\n2. Backend derives user's smart wallet address from their encrypted private key\n3. Backend checks USDC allowance for the smart wallet\n4. If insufficient, backend submits gasless approval via smart wallet API\n5. Backend waits for allowance to update on-chain\n6. Backend calls the Yield Aggregator deposit endpoint\n7. User receives confirmation with transaction hashes\n\n### Withdrawal Flow\n1. User calls `POST /vault/user/withdraw` with amount\n2. Withdrawal request is queued in the smart contract\n3. Admin processes pending withdrawals in batches (daily)\n4. User can cancel pending withdrawal before processing\n\n### Claim Flow\n1. User calls `POST /vault/user/claim` to request reward claim\n2. Claim request is queued in the smart contract\n3. Admin processes pending claims in batches (daily)\n4. User can cancel pending claim before processing",
+      "version": "1.0.0",
+      "contact": {
+        "name": "RiftFi",
+        "url": "https://riftfi.xyz"
+      }
+    },
+    "servers": [
+      {
+        "url": "https://payment.riftfi.xyz",
+        "description": "Production server"
+      },
+      {
+        "url": "http://localhost:8000",
+        "description": "Local development server"
+      }
+    ],
+    "tags": [
+      {
+        "name": "Protocol",
+        "description": "Protocol-wide statistics and information (API key required)"
+      },
+      {
+        "name": "Contract",
+        "description": "Smart contract information (API key required)"
+      },
+      {
+        "name": "User",
+        "description": "User-specific data and operations (API key + JWT required)"
+      }
+    ],
+    "paths": {
+      "/vault/protocol/stats": {
+        "get": {
+          "tags": ["Protocol"],
+          "summary": "Get all protocol statistics",
+          "description": "Returns comprehensive protocol statistics including TVL, total deposits, pending rewards, rewards distributed, and queue counts.",
+          "security": [{ "ApiKeyAuth": [] }],
+          "responses": {
+            "200": {
+              "description": "Protocol statistics retrieved successfully",
+              "content": {
+                "application/json": {
+                  "schema": { "$ref": "#/components/schemas/ProtocolStats" },
+                  "example": {
+                    "tvl": "1000000.00",
+                    "totalDeposits": "950000.00",
+                    "pendingRewards": "50000.00",
+                    "rewardsDistributed": "25000.00",
+                    "pendingClaimersCount": 5,
+                    "pendingWithdrawersCount": 3,
+                    "version": "1.1.0",
+                    "stablecoin": "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913",
+                    "admin": "0xA8E138f613ed04Eb7229F43e8B0f05a91480A0fA"
+                  }
+                }
+              }
+            },
+            "500": {
+              "description": "Server error",
+              "content": {
+                "application/json": {
+                  "schema": { "$ref": "#/components/schemas/Error" }
+                }
+              }
+            }
+          }
+        }
+      },
+      "/vault/protocol/tvl": {
+        "get": {
+          "tags": ["Protocol"],
+          "summary": "Get Total Value Locked",
+          "description": "Returns the total value locked in the protocol (deposits + pending rewards).",
+          "security": [{ "ApiKeyAuth": [] }],
+          "responses": {
+            "200": {
+              "description": "TVL retrieved successfully",
+              "content": {
+                "application/json": {
+                  "schema": {
+                    "type": "object",
+                    "properties": {
+                      "tvl": {
+                        "type": "string",
+                        "description": "Total Value Locked in USDC (human readable)",
+                        "example": "1000000.00"
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "/vault/protocol/deposits": {
+        "get": {
+          "tags": ["Protocol"],
+          "summary": "Get total deposits",
+          "description": "Returns the total amount of USDC deposited in the protocol.",
+          "security": [{ "ApiKeyAuth": [] }],
+          "responses": {
+            "200": {
+              "description": "Total deposits retrieved successfully",
+              "content": {
+                "application/json": {
+                  "schema": {
+                    "type": "object",
+                    "properties": {
+                      "totalDeposits": {
+                        "type": "string",
+                        "description": "Total deposits in USDC",
+                        "example": "500000.00"
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "/vault/protocol/pending-rewards": {
+        "get": {
+          "tags": ["Protocol"],
+          "summary": "Get total pending rewards",
+          "description": "Returns the total pending rewards across all users that have not yet been claimed.",
+          "security": [{ "ApiKeyAuth": [] }],
+          "responses": {
+            "200": {
+              "description": "Pending rewards retrieved successfully",
+              "content": {
+                "application/json": {
+                  "schema": {
+                    "type": "object",
+                    "properties": {
+                      "pendingRewards": {
+                        "type": "string",
+                        "description": "Total pending rewards in USDC",
+                        "example": "5000.00"
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "/vault/protocol/rewards-distributed": {
+        "get": {
+          "tags": ["Protocol"],
+          "summary": "Get total rewards distributed",
+          "description": "Returns the cumulative total of all rewards that have been distributed to users.",
+          "security": [{ "ApiKeyAuth": [] }],
+          "responses": {
+            "200": {
+              "description": "Rewards distributed retrieved successfully",
+              "content": {
+                "application/json": {
+                  "schema": {
+                    "type": "object",
+                    "properties": {
+                      "rewardsDistributed": {
+                        "type": "string",
+                        "description": "Total rewards distributed in USDC",
+                        "example": "25000.00"
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "/vault/protocol/pending-claimers": {
+        "get": {
+          "tags": ["Protocol"],
+          "summary": "Get pending claimers count",
+          "description": "Returns the number of users with pending claim requests waiting to be processed.",
+          "security": [{ "ApiKeyAuth": [] }],
+          "responses": {
+            "200": {
+              "description": "Pending claimers count retrieved successfully",
+              "content": {
+                "application/json": {
+                  "schema": {
+                    "type": "object",
+                    "properties": {
+                      "pendingClaimersCount": {
+                        "type": "integer",
+                        "description": "Number of pending claim requests",
+                        "example": 5
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "/vault/protocol/pending-withdrawers": {
+        "get": {
+          "tags": ["Protocol"],
+          "summary": "Get pending withdrawers count",
+          "description": "Returns the number of users with pending withdrawal requests waiting to be processed.",
+          "security": [{ "ApiKeyAuth": [] }],
+          "responses": {
+            "200": {
+              "description": "Pending withdrawers count retrieved successfully",
+              "content": {
+                "application/json": {
+                  "schema": {
+                    "type": "object",
+                    "properties": {
+                      "pendingWithdrawersCount": {
+                        "type": "integer",
+                        "description": "Number of pending withdrawal requests",
+                        "example": 3
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "/vault/contract/version": {
+        "get": {
+          "tags": ["Contract"],
+          "summary": "Get contract version",
+          "description": "Returns the current version of the Yield Aggregator smart contract.",
+          "security": [{ "ApiKeyAuth": [] }],
+          "responses": {
+            "200": {
+              "description": "Contract version retrieved successfully",
+              "content": {
+                "application/json": {
+                  "schema": {
+                    "type": "object",
+                    "properties": {
+                      "version": {
+                        "type": "string",
+                        "description": "Contract version string",
+                        "example": "1.1.0"
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "/vault/contract/stablecoin": {
+        "get": {
+          "tags": ["Contract"],
+          "summary": "Get stablecoin address",
+          "description": "Returns the USDC contract address used by the protocol on Base network.",
+          "security": [{ "ApiKeyAuth": [] }],
+          "responses": {
+            "200": {
+              "description": "Stablecoin address retrieved successfully",
+              "content": {
+                "application/json": {
+                  "schema": {
+                    "type": "object",
+                    "properties": {
+                      "stablecoin": {
+                        "type": "string",
+                        "description": "USDC contract address on Base",
+                        "example": "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913"
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "/vault/contract/admin": {
+        "get": {
+          "tags": ["Contract"],
+          "summary": "Get admin address",
+          "description": "Returns the current admin address of the Yield Aggregator contract.",
+          "security": [{ "ApiKeyAuth": [] }],
+          "responses": {
+            "200": {
+              "description": "Admin address retrieved successfully",
+              "content": {
+                "application/json": {
+                  "schema": {
+                    "type": "object",
+                    "properties": {
+                      "admin": {
+                        "type": "string",
+                        "description": "Admin wallet address",
+                        "example": "0xA8E138f613ed04Eb7229F43e8B0f05a91480A0fA"
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "/vault/user/me": {
+        "get": {
+          "tags": ["User"],
+          "summary": "Get current user's vault data",
+          "description": "Returns comprehensive vault data for the authenticated user including balance, rewards, and pending request status. The user's smart wallet address is derived from their encrypted private key stored in the database.",
+          "security": [
+            { "ApiKeyAuth": [] },
+            { "BearerAuth": [] }
+          ],
+          "responses": {
+            "200": {
+              "description": "User data retrieved successfully",
+              "content": {
+                "application/json": {
+                  "schema": { "$ref": "#/components/schemas/UserData" },
+                  "example": {
+                    "address": "0xD692AA908584135208EF8e15F6c63Ac0535A842b",
+                    "balance": "1000.00",
+                    "rewards": "50.00",
+                    "hasPendingClaim": false,
+                    "pendingWithdrawal": "0",
+                    "hasPendingWithdrawal": false
+                  }
+                }
+              }
+            },
+            "401": {
+              "description": "Unauthorized - Missing or invalid JWT token",
+              "content": {
+                "application/json": {
+                  "schema": { "$ref": "#/components/schemas/Error" }
+                }
+              }
+            },
+            "500": {
+              "description": "Server error",
+              "content": {
+                "application/json": {
+                  "schema": { "$ref": "#/components/schemas/Error" }
+                }
+              }
+            }
+          }
+        }
+      },
+      "/vault/user/me/balance": {
+        "get": {
+          "tags": ["User"],
+          "summary": "Get current user's deposited balance",
+          "description": "Returns the authenticated user's deposited USDC balance in the vault.",
+          "security": [
+            { "ApiKeyAuth": [] },
+            { "BearerAuth": [] }
+          ],
+          "responses": {
+            "200": {
+              "description": "Balance retrieved successfully",
+              "content": {
+                "application/json": {
+                  "schema": {
+                    "type": "object",
+                    "properties": {
+                      "balance": {
+                        "type": "string",
+                        "description": "Deposited balance in USDC",
+                        "example": "1000.00"
+                      }
+                    }
+                  }
+                }
+              }
+            },
+            "401": {
+              "description": "Unauthorized",
+              "content": {
+                "application/json": {
+                  "schema": { "$ref": "#/components/schemas/Error" }
+                }
+              }
+            }
+          }
+        }
+      },
+      "/vault/user/me/rewards": {
+        "get": {
+          "tags": ["User"],
+          "summary": "Get current user's pending rewards",
+          "description": "Returns the authenticated user's pending yield rewards that can be claimed.",
+          "security": [
+            { "ApiKeyAuth": [] },
+            { "BearerAuth": [] }
+          ],
+          "responses": {
+            "200": {
+              "description": "Rewards retrieved successfully",
+              "content": {
+                "application/json": {
+                  "schema": {
+                    "type": "object",
+                    "properties": {
+                      "rewards": {
+                        "type": "string",
+                        "description": "Pending rewards in USDC",
+                        "example": "50.00"
+                      }
+                    }
+                  }
+                }
+              }
+            },
+            "401": {
+              "description": "Unauthorized",
+              "content": {
+                "application/json": {
+                  "schema": { "$ref": "#/components/schemas/Error" }
+                }
+              }
+            }
+          }
+        }
+      },
+      "/vault/user/me/whitelist": {
+        "get": {
+          "tags": ["User"],
+          "summary": "Check user's whitelist status",
+          "description": "Returns whether the authenticated user's smart wallet is whitelisted for fund transfers.",
+          "security": [
+            { "ApiKeyAuth": [] },
+            { "BearerAuth": [] }
+          ],
+          "responses": {
+            "200": {
+              "description": "Whitelist status retrieved successfully",
+              "content": {
+                "application/json": {
+                  "schema": {
+                    "type": "object",
+                    "properties": {
+                      "address": {
+                        "type": "string",
+                        "description": "User's smart wallet address",
+                        "example": "0xD692AA908584135208EF8e15F6c63Ac0535A842b"
+                      },
+                      "isWhitelisted": {
+                        "type": "boolean",
+                        "description": "Whether the address is whitelisted",
+                        "example": true
+                      }
+                    }
+                  }
+                }
+              }
+            },
+            "401": {
+              "description": "Unauthorized",
+              "content": {
+                "application/json": {
+                  "schema": { "$ref": "#/components/schemas/Error" }
+                }
+              }
+            }
+          }
+        }
+      },
+      "/vault/user/deposit": {
+        "post": {
+          "tags": ["User"],
+          "summary": "Deposit USDC into the vault",
+          "description": "Deposits USDC into the yield vault. The backend automatically:\n1. Derives the user's smart wallet address\n2. Checks current USDC allowance for the vault contract\n3. If insufficient, submits a gasless approval transaction via smart wallet\n4. Waits for allowance to update on-chain\n5. Submits the deposit transaction\n\nAll transactions are gasless - the user doesn't need ETH for gas.",
+          "security": [
+            { "ApiKeyAuth": [] },
+            { "BearerAuth": [] }
+          ],
+          "requestBody": {
+            "required": true,
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": ["amount"],
+                  "properties": {
+                    "amount": {
+                      "type": "string",
+                      "description": "Amount of USDC to deposit (human readable, e.g., '100' for 100 USDC)",
+                      "example": "100"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "responses": {
+            "200": {
+              "description": "Deposit successful",
+              "content": {
+                "application/json": {
+                  "schema": { "$ref": "#/components/schemas/DepositResponse" },
+                  "example": {
+                    "message": "Deposit successful",
+                    "ownerEOA": "0x1234567890abcdef1234567890abcdef12345678",
+                    "smartWalletAddress": "0xD692AA908584135208EF8e15F6c63Ac0535A842b",
+                    "approvalPerformed": true,
+                    "approval": {
+                      "success": true,
+                      "userOperationHash": "0xabcdef1234567890abcdef1234567890abcdef1234567890abcdef1234567890"
+                    },
+                    "deposit": {
+                      "success": true,
+                      "transactionHash": "0x9876543210fedcba9876543210fedcba9876543210fedcba9876543210fedcba"
+                    }
+                  }
+                }
+              }
+            },
+            "400": {
+              "description": "Bad request - Missing amount or invalid input",
+              "content": {
+                "application/json": {
+                  "schema": { "$ref": "#/components/schemas/Error" },
+                  "example": {
+                    "message": "amount is required"
+                  }
+                }
+              }
+            },
+            "401": {
+              "description": "Unauthorized - Missing or invalid JWT token",
+              "content": {
+                "application/json": {
+                  "schema": { "$ref": "#/components/schemas/Error" }
+                }
+              }
+            },
+            "500": {
+              "description": "Server error - Transaction failed",
+              "content": {
+                "application/json": {
+                  "schema": { "$ref": "#/components/schemas/Error" },
+                  "example": {
+                    "message": "Failed to process deposit",
+                    "error": "Allowance not updated after approval. Required: 100000000"
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "/vault/user/withdraw": {
+        "post": {
+          "tags": ["User"],
+          "summary": "Request withdrawal from the vault",
+          "description": "Requests a withdrawal of deposited USDC from the vault. The withdrawal is queued and will be processed by the admin in the next batch (typically daily). The user's balance is locked until the withdrawal is processed or cancelled.",
+          "security": [
+            { "ApiKeyAuth": [] },
+            { "BearerAuth": [] }
+          ],
+          "requestBody": {
+            "required": true,
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": ["amount"],
+                  "properties": {
+                    "amount": {
+                      "type": "string",
+                      "description": "Amount of USDC to withdraw (human readable)",
+                      "example": "500"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "responses": {
+            "200": {
+              "description": "Withdrawal request submitted",
+              "content": {
+                "application/json": {
+                  "schema": { "$ref": "#/components/schemas/TransactionResponse" },
+                  "example": {
+                    "message": "Withdrawal request submitted",
+                    "success": true,
+                    "transactionHash": "0x1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef"
+                  }
+                }
+              }
+            },
+            "400": {
+              "description": "Bad request - Missing amount or insufficient balance",
+              "content": {
+                "application/json": {
+                  "schema": { "$ref": "#/components/schemas/Error" }
+                }
+              }
+            },
+            "401": {
+              "description": "Unauthorized",
+              "content": {
+                "application/json": {
+                  "schema": { "$ref": "#/components/schemas/Error" }
+                }
+              }
+            }
+          }
+        }
+      },
+      "/vault/user/withdraw/cancel": {
+        "post": {
+          "tags": ["User"],
+          "summary": "Cancel pending withdrawal request",
+          "description": "Cancels a pending withdrawal request and restores the user's balance. Can only be called if the user has a pending withdrawal that hasn't been processed yet.",
+          "security": [
+            { "ApiKeyAuth": [] },
+            { "BearerAuth": [] }
+          ],
+          "responses": {
+            "200": {
+              "description": "Withdrawal cancelled successfully",
+              "content": {
+                "application/json": {
+                  "schema": { "$ref": "#/components/schemas/TransactionResponse" },
+                  "example": {
+                    "message": "Withdrawal request cancelled",
+                    "success": true,
+                    "transactionHash": "0xfedcba0987654321fedcba0987654321fedcba0987654321fedcba0987654321"
+                  }
+                }
+              }
+            },
+            "400": {
+              "description": "Bad request - No pending withdrawal to cancel",
+              "content": {
+                "application/json": {
+                  "schema": { "$ref": "#/components/schemas/Error" }
+                }
+              }
+            },
+            "401": {
+              "description": "Unauthorized",
+              "content": {
+                "application/json": {
+                  "schema": { "$ref": "#/components/schemas/Error" }
+                }
+              }
+            }
+          }
+        }
+      },
+      "/vault/user/claim": {
+        "post": {
+          "tags": ["User"],
+          "summary": "Request reward claim",
+          "description": "Requests to claim pending yield rewards. The claim is queued and will be processed by the admin in the next batch (typically daily). Once processed, the rewards will be sent to the user's smart wallet.",
+          "security": [
+            { "ApiKeyAuth": [] },
+            { "BearerAuth": [] }
+          ],
+          "responses": {
+            "200": {
+              "description": "Claim request submitted",
+              "content": {
+                "application/json": {
+                  "schema": { "$ref": "#/components/schemas/TransactionResponse" },
+                  "example": {
+                    "message": "Claim request submitted",
+                    "success": true,
+                    "transactionHash": "0xabcdef1234567890abcdef1234567890abcdef1234567890abcdef1234567890"
+                  }
+                }
+              }
+            },
+            "400": {
+              "description": "Bad request - No rewards to claim or already has pending claim",
+              "content": {
+                "application/json": {
+                  "schema": { "$ref": "#/components/schemas/Error" }
+                }
+              }
+            },
+            "401": {
+              "description": "Unauthorized",
+              "content": {
+                "application/json": {
+                  "schema": { "$ref": "#/components/schemas/Error" }
+                }
+              }
+            }
+          }
+        }
+      },
+      "/vault/user/claim/cancel": {
+        "post": {
+          "tags": ["User"],
+          "summary": "Cancel pending claim request",
+          "description": "Cancels a pending reward claim request. Can only be called if the user has a pending claim that hasn't been processed yet.",
+          "security": [
+            { "ApiKeyAuth": [] },
+            { "BearerAuth": [] }
+          ],
+          "responses": {
+            "200": {
+              "description": "Claim cancelled successfully",
+              "content": {
+                "application/json": {
+                  "schema": { "$ref": "#/components/schemas/TransactionResponse" },
+                  "example": {
+                    "message": "Claim request cancelled",
+                    "success": true,
+                    "transactionHash": "0x0987654321fedcba0987654321fedcba0987654321fedcba0987654321fedcba"
+                  }
+                }
+              }
+            },
+            "400": {
+              "description": "Bad request - No pending claim to cancel",
+              "content": {
+                "application/json": {
+                  "schema": { "$ref": "#/components/schemas/Error" }
+                }
+              }
+            },
+            "401": {
+              "description": "Unauthorized",
+              "content": {
+                "application/json": {
+                  "schema": { "$ref": "#/components/schemas/Error" }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "components": {
+      "securitySchemes": {
+        "ApiKeyAuth": {
+          "type": "apiKey",
+          "in": "header",
+          "name": "X-API-Key",
+          "description": "API key for project authentication. Format: sk_<64_character_hex_string>"
+        },
+        "BearerAuth": {
+          "type": "http",
+          "scheme": "bearer",
+          "bearerFormat": "JWT",
+          "description": "JWT token containing user identity and encrypted private key. Signed with ES256."
+        }
+      },
+      "schemas": {
+        "ProtocolStats": {
+          "type": "object",
+          "properties": {
+            "tvl": {
+              "type": "string",
+              "description": "Total Value Locked in USDC (deposits + pending rewards)",
+              "example": "1000000.00"
+            },
+            "totalDeposits": {
+              "type": "string",
+              "description": "Total deposits in USDC",
+              "example": "950000.00"
+            },
+            "pendingRewards": {
+              "type": "string",
+              "description": "Total pending rewards in USDC",
+              "example": "50000.00"
+            },
+            "rewardsDistributed": {
+              "type": "string",
+              "description": "Total rewards distributed to date in USDC",
+              "example": "25000.00"
+            },
+            "pendingClaimersCount": {
+              "type": "integer",
+              "description": "Number of users with pending claim requests",
+              "example": 5
+            },
+            "pendingWithdrawersCount": {
+              "type": "integer",
+              "description": "Number of users with pending withdrawal requests",
+              "example": 3
+            },
+            "version": {
+              "type": "string",
+              "description": "Smart contract version",
+              "example": "1.1.0"
+            },
+            "stablecoin": {
+              "type": "string",
+              "description": "USDC contract address on Base",
+              "example": "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913"
+            },
+            "admin": {
+              "type": "string",
+              "description": "Admin wallet address",
+              "example": "0xA8E138f613ed04Eb7229F43e8B0f05a91480A0fA"
+            }
+          }
+        },
+        "UserData": {
+          "type": "object",
+          "properties": {
+            "address": {
+              "type": "string",
+              "description": "User's smart wallet address",
+              "example": "0xD692AA908584135208EF8e15F6c63Ac0535A842b"
+            },
+            "balance": {
+              "type": "string",
+              "description": "Deposited balance in USDC",
+              "example": "1000.00"
+            },
+            "rewards": {
+              "type": "string",
+              "description": "Pending rewards in USDC",
+              "example": "50.00"
+            },
+            "hasPendingClaim": {
+              "type": "boolean",
+              "description": "Whether user has a pending claim request",
+              "example": false
+            },
+            "pendingWithdrawal": {
+              "type": "string",
+              "description": "Pending withdrawal amount in USDC (0 if none)",
+              "example": "0"
+            },
+            "hasPendingWithdrawal": {
+              "type": "boolean",
+              "description": "Whether user has a pending withdrawal request",
+              "example": false
+            }
+          }
+        },
+        "DepositResponse": {
+          "type": "object",
+          "properties": {
+            "message": {
+              "type": "string",
+              "description": "Success message",
+              "example": "Deposit successful"
+            },
+            "ownerEOA": {
+              "type": "string",
+              "description": "User's EOA (externally owned account) address derived from private key",
+              "example": "0x1234567890abcdef1234567890abcdef12345678"
+            },
+            "smartWalletAddress": {
+              "type": "string",
+              "description": "User's smart wallet address that holds funds",
+              "example": "0xD692AA908584135208EF8e15F6c63Ac0535A842b"
+            },
+            "approvalPerformed": {
+              "type": "boolean",
+              "description": "Whether a USDC approval transaction was needed and performed",
+              "example": true
+            },
+            "approval": {
+              "type": "object",
+              "description": "Approval transaction details (null if not performed)",
+              "properties": {
+                "success": {
+                  "type": "boolean",
+                  "example": true
+                },
+                "userOperationHash": {
+                  "type": "string",
+                  "description": "ERC-4337 UserOperation hash for the approval",
+                  "example": "0xabcdef1234567890abcdef1234567890abcdef1234567890abcdef1234567890"
+                }
+              }
+            },
+            "deposit": {
+              "type": "object",
+              "description": "Deposit transaction details",
+              "properties": {
+                "success": {
+                  "type": "boolean",
+                  "example": true
+                },
+                "transactionHash": {
+                  "type": "string",
+                  "description": "Transaction hash on Base network",
+                  "example": "0x9876543210fedcba9876543210fedcba9876543210fedcba9876543210fedcba"
+                }
+              }
+            }
+          }
+        },
+        "TransactionResponse": {
+          "type": "object",
+          "properties": {
+            "message": {
+              "type": "string",
+              "description": "Success message",
+              "example": "Transaction successful"
+            },
+            "success": {
+              "type": "boolean",
+              "description": "Whether the transaction was successful",
+              "example": true
+            },
+            "transactionHash": {
+              "type": "string",
+              "description": "Transaction hash on Base network",
+              "example": "0x1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef"
+            }
+          }
+        },
+        "Error": {
+          "type": "object",
+          "properties": {
+            "message": {
+              "type": "string",
+              "description": "Error message",
+              "example": "Failed to process request"
+            },
+            "error": {
+              "type": "string",
+              "description": "Detailed error information",
+              "example": "Insufficient balance"
+            }
+          }
+        }
+      }
+    }
+  }
+  
+  
