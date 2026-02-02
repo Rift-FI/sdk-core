@@ -1273,6 +1273,8 @@ export interface CreateInvoiceRequest {
   amount: number;
   recipientEmail?: string;
   recipientPhone?: string;
+  originUrl?:string;
+  [key: string]: string | number | undefined; 
 }
 
 export interface CreateInvoiceResponse {
