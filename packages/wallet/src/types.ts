@@ -255,6 +255,8 @@ export interface OfframpOrder {
   transaction_hash?: string;
   receipt_number?: string;
   currency?: string;
+  chain?: string | null;
+  token?: string | null;
 }
 
 
@@ -325,10 +327,11 @@ export interface OnrampStatusResponse {
   transaction_hash?: string | null;
   amount?: string | null;
   shortcode?: string;
-  chain?: string;
+  chain?: string | null;
   asset?: string;
   account_number?: string;
   currency?: string;
+  token?: string | null;
 }
 
 
@@ -357,6 +360,8 @@ export interface PollOfframpOrderResponse {
   receipt_number?: string;
   amount?: string;
   currency?: string;
+  chain?: string | null;
+  token?: string | null;
 }
 
 export interface GetOfframpOrdersResponse {
