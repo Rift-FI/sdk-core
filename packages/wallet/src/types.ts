@@ -173,10 +173,9 @@ export interface Recipient {
 }
 
 export interface PreviewExchangeRateRequest {
- 
-
   currency: OfframpCurrency;
- 
+  amount?: number;
+  type?: "offramp" | "onramp";
 }
 
 
@@ -226,19 +225,40 @@ export interface GetSupportedInstitutionsResponse {
   metadata: SupportedInstitutionsMetadata;
 }
 
+export interface FeeBreakdown {
+  type?: string;
+  usdcAmount?: number;
+  userReceivesFiat?: number;
+  fee?: number;
+  feePercentage?: number;
+  totalFiatDeducted?: number;
+  totalUsdcNeeded?: number;
+  exchangeRate?: number;
+  fiatValue?: number;
+  userPays?: number;
+  userReceivesUsdc?: number;
+  currency?: string;
+}
+
 export interface PreviewExchangeRateResponse {
   rate: number;
   buying_rate: number;
   selling_rate: number;
   quoted_rate: number;
+  feePercentage?: number;
+  feeBps?: number;
+  feeBreakdown?: FeeBreakdown;
 }
 
 export interface CreateOfframpOrderRequest {
   token: RampToken;
   amount: number;
+  localAmount?: number;
   currency: OfframpCurrency;
   chain: RampChain;
   recipient: string; // JSON stringified Recipient object
+  otpCode?: string;
+  password?: string;
   // New optional utility payment fields
   utilities?: boolean;
   service_code?: string;
@@ -257,6 +277,12 @@ export interface OfframpOrder {
   currency?: string;
   chain?: string | null;
   token?: string | null;
+  totalDeducted?: number;
+  usdcDeducted?: number;
+  fee?: number;
+  feePercentage?: number;
+  feeNote?: string;
+  provider?: string;
 }
 
 
@@ -264,9 +290,12 @@ export interface OfframpOrder {
 export interface PayRequest {
   token: RampToken;
   amount: number;
+  localAmount?: number;
   currency: OfframpCurrency;
   chain: RampChain;
   recipient: string; // JSON stringified Recipient object
+  otpCode?: string;
+  password?: string;
   // New optional utility payment fields
   utilities?: boolean;
   service_code?: string;
@@ -278,6 +307,7 @@ export interface PayRequest {
 export interface BuyRequest {
   shortcode: string;
   amount: number;
+  localAmount?: number;
   chain: RampChain;
   asset: RampToken;
   mobile_network: string;
@@ -308,6 +338,7 @@ export interface BuyResponse {
     status?: string;
     account_number?: string;
   };
+  feeBreakdown?: FeeBreakdown;
 }
 
 // //const order: {
