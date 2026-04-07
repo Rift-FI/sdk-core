@@ -283,6 +283,7 @@ export interface OfframpOrder {
   feePercentage?: number;
   feeNote?: string;
   provider?: string;
+  public_name?: string | null;
 }
 
 
@@ -363,6 +364,7 @@ export interface OnrampStatusResponse {
   account_number?: string;
   currency?: string;
   token?: string | null;
+  public_name?: string | null;
 }
 
 
