@@ -1,6 +1,6 @@
 {
   "name": "@rift-finance/token",
-  "version": "4.0.0",
+  "version": "4.0.2",
   "description": "Token module for Rift Finance SDK - ERC20 token minting and factory functionality",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",

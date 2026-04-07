@@ -647,7 +647,10 @@ export type ChainName =
   | "POLYGON"
   | "POLYGON_TESTNET"
   | "AVAX"
-  | "BSC";
+  | "BSC"
+  | "BERACHAIN"
+  | "BERACHAIN_TESTNET"
+  | "CELO";
 
 export type TokenSymbol =
   | "USDC"
@@ -659,7 +662,9 @@ export type TokenSymbol =
   | "USDC.e"
   | "LSK"
   | "BNB"
-  | "MATIC";
+  | "MATIC"
+  | "SAIL"
+  | "cUSD";
 
 export interface Balance {
   amount: number;
@@ -1898,4 +1903,618 @@ export interface VaultTransactionResponse {
   message: string;
   success: boolean;
   transactionHash: string;
+}
+
+// ============================================
+// KYC Types
+// ============================================
+
+export interface KYCTokenRequest {
+  country_code: string;
+  identifier: string;
+}
+
+export interface KYCTokenResponse {
+  token: string | null;
+  provider: "smileid" | "sumsub";
+  expires_at: string;
+  verificationUrl?: string;
+  linkDelivered?: boolean;
+  deliveryMethod?: "email" | "sms" | "none";
+}
+
+export interface KYCUserExistsRequest {
+  email?: string;
+  phoneNumber?: string;
+  externalId?: string;
+}
+
+export interface KYCUserExistsResponse {
+  exists: boolean;
+  userId?: string;
+  kycStatus?: "verified" | "failed" | "pending" | "provisional";
+}
+
+export interface KYCStatusRequest {
+  email?: string;
+  phoneNumber?: string;
+  externalId?: string;
+}
+
+export interface KYCStatusResponse {
+  status: "verified" | "failed" | "pending" | "provisional";
+  message: string;
+}
+
+export interface KYCVerifyAndSendOtpRequest {
+  identifier: string;
+  maxWaitTime?: number;
+}
+
+export interface KYCVerifyRequest {
+  jobId: string;
+}
+
+export interface KYCVerifyResponse {
+  success: boolean;
+  kycVerified: boolean;
+  message: string;
+}
+
+export interface KYCVerifiedResponse {
+  success: boolean;
+  kycVerified: boolean;
+}
+
+export interface KYCJobStatusResponse {
+  success: boolean;
+  status: "verified" | "failed" | "pending" | "provisional";
+  complete: boolean;
+  passed: boolean;
+  underReview: boolean;
+  message: string;
+}
+
+// ============================================
+// Loyalty Types
+// ============================================
+
+export interface LoyaltyStats {
+  totalPoints: number;
+  availablePoints: number;
+  claimedPoints: number;
+  stats: {
+    currentStreak: number;
+    uniqueActionTypes: number;
+    cumulativeVolume: number;
+    lastActivityDate: string | null;
+    dailyPointsToday: number;
+  };
+}
+
+export interface LoyaltyStatsResponse {
+  success: boolean;
+  data: LoyaltyStats;
+}
+
+export interface LoyaltyHistoryRequest {
+  limit?: number;
+  offset?: number;
+}
+
+export interface LoyaltyActivity {
+  id: string;
+  actionType: string;
+  transactionValue: number;
+  pointsEarned: number;
+  pointValue: number;
+  multiplier: number;
+  metadata: any;
+  createdAt: string;
+}
+
+export interface LoyaltyHistoryResponse {
+  success: boolean;
+  data: {
+    activities: LoyaltyActivity[];
+    pagination: {
+      total: number;
+      limit: number;
+      offset: number;
+      hasMore: boolean;
+    };
+  };
+}
+
+export interface LoyaltyLeaderboardRequest {
+  limit?: number;
+}
+
+export interface LoyaltyLeaderboardEntry {
+  rank: number;
+  userId: string;
+  totalPoints: number;
+  address: string;
+}
+
+export interface LoyaltyLeaderboardResponse {
+  success: boolean;
+  data: {
+    leaderboard: LoyaltyLeaderboardEntry[];
+  };
+}
+
+export interface LoyaltyMetricsResponse {
+  success: boolean;
+  data: {
+    totalPointsIssued: number;
+    totalUsers: number;
+    totalRedemptions: number;
+    totalRedeemed: number;
+    averagePointsPerUser: number;
+  };
+}
+
+export interface LoyaltyPointValueResponse {
+  success: boolean;
+  data: {
+    pointValue: number;
+    totalSupply: number;
+    budget: number;
+    commitment: number;
+    remaining: number;
+  };
+}
+
+export interface LoyaltyRedeemRequest {
+  points: number;
+  redemptionType?: string;
+}
+
+export interface LoyaltyRedemption {
+  redemptionId: string;
+  pointsRedeemed: number;
+  usdValue: number;
+  recipientAddress: string;
+  chain: string;
+  token: string;
+  status: "COMPLETED" | "FAILED";
+  transactionHash: string;
+  transactionUrl: string;
+}
+
+export interface LoyaltyRedeemResponse {
+  success: boolean;
+  message: string;
+  data: LoyaltyRedemption;
+}
+
+export interface LoyaltyRedemptionHistoryItem {
+  id: string;
+  accountId: string;
+  pointsRedeemed: number;
+  pointValue: number;
+  usdValue: number;
+  redemptionType: string;
+  status: "PENDING" | "COMPLETED" | "FAILED";
+  completedAt: string | null;
+  metadata: any;
+  createdAt: string;
+}
+
+export interface LoyaltyRedemptionsResponse {
+  success: boolean;
+  data: {
+    redemptions: LoyaltyRedemptionHistoryItem[];
+  };
+}
+
+export interface LoyaltyConfigResponse {
+  success: boolean;
+  data: {
+    config: {
+      TOTAL_BUDGET: number;
+      REDEMPTION: {
+        MIN_POINTS: number;
+      };
+    };
+    note: string;
+  };
+}
+
+// ============================================
+// Weekly Pool Types
+// ============================================
+
+export interface WeeklyPoolResponse {
+  currentPool: any;
+  userProgress: any;
+  leaderboard: any[];
+  pastWinners: any[];
+}
+
+export interface WeeklyPoolHistoryRequest {
+  page?: number;
+  limit?: number;
+}
+
+export interface WeeklyPoolHistoryResponse {
+  pools: any[];
+  pagination: {
+    page: number;
+    limit: number;
+    total: number;
+    pages: number;
+  };
+}
+
+export interface WeeklyPoolReferralResponse {
+  referralCode: string;
+  referralLink: string;
+  referralsCount: number;
+  referralStats: any;
+}
+
+// ============================================
+// Referral Fee Types
+// ============================================
+
+export interface ReferralFeeBalanceResponse {
+  totalUsd: number;
+  currencyBreakdown: Record<string, number>;
+  entryCount: number;
+  canClaim: boolean;
+  nextClaimDate: string | null;
+}
+
+export interface ReferralFeeEntry {
+  id: string;
+  currency: string;
+  amount: number;
+  date: string;
+}
+
+export interface ReferralFeeEntriesResponse {
+  totalUsd: number;
+  currencyBreakdown: Record<string, number>;
+  entries: ReferralFeeEntry[];
+}
+
+export interface ReferralFeeClaim {
+  id: string;
+  totalUsd: number;
+  status: "PENDING" | "COMPLETED";
+  createdAt: string;
+  completedAt?: string | null;
+}
+
+export interface ReferralFeeClaimResponse {
+  success: boolean;
+  error?: string;
+  claim: ReferralFeeClaim;
+}
+
+export interface ReferralFeeClaimsResponse {
+  claims: ReferralFeeClaim[];
+}
+
+export interface ReferralFeeReferralsRequest {
+  referralCode?: string;
+  list?: "true" | "false";
+}
+
+export interface ReferralFeeReferralsResponse {
+  referralCode: string;
+  totalReferrals: number;
+  referredUsers?: any[];
+}
+
+// ============================================
+// Bridge Types
+// ============================================
+
+export interface BridgeRoutesResponse {
+  routes: Record<string, string[]>;
+  supportedTokens: string[];
+}
+
+export interface BridgeQuoteRequest {
+  sourceChain: string;
+  destinationChain: string;
+  token: string;
+  amount: string;
+}
+
+export interface BridgeQuoteResponse {
+  sourceChain: string;
+  destinationChain: string;
+  token: string;
+  inputAmount: string;
+  outputAmount: string;
+  fee: string;
+  feeBps: number;
+  estimatedTime: string;
+}
+
+export interface BridgeExecuteRequest {
+  sourceChain: string;
+  destinationChain: string;
+  token: string;
+  amount: string;
+  recipient?: string;
+}
+
+export interface BridgeExecuteResponse {
+  success: boolean;
+  sourceChain: string;
+  destinationChain: string;
+  token: string;
+  inputAmount: string;
+  outputAmount: string;
+  fee: string;
+  recipient: string;
+  transactionHash: string;
+  smartWalletAddress: string;
+  sourceChainId: number;
+  destinationChainId: number;
+}
+
+// ============================================
+// WalletConnect Types
+// ============================================
+
+export interface WalletConnectPairRequest {
+  uri: string;
+  chain: string;
+}
+
+export interface WalletConnectPairResponse {
+  success: boolean;
+  topic: string;
+  smartWalletAddress: string;
+  chain: string;
+  chainId: number;
+  peerName: string;
+  peerUrl: string;
+}
+
+export interface WalletConnectSession {
+  topic: string;
+  peerName: string;
+  peerUrl: string;
+  chains: string[];
+  [key: string]: any;
+}
+
+export interface WalletConnectRequest {
+  id: string;
+  method: string;
+  params: any;
+  [key: string]: any;
+}
+
+// ============================================
+// Project Types (extended)
+// ============================================
+
+export interface CreateProjectRequest {
+  name: string;
+  email?: string;
+  phoneNumber?: string;
+  known_origins?: string;
+  payment_link_widget?: string;
+}
+
+export interface ProjectData {
+  id: string;
+  name: string;
+  api_key?: string;
+  owner_phone?: string;
+  owner_email?: string;
+  known_origins?: string[];
+  api_calls?: number;
+  payment_link_widget?: string;
+  createdAt: string;
+  updatedAt?: string;
+}
+
+export interface CreateProjectResponse {
+  success: boolean;
+  message: string;
+  data: ProjectData;
+}
+
+export interface GetProjectsRequest {
+  page?: number;
+  limit?: number;
+}
+
+export interface GetProjectsResponse {
+  success: boolean;
+  data: {
+    projects: ProjectData[];
+    pagination: {
+      page: number;
+      limit: number;
+      total: number;
+      pages: number;
+    };
+  };
+}
+
+export interface GetMyProjectsRequest {
+  email?: string;
+  phoneNumber?: string;
+}
+
+export interface GetMyProjectsResponse {
+  success: boolean;
+  data: ProjectData[];
+}
+
+export interface GetProjectResponse {
+  success: boolean;
+  data: ProjectData;
+}
+
+export interface ProjectStatsResponse {
+  success: boolean;
+  data: {
+    api_calls: number;
+  };
+}
+
+export interface RegenerateKeyResponse {
+  success: boolean;
+  message: string;
+  data: ProjectData;
+}
+
+export interface AddOriginRequest {
+  origin: string;
+  phoneNumber?: string;
+  email?: string;
+}
+
+export interface AddOriginResponse {
+  success: boolean;
+  message: string;
+  data: ProjectData;
+}
+
+export interface UpdatePaymentWidgetRequest {
+  id: string;
+  payment_link_widget: string;
+}
+
+export interface UpdatePaymentWidgetResponse {
+  success: boolean;
+  data: ProjectData;
+}
+
+// ============================================
+// User Management Types
+// ============================================
+
+export interface SuspendUserRequest {
+  phoneNumber?: string;
+  email?: string;
+  externalId?: string;
+  userId?: string;
+  reason?: string;
+  projectOwnerPhone?: string;
+  projectOwnerEmail?: string;
+}
+
+export interface SuspendUserResponse {
+  success: boolean;
+  message: string;
+  data: {
+    userId: string;
+    email: string;
+    phoneNumber: string;
+    externalId: string;
+    suspendedAt: string;
+    suspendedReason: string;
+  };
+}
+
+export interface UnsuspendUserRequest {
+  phoneNumber?: string;
+  email?: string;
+  externalId?: string;
+  userId?: string;
+  projectOwnerPhone?: string;
+  projectOwnerEmail?: string;
+}
+
+export interface UnsuspendUserResponse {
+  success: boolean;
+  message: string;
+  data: {
+    userId: string;
+    email: string;
+    phoneNumber: string;
+    externalId: string;
+    isSuspended: false;
+  };
+}
+
+export interface GetSuspendedUsersRequest {
+  projectOwnerPhone?: string;
+  projectOwnerEmail?: string;
+}
+
+export interface SuspendedUser {
+  id: string;
+  email: string;
+  phoneNumber: string;
+  externalId: string;
+  display_name: string;
+  suspendedAt: string;
+  suspendedReason: string;
+  suspendedBy: string;
+  createdAt: string;
+}
+
+export interface GetSuspendedUsersResponse {
+  success: boolean;
+  message: string;
+  data: {
+    suspendedUsers: SuspendedUser[];
+    totalCount: number;
+  };
+}
+
+export interface GetUserStatusRequest {
+  phoneNumber?: string;
+  email?: string;
+  externalId?: string;
+  userId?: string;
+}
+
+export interface GetUserStatusResponse {
+  success: boolean;
+  data: {
+    userId: string;
+    email: string;
+    phoneNumber: string;
+    externalId: string;
+    isSuspended: boolean;
+    suspendedAt: string | null;
+    suspendedReason: string | null;
+    suspendedBy: string | null;
+  };
+}
+
+// ============================================
+// Stats Types
+// ============================================
+
+export interface StatsVolumeResponse {
+  data: {
+    usdcDeposits: number;
+    usdcDepositsCount: number;
+    usdcDepositsInKes: number;
+    offrampVolume: number;
+    offrampVolumeInKes: number;
+    offrampVolumeCount: number;
+    totalVolume: number;
+    totalVolumeCount: number;
+    totalVolumeInKes: number;
+  };
+}
+
+export interface StatsUsersResponse {
+  data: number;
+}
+
+export interface StatsTvlResponse {
+  data: {
+    totalValueLocked: number;
+    totalValueLockedInKes: number;
+    walletsCount: number;
+    exchangeRate: number;
+    currency: string;
+  };
 }
