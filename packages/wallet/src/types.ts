@@ -1802,6 +1802,15 @@ export interface GetAllDepositsResponse {
   deposits: Deposit[];
 }
 
+export interface DepositStatsResponse {
+  stats: {
+    totalDeposits: number;
+    totalUsdcAmount: number;
+    totalKesAmount: number;
+    deposits: Deposit[];
+  };
+}
+
 // Vault Types
 
 // Protocol Statistics
