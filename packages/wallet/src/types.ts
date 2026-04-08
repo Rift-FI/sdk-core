@@ -544,6 +544,8 @@ export interface OtpResponse {
 }
 
 // User Types
+export type AutoSwapTargetChain = "BASE" | "ARBITRUM" | "POLYGON" | "ETHEREUM";
+
 export interface User {
   id: string;
   externalId: string;
@@ -558,6 +560,8 @@ export interface User {
   paymentAccount?: string;
   notificationEmail?: string;
   instantWithdrawals?: boolean;
+  autoSwapEnabled?: boolean;
+  autoSwapTargetChain?: AutoSwapTargetChain | null;
   [key: string]: any;
 }
 export interface UpdateUserRequest {
@@ -574,6 +578,8 @@ export interface UpdateUserRequest {
   paymentAccount?: string;
   notificationEmail?: string;
   instantWithdrawals?: boolean;
+  autoSwapEnabled?: boolean;
+  autoSwapTargetChain?: AutoSwapTargetChain | null;
   [key: string]: any;
 }
 
