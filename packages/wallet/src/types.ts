@@ -153,15 +153,22 @@ export enum OfframpCurrency {
   CDF = "CDF",  // Democratic Republic of Congo
   ETB = "ETB",  // Ethiopia
   GHS = "GHS",  // Ghana
+  TZS = "TZS",  // Tanzania
+  MWK = "MWK",  // Malawi
+  BRL = "BRL",  // Brazil
 }
 
 export enum RampChain {
   POLYGON = "polygon",
   BASE = "base",
+  ARBITRUM = "arbitrum",
+  ETHEREUM = "ethereum",
+  CELO = "celo",
 }
 
 export enum RampToken {
   USDC = "USDC",
+  USDT = "USDT",
 }
 
 export interface Recipient {
