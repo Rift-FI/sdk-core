@@ -1609,35 +1609,33 @@ export interface SignTransactionResponse {
 export interface SendTransactionRequest {
   chain: ChainName;
   transactionData: {
-    to?: string;
+    to: string;
     value?: string;
     data?: string;
-    gasLimit?: string;
-    gasPrice?: string;
-    maxFeePerGas?: string;
-    maxPriorityFeePerGas?: string;
-    nonce?: number;
-    type?: number;
-    chainId?: number;
     [key: string]: any;
   };
+  // ERC-20 token address used to pay gas via the smart-wallet paymaster.
+  // Omit to use sponsored gas (default).
+  paymasterToken?: string;
   [key: string]: any;
 }
 
 export interface SendTransactionResponse {
+  success: boolean;
+  // Primary hash to track — transactionHash when available (e.g., Lisk),
+  // otherwise userOperationHash.
   hash: string;
+  userOperationHash?: string;
+  transactionHash?: string;
   to?: string;
-  from: string;
-  value?: string;
-  gasLimit?: string;
-  gasPrice?: string;
-  nonce: number;
+  // On-chain sender — the user's smart wallet address.
+  from?: string;
+  // EOA that signed the UserOperation.
+  owner: string;
   chainId?: number;
-  blockNumber?: number;
-  blockHash?: string;
-  timestamp?: number;
-  confirmations: number;
-  raw: any; // Raw transaction object
+  gasUsed?: string;
+  paymasterToken?: string | null;
+  raw: any;
 }
 
 export interface SignMessageRequest {
