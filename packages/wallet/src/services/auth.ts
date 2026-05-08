@@ -9,6 +9,10 @@ import {
   DeleteUserRequest,
   ApiResponse,
   LoginResponse,
+  GoogleLoginRequest,
+  GoogleLoginResponse,
+  AppleLoginRequest,
+  AppleLoginResponse,
   SignupResponse,
   DeleteUserResponse,
   CreateRecoveryRequest,
@@ -47,6 +51,65 @@ export class AuthService extends BaseService {
     const response = await this.publicRequest<LoginResponse>({
       method: "POST",
       url: "/auth/login",
+      data: request,
+    });
+
+    if (response.accessToken) {
+      this.setBearerToken(response.accessToken);
+    }
+
+    return response;
+  }
+
+  /**
+   * Sign in (or sign up on first use) with a Google ID token.
+   *
+   * Pass the `id_token` returned by Google's identity flow on the client —
+   * for example the `credential` from Google One-Tap, or the ID token from
+   * `useGoogleLogin({ flow: "implicit" })` exchanged via Google's OAuth2
+   * endpoint. The backend verifies the signature with Google, then either
+   * creates a new wallet for the email or signs the existing user in.
+   *
+   * Once an account is bound to Google, password/OTP login is rejected for
+   * that account — the user must continue using Google.
+   */
+  async loginWithGoogle(
+    request: GoogleLoginRequest
+  ): Promise<GoogleLoginResponse> {
+    const response = await this.publicRequest<GoogleLoginResponse>({
+      method: "POST",
+      url: "/auth/google",
+      data: request,
+    });
+
+    if (response.accessToken) {
+      this.setBearerToken(response.accessToken);
+    }
+
+    return response;
+  }
+
+  /**
+   * Sign in (or sign up on first use) with an Apple identity token.
+   *
+   * Pass the `id_token` returned by "Sign in with Apple" — `authorization.id_token`
+   * from `AppleID.auth.signIn()` on the web, the identity token from
+   * `ASAuthorizationAppleIDCredential` on iOS, etc.
+   *
+   * Apple only delivers the user's email and name on the FIRST sign-in
+   * (and only the privaterelay alias if the user chose "Hide My Email").
+   * On first sign-in the client should also forward `displayName` —
+   * subsequent sign-ins identify the user by their stable Apple `sub`.
+   *
+   * Email/OTP login remains available for users with a non-relay email
+   * on file. Apple-bound accounts are not locked to Apple.
+   */
+  async loginWithApple(
+    request: AppleLoginRequest
+  ): Promise<AppleLoginResponse> {
+    const response = await this.publicRequest<AppleLoginResponse>({
+      method: "POST",
+      url: "/auth/apple",
       data: request,
     });
 
