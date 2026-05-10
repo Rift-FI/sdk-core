@@ -164,11 +164,18 @@ export enum RampChain {
   ARBITRUM = "arbitrum",
   ETHEREUM = "ethereum",
   CELO = "celo",
+  LISK = "lisk",
 }
 
 export enum RampToken {
   USDC = "USDC",
   USDT = "USDT",
+}
+
+export interface RefundAccount {
+  institution: string;
+  accountIdentifier: string;
+  accountName: string;
 }
 
 export interface Recipient {
@@ -313,13 +320,18 @@ export interface PayRequest {
 
 //const { shortcode, amount, chain, asset,  mobile_network, country_code} = req.body;
 export interface BuyRequest {
-  shortcode: string;
   amount: number;
   localAmount?: number;
   chain: RampChain;
   asset: RampToken;
-  mobile_network: string;
   country_code: string;
+  // Pretium (mobile-money) onramp fields. Required for KES/UGX/CDF/ETB/GHS/TZS/MWK,
+  // unused for Paycrest currencies (NGN).
+  shortcode?: string;
+  mobile_network?: string;
+  // Paycrest (bank-transfer) onramp field. Required for NGN — the bank account
+  // Paycrest will refund to if the order fails. Unused for Pretium currencies.
+  refund_account?: RefundAccount;
 }
 
 // //{
@@ -332,9 +344,16 @@ export interface BuyRequest {
 //   }
 // }
 
+// Onramp response. The shape depends on which provider settled the order:
+//   - Pretium (KES, UGX, CDF, ETB, GHS, TZS, MWK): mobile-money STK push;
+//     `transaction_code`/`status` describe the collection.
+//   - Paycrest (NGN): bank-transfer; `payment.bankAccount` is what the user
+//     pays into, and the order is settled when funds arrive.
+// `provider` is only present on the Paycrest variant; absence implies Pretium.
 export interface BuyResponse {
+  // Pretium fields
   success?: boolean;
-  message: string;
+  message?: string;
   transaction_code?: string;
   status?: string;
   data?: {
@@ -345,8 +364,23 @@ export interface BuyResponse {
     asset?: string;
     status?: string;
     account_number?: string;
+    // Paycrest order data is also surfaced here (id, status, etc.)
+    rate?: string;
+    senderFee?: number;
+    transactionFee?: number;
+    receiveAddress?: string;
+    validUntil?: string;
   };
   feeBreakdown?: FeeBreakdown;
+  // Paycrest-only fields
+  provider?: "paycrest";
+  payment?: {
+    bankAccount: string;
+    validUntil: string;
+    amount: string;
+    currency: string;
+    reference: string;
+  };
 }
 
 // //const order: {
@@ -467,6 +501,42 @@ export interface LoginResponse {
   btcAddress: string;
   accessToken: string;
 }
+
+// Google sign-in. The frontend obtains an ID token from Google (e.g. via
+// @react-oauth/google's `useGoogleLogin({ flow: "implicit" })` or the
+// One-Tap credential), and the backend verifies it before issuing a session.
+export interface GoogleLoginRequest {
+  idToken: string;
+  // Optional referral code propagated to the new user when the account is
+  // created on first sign-in.
+  referrer?: string;
+}
+
+// Same shape as LoginResponse — Google sign-in produces a session identical
+// to email/phone login. Kept as a separate type alias for clarity.
+export type GoogleLoginResponse = LoginResponse;
+
+// Apple Sign In. The frontend obtains an identity token from Apple — on
+// web via the "Sign in with Apple JS" flow (`AppleID.auth.signIn()`), on
+// iOS via `ASAuthorizationAppleIDProvider`, on RN via expo-apple-authentication
+// or a similar wrapper.
+//
+// Apple is privacy-aware: `email` is only included on the FIRST sign-in,
+// and `displayName` is only delivered on the first sign-in if name scope is
+// requested. Pass `displayName` through on first sign-in so we can store it;
+// on subsequent sign-ins the backend looks the user up by their durable
+// Apple sub instead.
+export interface AppleLoginRequest {
+  idToken: string;
+  // First-name + last-name composed by the client. Apple won't give us this
+  // again, so capture it on first sign-in.
+  displayName?: string;
+  // Optional referral code propagated to the new user when the account is
+  // created on first sign-in.
+  referrer?: string;
+}
+
+export type AppleLoginResponse = LoginResponse;
 
 // Authentication Types
 export type LoginRequest =
