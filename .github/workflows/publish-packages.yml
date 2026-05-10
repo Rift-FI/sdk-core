@@ -103,7 +103,7 @@ jobs:
         if: github.event.inputs.package != 'all'
         run: |
           npm version ${{ github.event.inputs.version }} -w @rift-finance/${{ github.event.inputs.package }} --no-git-tag-version
-          git add .
+          git add packages/${{ github.event.inputs.package }}/package.json
           git commit -m "chore: bump @rift-finance/${{ github.event.inputs.package }} to ${{ github.event.inputs.version }}"
 
       - name: Publish all packages
