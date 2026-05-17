@@ -851,9 +851,44 @@ export interface TransactionFeeRequest {
   token: string;
 }
 
+/**
+ * Real on-chain gas estimate for a transfer, denominated in the **same
+ * token** the user is sending (for ERC-20 via paymaster) or the chain's
+ * native asset (for raw ETH/MATIC/etc. transfers).
+ *
+ * Backwards compatible: legacy callers reading just `amount` + `token`
+ * keep working. New callers consume the rich fields below to display a
+ * "send X, gas Y, total Z" preview and hard-block the Send button when
+ * `sufficient` is false.
+ */
 export interface TransactionFeeResponse {
+  /**
+   * Gas/fee amount in the same token as the transfer. Legacy field —
+   * equal to `gasFeeInToken` parsed as a number.
+   */
   amount: number;
+  /** Token symbol the fee is denominated in. */
   token: string;
+  /** Gas fee in the token, as a string for full precision. */
+  gasFeeInToken?: string;
+  /** The send amount as submitted, echoed back. */
+  sendAmount?: string;
+  /** sendAmount + gasFeeInToken — total tokens the wallet must hold. */
+  totalNeeded?: string;
+  /** Current token balance of the user's smart account. */
+  tokenBalance?: string | null;
+  /** Whether tokenBalance >= totalNeeded. */
+  sufficient?: boolean | null;
+  /** totalNeeded - tokenBalance when not sufficient, else "0". */
+  deficit?: string;
+  /** Chain key (BASE, POLYGON, …). */
+  chain?: string;
+  /** Paymaster contract address (null for native asset path). */
+  paymaster?: string | null;
+  /** Smart account address resolved from the user's owner address. */
+  smartAccount?: string;
+  /** Token decimals — useful for UI formatting. */
+  tokenDecimals?: number;
 }
 
 // DeFi Types

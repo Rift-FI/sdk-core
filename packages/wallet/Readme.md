@@ -69,7 +69,7 @@ const session = await rift.auth.loginWithGoogle({
 
 Pass the `id_token` your client got from Google Identity Services. The backend verifies the signature with Google, then either creates a wallet for the email or signs the existing user in.
 
-> Once a user is bound to Google, OTP/password login is rejected for them — they keep using Google. Configure allowed Google Client IDs in your project's **Auth** tab in the dashboard.
+> Once a user is bound to Google, OTP/password login is rejected for them — they keep using Google.
 
 ### Apple sign-in
 
@@ -256,7 +256,7 @@ try {
 
 - **Integration walkthrough**: https://service.riftfi.xyz/docs
 - **HTTP API explorer**: https://developers.riftfi.xyz
-- **OpenAPI spec**: https://developers.riftfi.xyz/docs.json
+- **OpenAPI spec**: https://github.com/Rift-FI/Rift-Sdk-Wrapper/blob/main/docs.json
 - **React bindings**: https://www.npmjs.com/package/@rift-finance/react
 - **MCP server for AI assistants**: https://www.npmjs.com/package/@rift-finance/mcp-server
 
