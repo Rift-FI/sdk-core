@@ -889,6 +889,35 @@ export interface TransactionFeeResponse {
   smartAccount?: string;
   /** Token decimals — useful for UI formatting. */
   tokenDecimals?: number;
+  /**
+   * `true` when the smart-wallet's prepareUserOperation simulation
+   * failed (common on Ethereum mainnet for undeployed accounts or
+   * balances near the edge of covering gas) and the gas number is a
+   * heuristic estimate (gas price × typical gas limit) rather than the
+   * bundler's exact value. The number is intentionally generous; the
+   * actual on-chain cost is typically lower.
+   */
+  degraded?: boolean;
+  /** Short reason why the precise simulation failed (degraded only). */
+  degradedReason?: string;
+  /**
+   * Paymaster's portion of `gasFeeInToken` — the actual on-chain gas
+   * cost in tokens. `gasFeeInToken = paymasterFeeInToken + markupFeeInToken`.
+   */
+  paymasterFeeInToken?: string;
+  /**
+   * Service-fee markup portion of `gasFeeInToken`. A configurable
+   * percentage of the transfer amount, charged in the same token as
+   * an additional on-chain transfer to Rift's treasury, in the same
+   * UserOperation. `"0"` when markup is disabled server-side.
+   */
+  markupFeeInToken?: string;
+  /**
+   * Markup rate in basis points. 50 = 0.5%. 0 = markup disabled.
+   * Set globally on the smart-wallet service (`MARKUP_BPS` env);
+   * applies to every caller, no per-project / per-key override.
+   */
+  markupBps?: number;
 }
 
 // DeFi Types
