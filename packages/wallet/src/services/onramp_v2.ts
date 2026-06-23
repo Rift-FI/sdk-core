@@ -16,7 +16,7 @@ export class OnrampServiceV2 extends BaseService {
   async buy(request: BuyRequest): Promise<BuyResponse> {
     return this.authenticatedRequest<BuyResponse>({
       method: "POST",
-      url: "/offramp/onramp",
+      url: "/v1/onramps",
       data: request,
     });
   }
@@ -25,7 +25,7 @@ export class OnrampServiceV2 extends BaseService {
   async getOnrampStatus(transactionCode: string): Promise<OnrampStatusResponse> {
     return this.authenticatedRequest<OnrampStatusResponse>({
       method: "POST",
-      url: `/offramp/onramp/status`,
+      url: `/v1/onramps/by-code`,
       data: {
         transaction_code: transactionCode,
       },
@@ -36,7 +36,7 @@ export class OnrampServiceV2 extends BaseService {
   async getOnrampOrders(userId: string): Promise<OnrampStatusResponse[]> {
     return this.authenticatedRequest<OnrampStatusResponse[]>({
       method: "GET",
-      url: `/offramp/onramp/orders`,
+      url: `/v1/onramps`,
       params: {
         userId,
       },

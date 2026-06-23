@@ -17,7 +17,7 @@ export class KYCService extends BaseService {
   async getToken(request: KYCTokenRequest): Promise<KYCTokenResponse> {
     return this.publicRequest<KYCTokenResponse>({
       method: "POST",
-      url: "/api/kyc/token",
+      url: "/v1/kyc/sessions",
       data: request,
     });
   }
@@ -25,7 +25,7 @@ export class KYCService extends BaseService {
   async checkUserExists(request: KYCUserExistsRequest): Promise<KYCUserExistsResponse> {
     return this.publicRequest<KYCUserExistsResponse>({
       method: "POST",
-      url: "/api/kyc/user-exists",
+      url: "/v1/users/lookup",
       data: request,
     });
   }
@@ -33,7 +33,7 @@ export class KYCService extends BaseService {
   async getStatus(request: KYCStatusRequest): Promise<KYCStatusResponse> {
     return this.publicRequest<KYCStatusResponse>({
       method: "POST",
-      url: "/api/kyc/status",
+      url: "/v1/kyc/status",
       data: request,
     });
   }
@@ -41,7 +41,7 @@ export class KYCService extends BaseService {
   async verifyAndSendOtp(request: KYCVerifyAndSendOtpRequest): Promise<KYCStatusResponse> {
     return this.publicRequest<KYCStatusResponse>({
       method: "POST",
-      url: "/api/kyc/verify-and-send-otp",
+      url: "/v1/kyc/poll-and-notify",
       data: request,
     });
   }
@@ -49,7 +49,7 @@ export class KYCService extends BaseService {
   async verify(request: KYCVerifyRequest): Promise<KYCVerifyResponse> {
     return this.authenticatedRequest<KYCVerifyResponse>({
       method: "POST",
-      url: "/api/kyc/verify",
+      url: "/v1/kyc/submissions",
       data: request,
     });
   }
@@ -57,14 +57,14 @@ export class KYCService extends BaseService {
   async isVerified(): Promise<KYCVerifiedResponse> {
     return this.authenticatedRequest<KYCVerifiedResponse>({
       method: "GET",
-      url: "/api/kyc/verified",
+      url: "/v1/kyc/status",
     });
   }
 
   async getJobStatus(jobId: string): Promise<KYCJobStatusResponse> {
     return this.authenticatedRequest<KYCJobStatusResponse>({
       method: "GET",
-      url: `/api/kyc/job/${jobId}`,
+      url: `/v1/kyc/jobs/${jobId}`,
     });
   }
 }

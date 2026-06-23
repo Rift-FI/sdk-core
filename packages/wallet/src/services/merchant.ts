@@ -24,7 +24,7 @@ export class MerchantService extends BaseService {
   ): Promise<CreateInvoiceResponse> {
     return this.authenticatedRequest<CreateInvoiceResponse>({
       method: "POST",
-      url: "/invoices",
+      url: "/v1/invoices",
       data: request,
     });
   }
@@ -39,7 +39,7 @@ export class MerchantService extends BaseService {
   ): Promise<GetInvoicesResponse> {
     return this.authenticatedRequest<GetInvoicesResponse>({
       method: "GET",
-      url: "/invoices",
+      url: "/v1/invoices",
       params: request,
     });
   }
@@ -65,7 +65,7 @@ export class MerchantService extends BaseService {
   ): Promise<GetMerchantStatusResponse> {
     return this.authenticatedRequest<GetMerchantStatusResponse>({
       method: "GET",
-      url: "/merchants/status",
+      url: "/v1/merchants/me",
       params: request,
     });
   }

@@ -12,7 +12,7 @@ export class WalletService extends BaseService {
   ): Promise<ApiResponse<Balance[]>> {
     return this.authenticatedRequest<ApiResponse<Balance[]>>({
       method: "GET",
-      url: "/wallet/token-balance",
+      url: "/v1/balances/tokens",
       params: {
         token: request.token,
         ...(request.chain && { chain: request.chain }),
@@ -23,7 +23,7 @@ export class WalletService extends BaseService {
   async getChainBalance(request?: ChainBalanceRequest): Promise<ApiResponse<Balance[]>> {
     const options: any = {
       method: "GET",
-      url: "/wallet/chain-balance",
+      url: "/v1/balances",
     };
   
     if (request?.chain) {

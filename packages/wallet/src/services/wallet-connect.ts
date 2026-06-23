@@ -11,7 +11,7 @@ export class WalletConnectService extends BaseService {
   async pair(request: WalletConnectPairRequest): Promise<WalletConnectPairResponse> {
     return this.authenticatedRequest<WalletConnectPairResponse>({
       method: "POST",
-      url: "/walletconnect/pair",
+      url: "/v1/wallet-connect/pairings",
       data: request,
     });
   }
@@ -19,35 +19,35 @@ export class WalletConnectService extends BaseService {
   async getRequests(): Promise<ApiResponse<WalletConnectRequest[]>> {
     return this.authenticatedRequest<ApiResponse<WalletConnectRequest[]>>({
       method: "GET",
-      url: "/walletconnect/requests",
+      url: "/v1/wallet-connect/requests",
     });
   }
 
   async approveRequest(id: string): Promise<ApiResponse> {
     return this.authenticatedRequest<ApiResponse>({
       method: "POST",
-      url: `/walletconnect/requests/${id}/approve`,
+      url: `/v1/wallet-connect/requests/${id}/approve`,
     });
   }
 
   async rejectRequest(id: string): Promise<ApiResponse> {
     return this.authenticatedRequest<ApiResponse>({
       method: "POST",
-      url: `/walletconnect/requests/${id}/reject`,
+      url: `/v1/wallet-connect/requests/${id}/reject`,
     });
   }
 
   async getSessions(): Promise<ApiResponse<WalletConnectSession[]>> {
     return this.authenticatedRequest<ApiResponse<WalletConnectSession[]>>({
       method: "GET",
-      url: "/walletconnect/sessions",
+      url: "/v1/wallet-connect/sessions",
     });
   }
 
   async disconnectSession(topic: string): Promise<ApiResponse> {
     return this.authenticatedRequest<ApiResponse>({
       method: "DELETE",
-      url: `/walletconnect/sessions/${topic}`,
+      url: `/v1/wallet-connect/sessions/${topic}`,
     });
   }
 }

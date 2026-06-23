@@ -42,7 +42,7 @@ export class AuthService extends BaseService {
   async signup(request: SignupRequest): Promise<SignupResponse> {
     return this.publicRequest<SignupResponse>({
       method: "POST",
-      url: "/auth/signup",
+      url: "/v1/auth/sign-up",
       data: request,
     });
   }
@@ -50,7 +50,7 @@ export class AuthService extends BaseService {
   async login(request: LoginRequest): Promise<LoginResponse> {
     const response = await this.publicRequest<LoginResponse>({
       method: "POST",
-      url: "/auth/login",
+      url: "/v1/auth/sign-in",
       data: request,
     });
 
@@ -78,7 +78,7 @@ export class AuthService extends BaseService {
   ): Promise<GoogleLoginResponse> {
     const response = await this.publicRequest<GoogleLoginResponse>({
       method: "POST",
-      url: "/auth/google",
+      url: "/v1/auth/sign-in/google",
       data: request,
     });
 
@@ -109,7 +109,7 @@ export class AuthService extends BaseService {
   ): Promise<AppleLoginResponse> {
     const response = await this.publicRequest<AppleLoginResponse>({
       method: "POST",
-      url: "/auth/apple",
+      url: "/v1/auth/sign-in/apple",
       data: request,
     });
 
@@ -123,7 +123,7 @@ export class AuthService extends BaseService {
   async updateUser(request: UpdateUserRequest): Promise<UpdateUserResponse> {
     return this.authenticatedRequest<UpdateUserResponse>({
       method: "PUT",
-      url: "/user/update",
+      url: "/v1/me",
       data: request,
     });
   }
@@ -132,7 +132,7 @@ export class AuthService extends BaseService {
   async sendOtp(request: OtpRequest): Promise<OtpResponse> {
     return this.publicRequest<OtpResponse>({
       method: "POST",
-      url: "/otp/send",
+      url: "/v1/one-time-codes",
       data: request,
     });
   }
@@ -140,7 +140,7 @@ export class AuthService extends BaseService {
   async verifyOtp(request: OtpVerifyRequest): Promise<OtpResponse> {
     return this.publicRequest<OtpResponse>({
       method: "POST",
-      url: "/otp/verify",
+      url: "/v1/one-time-codes/verify",
       data: request,
     });
   }
@@ -148,7 +148,7 @@ export class AuthService extends BaseService {
   async getUser(): Promise<UserResponse> {
     return this.authenticatedRequest<UserResponse>({
       method: "GET",
-      url: "/user/me",
+      url: "/v1/me",
     });
   }
 
@@ -159,7 +159,7 @@ export class AuthService extends BaseService {
       ApiResponse<DeleteUserResponse>
     >({
       method: "DELETE",
-      url: "/user/delete",
+      url: "/v1/me",
       data: request,
     });
 
@@ -183,7 +183,7 @@ export class AuthService extends BaseService {
   ): Promise<CreateRecoveryResponse> {
     return this.authenticatedRequest<CreateRecoveryResponse>({
       method: "POST",
-      url: "/recovery/create",
+      url: "/v1/recovery/methods",
       data: request,
     });
   }
@@ -193,7 +193,7 @@ export class AuthService extends BaseService {
   ): Promise<RecoveryOptionsResponse> {
     return this.publicRequest<RecoveryOptionsResponse>({
       method: "GET",
-      url: `/recovery/options/${externalId}`,
+      url: `/v1/recovery/options/${externalId}`,
     });
   }
 
@@ -202,7 +202,7 @@ export class AuthService extends BaseService {
   ): Promise<RequestPasswordResetResponse> {
     return this.publicRequest<RequestPasswordResetResponse>({
       method: "POST",
-      url: "/recovery/request-reset",
+      url: "/v1/recovery/password-reset",
       data: request,
     });
   }
@@ -212,7 +212,7 @@ export class AuthService extends BaseService {
   ): Promise<ResetPasswordResponse> {
     return this.publicRequest<ResetPasswordResponse>({
       method: "POST",
-      url: "/recovery/reset-password",
+      url: "/v1/recovery/password-reset/complete",
       data: request,
     });
   }
@@ -222,7 +222,7 @@ export class AuthService extends BaseService {
   ): Promise<UpdateRecoveryResponse> {
     return this.authenticatedRequest<UpdateRecoveryResponse>({
       method: "PUT",
-      url: "/recovery/update",
+      url: "/v1/recovery/methods",
       data: request,
     });
   }
@@ -232,7 +232,7 @@ export class AuthService extends BaseService {
   ): Promise<AddRecoveryMethodResponse> {
     return this.authenticatedRequest<AddRecoveryMethodResponse>({
       method: "POST",
-      url: "/recovery/add-method",
+      url: "/v1/recovery/methods/by-type",
       data: request,
     });
   }
@@ -242,7 +242,7 @@ export class AuthService extends BaseService {
   ): Promise<RemoveRecoveryMethodResponse> {
     return this.authenticatedRequest<RemoveRecoveryMethodResponse>({
       method: "DELETE",
-      url: "/recovery/remove-method",
+      url: "/v1/recovery/methods/by-type",
       data: request,
     });
   }
@@ -252,7 +252,7 @@ export class AuthService extends BaseService {
   ): Promise<UpdateRecoveryMethodResponse> {
     return this.authenticatedRequest<UpdateRecoveryMethodResponse>({
       method: "PUT",
-      url: "/recovery/update-method",
+      url: "/v1/recovery/methods/by-type",
       data: request,
     });
   }
@@ -262,7 +262,7 @@ export class AuthService extends BaseService {
   ): Promise<GetMyRecoveryMethodsResponse> {
     return this.authenticatedRequest<GetMyRecoveryMethodsResponse>({
       method: "POST",
-      url: "/recovery/my-methods",
+      url: "/v1/recovery/methods",
       data: request,
     });
   }
@@ -272,7 +272,7 @@ export class AuthService extends BaseService {
   ): Promise<DeleteAllRecoveryMethodsResponse> {
     return this.authenticatedRequest<DeleteAllRecoveryMethodsResponse>({
       method: "DELETE",
-      url: "/recovery/delete-all",
+      url: "/v1/recovery/methods",
       data: request,
     });
   }

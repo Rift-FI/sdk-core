@@ -12,7 +12,7 @@ export class TransactionService extends BaseService {
   async send(request: TransactionRequest): Promise<TransactionResponse> {
     return this.authenticatedRequest<TransactionResponse>({
       method: "POST",
-      url: "/transaction/spend",
+      url: "/v1/transactions",
       data: request,
     });
   }
@@ -22,7 +22,7 @@ export class TransactionService extends BaseService {
   ): Promise<Transaction[]> {
     return this.authenticatedRequest<Transaction[]>({
       method: "POST",
-      url: "/transaction/history",
+      url: "/v1/transactions",
       params: request,
     });
   }
@@ -32,7 +32,7 @@ export class TransactionService extends BaseService {
   ): Promise<TransactionFeeResponse> {
     return this.authenticatedRequest<TransactionFeeResponse>({
       method: "GET",
-      url: "/transaction/fee",
+      url: "/v1/transactions/fee-estimate",
       params: request,
     });
   }

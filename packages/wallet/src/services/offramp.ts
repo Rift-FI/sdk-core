@@ -33,7 +33,7 @@ export class OfframpService extends BaseService {
   ): Promise<PreviewExchangeRateResponse> {
     return this.authenticatedRequest<PreviewExchangeRateResponse>({
       method: "POST",
-      url: "/offramp/preview_exchange_rate",
+      url: "/v1/rates/quote",
       data: request,
     });
   }
@@ -42,7 +42,7 @@ export class OfframpService extends BaseService {
   async getSupportedInstitutions(currency: OfframpCurrency): Promise<GetSupportedInstitutionsResponse> {
     return this.authenticatedRequest<GetSupportedInstitutionsResponse>({
       method: "GET",
-      url: `/offramp/payment_methods/${currency}`,
+      url: `/v1/rails/${currency}/payment-methods`,
     });
   }
 
@@ -50,7 +50,7 @@ export class OfframpService extends BaseService {
   async sendPaymentLink(request: SendPaymentLinkRequest): Promise<SendPaymentLinkResponse> {
     return this.authenticatedRequest<SendPaymentLinkResponse>({
       method: "POST",
-      url: "/offramp/send-payment-link",
+      url: "/v1/invoices/notifications",
       data: request,
     });
   }
@@ -58,7 +58,7 @@ export class OfframpService extends BaseService {
   async pay (request: PayRequest): Promise<PayResponse> {
     return this.authenticatedRequest<PayResponse>({
       method: "POST",
-      url: "/offramp/pay",
+      url: "/v1/offramps",
       data: request,
     });
   }
@@ -73,7 +73,7 @@ export class OfframpService extends BaseService {
   ): Promise<CreateOfframpOrderResponse> {
     return this.authenticatedRequest<CreateOfframpOrderResponse>({
       method: "POST",
-      url: "/offramp/offramp",
+      url: "/v1/offramps",
       data: request,
     });
   }
@@ -81,7 +81,7 @@ export class OfframpService extends BaseService {
   async getWithdrawalFee(amount: number): Promise<GetWithdrawalFeeResponse> {
     return this.authenticatedRequest<GetWithdrawalFeeResponse>({
       method: "POST",
-      url: "/offramp/get-withdrawal-fee",
+      url: "/v1/rates/withdrawal-fee",
       data:{amount}
     });
   }
@@ -96,7 +96,7 @@ export class OfframpService extends BaseService {
   ): Promise<PollOfframpOrderResponse> {
     return this.authenticatedRequest<PollOfframpOrderResponse>({
       method: "GET",
-      url: "/offramp/poll_order_status",
+      url: "/v1/offramps/by-code",
       params: request
       
     });
@@ -109,7 +109,7 @@ export class OfframpService extends BaseService {
   async getOrders(): Promise<GetOfframpOrdersResponse> {
     return this.authenticatedRequest<GetOfframpOrdersResponse>({
       method: "GET",
-      url: "/offramp/get_orders",
+      url: "/v1/offramps",
     });
   }
 }

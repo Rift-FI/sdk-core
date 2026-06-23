@@ -22,7 +22,7 @@ export class SignerService extends BaseService {
   ): Promise<WalletInstanceResponse> {
     return this.authenticatedRequest<WalletInstanceResponse>({
       method: "POST",
-      url: "/proxy-wallet/get-wallet-instance",
+      url: "/v1/wallet/chains/by-id",
       data: request,
     });
   }
@@ -36,7 +36,7 @@ export class SignerService extends BaseService {
   ): Promise<SignTransactionResponse> {
     return this.authenticatedRequest<SignTransactionResponse>({
       method: "POST",
-      url: "/proxy-wallet/sign-transaction",
+      url: "/v1/wallet/signatures/transaction",
       data: request,
     });
   }
@@ -50,7 +50,7 @@ export class SignerService extends BaseService {
   ): Promise<SendTransactionResponse> {
     return this.authenticatedRequest<SendTransactionResponse>({
       method: "POST",
-      url: "/proxy-wallet/send-transaction",
+      url: "/v1/wallet/user-operations",
       data: request,
     });
   }
@@ -62,7 +62,7 @@ export class SignerService extends BaseService {
   async signMessage(request: SignMessageRequest): Promise<SignMessageResponse> {
     return this.authenticatedRequest<SignMessageResponse>({
       method: "POST",
-      url: "/proxy-wallet/sign-message",
+      url: "/v1/wallet/signatures/message",
       data: request,
     });
   }

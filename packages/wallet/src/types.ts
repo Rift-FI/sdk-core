@@ -914,10 +914,21 @@ export interface TransactionFeeResponse {
   markupFeeInToken?: string;
   /**
    * Markup rate in basis points. 50 = 0.5%. 0 = markup disabled.
-   * Set globally on the smart-wallet service (`MARKUP_BPS` env);
-   * applies to every caller, no per-project / per-key override.
+   * Set globally on the smart-wallet service (`MARKUP_BPS` env), with an
+   * optional per-API-key override.
    */
   markupBps?: number;
+  /**
+   * The PROJECT's own markup portion of `gasFeeInToken` — a fee the
+   * project configures and collects to its own treasury, stacked on top
+   * of Rift's markup. `"0"` when the project hasn't set one.
+   */
+  projectMarkupFeeInToken?: string;
+  /**
+   * The project's markup rate in basis points. 30 = 0.3%. 0 when unset.
+   * Configured per-project from the dashboard, not via env.
+   */
+  projectMarkupBps?: number;
 }
 
 // DeFi Types

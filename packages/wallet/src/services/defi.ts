@@ -5,7 +5,7 @@ export class DeFiService extends BaseService {
   async swap(request: SwapRequest): Promise<SwapResponse> {
     return this.authenticatedRequest<SwapResponse>({
       method: "POST",
-      url: "/defi/swap",
+      url: "/v1/defi/swap",
       data: request,
     });
   }

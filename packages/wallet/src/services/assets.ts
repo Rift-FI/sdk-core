@@ -18,14 +18,14 @@ export class AssetsService extends BaseService {
       // This requires authentication
       return this.authenticatedRequest<ApiResponse<WalletChain[]>>({
         method: "GET",
-        url: "/assets/supported-chains",
+        url: "/v1/chains",
         params: { active: "true" },
       });
     } else {
       // Public endpoint
       return this.publicRequest<ApiResponse<WalletChain[]>>({
         method: "GET",
-        url: "/assets/supported-chains",
+        url: "/v1/chains",
       });
     }
   }
@@ -36,7 +36,7 @@ export class AssetsService extends BaseService {
   async getAllTokens(): Promise<ApiResponse<WalletToken[]>> {
     return this.publicRequest<ApiResponse<WalletToken[]>>({
       method: "GET",
-      url: "/assets/tokens",
+      url: "/v1/tokens",
     });
   }
 
@@ -46,7 +46,7 @@ export class AssetsService extends BaseService {
   async getUserTokens(): Promise<ApiResponse<WalletToken[]>> {
     return this.authenticatedRequest<ApiResponse<WalletToken[]>>({
       method: "GET",
-      url: "/assets/tokens/user",
+      url: "/v1/me/tokens",
     });
   }
 
@@ -58,7 +58,7 @@ export class AssetsService extends BaseService {
   ): Promise<ApiResponse<WalletToken[]>> {
     return this.publicRequest<ApiResponse<WalletToken[]>>({
       method: "GET",
-      url: `/assets/tokens/chain/${chainId}`,
+      url: `/v1/chains/${chainId}/tokens`,
     });
   }
 
@@ -69,7 +69,7 @@ export class AssetsService extends BaseService {
   async getTokenById(tokenId: string): Promise<ApiResponse<WalletToken>> {
     return this.publicRequest<ApiResponse<WalletToken>>({
       method: "GET",
-      url: `/assets/tokens/${tokenId}`,
+      url: `/v1/tokens/${tokenId}`,
     });
   }
 
@@ -79,7 +79,7 @@ export class AssetsService extends BaseService {
   async getChainById(chainId: string): Promise<ApiResponse<WalletChain>> {
     return this.publicRequest<ApiResponse<WalletChain>>({
       method: "GET",
-      url: `/assets/chains/${chainId}`,
+      url: `/v1/chains/${chainId}`,
     });
   }
 }

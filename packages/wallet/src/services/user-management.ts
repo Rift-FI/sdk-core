@@ -14,7 +14,7 @@ export class UserManagementService extends BaseService {
   async suspendUser(request: SuspendUserRequest): Promise<SuspendUserResponse> {
     return this.publicRequest<SuspendUserResponse>({
       method: "POST",
-      url: "/users/suspend",
+      url: "/v1/users/suspend",
       data: request,
     });
   }
@@ -22,7 +22,7 @@ export class UserManagementService extends BaseService {
   async unsuspendUser(request: UnsuspendUserRequest): Promise<UnsuspendUserResponse> {
     return this.publicRequest<UnsuspendUserResponse>({
       method: "POST",
-      url: "/users/unsuspend",
+      url: "/v1/users/unsuspend",
       data: request,
     });
   }
@@ -30,7 +30,7 @@ export class UserManagementService extends BaseService {
   async getSuspendedUsers(request?: GetSuspendedUsersRequest): Promise<GetSuspendedUsersResponse> {
     return this.publicRequest<GetSuspendedUsersResponse>({
       method: "GET",
-      url: "/users/suspended",
+      url: "/v1/users/suspended",
       params: request,
     });
   }
@@ -38,7 +38,7 @@ export class UserManagementService extends BaseService {
   async getUserStatus(request: GetUserStatusRequest): Promise<GetUserStatusResponse> {
     return this.publicRequest<GetUserStatusResponse>({
       method: "GET",
-      url: "/users/status",
+      url: "/v1/users/lookup",
       params: request,
     });
   }

@@ -33,7 +33,7 @@ export class VaultService extends BaseService {
   async getProtocolStats(): Promise<ProtocolStats> {
     return this.publicRequest<ProtocolStats>({
       method: "GET",
-      url: "/vault/protocol/stats",
+      url: "/v1/vault/stats",
     });
   }
 
@@ -44,7 +44,7 @@ export class VaultService extends BaseService {
   async getTvl(): Promise<VaultTvlResponse> {
     return this.publicRequest<VaultTvlResponse>({
       method: "GET",
-      url: "/vault/protocol/tvl",
+      url: "/v1/vault/tvl",
     });
   }
 
@@ -55,7 +55,7 @@ export class VaultService extends BaseService {
   async getTotalDeposits(): Promise<VaultTotalDepositsResponse> {
     return this.publicRequest<VaultTotalDepositsResponse>({
       method: "GET",
-      url: "/vault/protocol/deposits",
+      url: "/v1/vault/deposits",
     });
   }
 
@@ -66,7 +66,7 @@ export class VaultService extends BaseService {
   async getPendingRewards(): Promise<VaultPendingRewardsResponse> {
     return this.publicRequest<VaultPendingRewardsResponse>({
       method: "GET",
-      url: "/vault/protocol/pending-rewards",
+      url: "/v1/vault/rewards/pending",
     });
   }
 
@@ -77,7 +77,7 @@ export class VaultService extends BaseService {
   async getRewardsDistributed(): Promise<VaultRewardsDistributedResponse> {
     return this.publicRequest<VaultRewardsDistributedResponse>({
       method: "GET",
-      url: "/vault/protocol/rewards-distributed",
+      url: "/v1/vault/rewards/distributed",
     });
   }
 
@@ -88,7 +88,7 @@ export class VaultService extends BaseService {
   async getPendingClaimersCount(): Promise<VaultPendingClaimersResponse> {
     return this.publicRequest<VaultPendingClaimersResponse>({
       method: "GET",
-      url: "/vault/protocol/pending-claimers",
+      url: "/v1/vault/claims/pending",
     });
   }
 
@@ -99,7 +99,7 @@ export class VaultService extends BaseService {
   async getPendingWithdrawersCount(): Promise<VaultPendingWithdrawersResponse> {
     return this.publicRequest<VaultPendingWithdrawersResponse>({
       method: "GET",
-      url: "/vault/protocol/pending-withdrawers",
+      url: "/v1/vault/withdrawals/pending",
     });
   }
 
@@ -114,7 +114,7 @@ export class VaultService extends BaseService {
   async getContractVersion(): Promise<VaultVersionResponse> {
     return this.publicRequest<VaultVersionResponse>({
       method: "GET",
-      url: "/vault/contract/version",
+      url: "/v1/vault/contract",
     });
   }
 
@@ -125,7 +125,7 @@ export class VaultService extends BaseService {
   async getStablecoinAddress(): Promise<VaultStablecoinResponse> {
     return this.publicRequest<VaultStablecoinResponse>({
       method: "GET",
-      url: "/vault/contract/stablecoin",
+      url: "/v1/vault/contract",
     });
   }
 
@@ -136,7 +136,7 @@ export class VaultService extends BaseService {
   async getAdminAddress(): Promise<VaultAdminResponse> {
     return this.publicRequest<VaultAdminResponse>({
       method: "GET",
-      url: "/vault/contract/admin",
+      url: "/v1/vault/contract",
     });
   }
 
@@ -152,7 +152,7 @@ export class VaultService extends BaseService {
   async getMyVaultData(): Promise<UserVaultData> {
     return this.authenticatedRequest<UserVaultData>({
       method: "GET",
-      url: "/vault/user/me",
+      url: "/v1/vault/positions/me",
     });
   }
 
@@ -163,7 +163,7 @@ export class VaultService extends BaseService {
   async getMyBalance(): Promise<UserVaultBalanceResponse> {
     return this.authenticatedRequest<UserVaultBalanceResponse>({
       method: "GET",
-      url: "/vault/user/me/balance",
+      url: "/v1/vault/positions/me/balance",
     });
   }
 
@@ -174,7 +174,7 @@ export class VaultService extends BaseService {
   async getMyRewards(): Promise<UserVaultRewardsResponse> {
     return this.authenticatedRequest<UserVaultRewardsResponse>({
       method: "GET",
-      url: "/vault/user/me/rewards",
+      url: "/v1/vault/positions/me/rewards",
     });
   }
 
@@ -185,7 +185,7 @@ export class VaultService extends BaseService {
   async getMyWhitelistStatus(): Promise<UserVaultWhitelistResponse> {
     return this.authenticatedRequest<UserVaultWhitelistResponse>({
       method: "GET",
-      url: "/vault/user/me/whitelist",
+      url: "/v1/vault/positions/me/whitelist",
     });
   }
 
@@ -209,7 +209,7 @@ export class VaultService extends BaseService {
   async deposit(request: VaultDepositRequest): Promise<VaultDepositResponse> {
     return this.authenticatedRequest<VaultDepositResponse>({
       method: "POST",
-      url: "/vault/user/deposit",
+      url: "/v1/vault/deposits",
       data: request,
     });
   }
@@ -227,7 +227,7 @@ export class VaultService extends BaseService {
   ): Promise<VaultTransactionResponse> {
     return this.authenticatedRequest<VaultTransactionResponse>({
       method: "POST",
-      url: "/vault/user/withdraw",
+      url: "/v1/vault/withdrawals",
       data: request,
     });
   }
@@ -240,7 +240,7 @@ export class VaultService extends BaseService {
   async cancelWithdrawal(): Promise<VaultTransactionResponse> {
     return this.authenticatedRequest<VaultTransactionResponse>({
       method: "POST",
-      url: "/vault/user/withdraw/cancel",
+      url: "/v1/vault/withdrawals/pending",
     });
   }
 
@@ -253,7 +253,7 @@ export class VaultService extends BaseService {
   async claimRewards(): Promise<VaultTransactionResponse> {
     return this.authenticatedRequest<VaultTransactionResponse>({
       method: "POST",
-      url: "/vault/user/claim",
+      url: "/v1/vault/claims",
     });
   }
 
@@ -265,7 +265,7 @@ export class VaultService extends BaseService {
   async cancelClaim(): Promise<VaultTransactionResponse> {
     return this.authenticatedRequest<VaultTransactionResponse>({
       method: "POST",
-      url: "/vault/user/claim/cancel",
+      url: "/v1/vault/claims/pending",
     });
   }
 }
