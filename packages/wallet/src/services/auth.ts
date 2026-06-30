@@ -36,6 +36,8 @@ import {
   DeleteAllRecoveryMethodsResponse,
   UpdateUserResponse,
   UpdateUserRequest,
+  MigrateToV3Request,
+  MigrateToV3Response,
 } from "../types";
 
 export class AuthService extends BaseService {
@@ -166,6 +168,32 @@ export class AuthService extends BaseService {
     this.clearBearerToken();
 
     return response;
+  }
+
+  /**
+   * Upgrade the authenticated user's wallet to a v3 (device-bound)
+   * envelope. Same EOA private key, new auth methods sealed inside the
+   * enclave. The on-chain wallet address is preserved.
+   *
+   * Typical flow:
+   *   1. Show the user a "Make my wallet non-custodial" prompt.
+   *   2. Run a Passkey enrolment ceremony (see PasskeyHelper.enrol) OR
+   *      an OIDC sign-in (see OidcHelper.fetchEnrolment).
+   *   3. Call this method with the resulting enrolledMethods.
+   *   4. From then on, every transaction MUST carry an `authProof` —
+   *      the user authorises each one with their device or Google/Apple.
+   *
+   * Idempotent: if the wallet is already on v3, returns
+   * `{ alreadyMigrated: true }` with no DB write.
+   */
+  async migrateToV3(
+    request: MigrateToV3Request
+  ): Promise<MigrateToV3Response> {
+    return this.authenticatedRequest<MigrateToV3Response>({
+      method: "POST",
+      url: "/wallet/migrate-to-v3",
+      data: request,
+    });
   }
 
   logout(): void {

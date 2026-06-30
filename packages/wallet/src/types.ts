@@ -1,3 +1,78 @@
+// ─────────────────────────────────────────────────────────────────────
+// v3 (device-bound, non-custodial) wire types
+// ─────────────────────────────────────────────────────────────────────
+//
+// Two shapes live here:
+//
+//   EnrolledMethod — declares an auth method the user is registering on
+//   their wallet. Pass an array of these at signup / login / migrate so
+//   the enclave seals (private key + auth methods) together. A user can
+//   enrol multiple methods — typically one passkey + Google as backup.
+//
+//   AuthProof — proves a specific transaction has been authorised by the
+//   user. Pass one with every signing request. The enclave verifies the
+//   proof matches one of the stored enrolled methods AND that the proof
+//   is bound to the user_op_hash being signed (nonce for OIDC, challenge
+//   for WebAuthn) — so a proof from one transaction can't authorise a
+//   different one.
+//
+// You usually don't construct these by hand. Use `PasskeyHelper` /
+// `OidcHelper` (browser-only) — they handle the WebAuthn ceremony and
+// Google Sign-In flow and return the right shape.
+
+/**
+ * Request to upgrade an existing v1 (KMS-only) or v2 (password-bound)
+ * envelope to v3 (device-bound). Same EOA private key, new auth methods.
+ * The wallet address is preserved.
+ */
+export interface MigrateToV3Request {
+  /** At least one auth method to enrol on the new v3 envelope. */
+  enrolledMethods: EnrolledMethod[];
+  /** Required if the user's current envelope is v2 (password-bound). */
+  oldPassword?: string;
+}
+
+export interface MigrateToV3Response {
+  success: boolean;
+  fromVersion: "v1" | "v2" | "v3";
+  toVersion: "v3";
+  /** true if the wallet was already on v3 — no work was done. */
+  alreadyMigrated: boolean;
+}
+
+export type EnrolledMethod =
+  | {
+      kind: "oidc";
+      /** Identity provider issuer URL. e.g. "https://accounts.google.com" */
+      iss: string;
+      /** The IdP-assigned, stable subject identifier for this user. */
+      sub: string;
+    }
+  | {
+      kind: "passkey";
+      /** WebAuthn credential ID (raw bytes, base64-no-padding). */
+      cred_id_b64: string;
+      /** COSE_Key bytes for the credential's public key, base64. */
+      cose_pubkey_b64: string;
+    };
+
+export type AuthProof =
+  | {
+      kind: "oidc";
+      /** Compact JWS id_token. MUST have `nonce` claim = `user_op_hash`. */
+      id_token: string;
+    }
+  | {
+      kind: "passkey";
+      cred_id_b64: string;
+      /** clientDataJSON bytes, base64. challenge field MUST equal user_op_hash. */
+      client_data_json_b64: string;
+      /** authenticatorData bytes, base64. */
+      authenticator_data_b64: string;
+      /** ECDSA signature bytes (DER), base64. */
+      signature_b64: string;
+    };
+
 // Recovery System Types
 export interface RecoveryData {
   id: string;
@@ -539,7 +614,17 @@ export interface AppleLoginRequest {
 export type AppleLoginResponse = LoginResponse;
 
 // Authentication Types
-export type LoginRequest =
+//
+// All variants accept an optional `enrolledMethods` array. When supplied
+// on a user's FIRST login the backend forwards it to the enclave so the
+// new wallet is generated as a v3 (device-bound, non-custodial) envelope
+// instead of v1/v2. Existing users keep whichever format their envelope
+// was generated with — to upgrade later, use `auth.migrateToV3()`.
+//
+// Pass `enrolledMethods: []` (or omit it) to fall back to v1/v2 behaviour.
+type EnrolledMethodsMixin = { enrolledMethods?: EnrolledMethod[] };
+
+export type LoginRequest = (
   | {
       phoneNumber: string;
       otpCode: string;
@@ -559,9 +644,10 @@ export type LoginRequest =
       phoneNumber?: never;
       externalId?: never;
       password?: never;
-    };
+    }
+) & EnrolledMethodsMixin;
 
-export type SignupRequest =
+export type SignupRequest = (
   | {
       externalId: string;
       password: string;
@@ -577,7 +663,8 @@ export type SignupRequest =
       email?: string;
       displayName: string;
       paymentAccount?: string;
-    };
+    }
+) & EnrolledMethodsMixin;
 
 export interface SignupResponse {
   message: string;
@@ -775,6 +862,18 @@ export type TransactionRequest = {
   chain: ChainName;
   intent?: "unlock";
   type?: TransactionType;
+  /**
+   * v3 (device-bound) consent proof. Required when the user's wallet is
+   * on a v3 envelope (Passkey / OIDC enrolled). The enclave refuses to
+   * sign a v3 envelope without it. Build it with `PasskeyHelper.sign()`
+   * or `OidcHelper.sign()` — the helper handles the WebAuthn ceremony
+   * or fetches a fresh Google id_token bound to this transaction's hash.
+   *
+   * For v1 (KMS-only) or v2 (password-bound) envelopes this field is
+   * ignored — those wallets continue to use `password` / `otpCode`
+   * exactly as in SDK v1.
+   */
+  authProof?: AuthProof;
 } & (
   | {
       externalId: string;
@@ -796,6 +895,15 @@ export type TransactionRequest = {
       externalId?: never;
       password?: never;
       phoneNumber?: never;
+    }
+  | {
+      // v3 (Passkey / OIDC) authentication. No legacy factor required —
+      // the authProof carries all consent.
+      externalId?: never;
+      password?: never;
+      phoneNumber?: never;
+      otpCode?: never;
+      email?: never;
     }
 );
 

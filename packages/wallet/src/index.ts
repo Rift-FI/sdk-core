@@ -167,5 +167,17 @@ export { BridgeService } from "./services/bridge";
 export { WalletConnectService } from "./services/wallet-connect";
 export { UserManagementService } from "./services/user-management";
 
+// v3 (non-custodial) browser-side ceremony helpers. These are tree-shake
+// safe — if you don't import them they don't end up in your bundle. They
+// throw at construction time on the server.
+export {
+  PasskeyHelper,
+  isPasskeySupported,
+  isPlatformPasskeySupported,
+} from "./services/passkey-helper";
+export type { PasskeyEnrolmentResult } from "./services/passkey-helper";
+export { OidcHelper } from "./services/oidc-helper";
+export type { OidcEnrolmentResult } from "./services/oidc-helper";
+
 // Default export
 export default Rift;
