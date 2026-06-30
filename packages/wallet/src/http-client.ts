@@ -13,6 +13,12 @@ export class RiftHttpClient implements HttpClient {
     switch (this.config.environment) {
       case "production":
         return "https://payment.riftfi.xyz";
+      case "sandbox":
+        // Sandbox uses the v3-enabled backend + sandbox enclave (PCR0
+        // pinned in sandbox KMS). Same wire shape as prod — the v3
+        // path is opt-in via enrolledMethods/authProof on a per-request
+        // basis.
+        return "https://sandbox.riftfi.com";
       case "development":
         return "https://payment.riftfi.xyz";
       default:

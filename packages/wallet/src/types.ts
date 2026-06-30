@@ -199,6 +199,21 @@ export interface DeleteAllRecoveryMethodsResponse {
 export enum Environment {
   DEVELOPMENT = "development",
   PRODUCTION = "production",
+  /**
+   * Sandbox — backed by https://sandbox.riftfi.com. This is the live
+   * non-custodial enclave deploy with the v3 PCR0 attested in KMS, the
+   * Google + Apple JWKS pinned, and the localhost / riftfi.xyz /
+   * riftfi.com WebAuthn RPs registered. Use this environment whenever
+   * you want to exercise the device-bound (v3) signing flows
+   * (Passkey or Google) end-to-end against the real attestation chain
+   * without touching production user funds.
+   *
+   * v3 is opt-in on a per-request basis (pass `enrolledMethods` at
+   * signup/migrate, `authProof` at send) so legacy v1/v2 flows keep
+   * working in sandbox too. Existing test users with v1/v2 envelopes
+   * are unaffected.
+   */
+  SANDBOX = "sandbox",
 }
 
 export interface RiftConfig {

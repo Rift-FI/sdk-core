@@ -1,7 +1,7 @@
 {
   "name": "@rift-finance/wallet",
-  "version": "2.0.0",
-  "description": "Wallet module for Rift Finance SDK — v2 adds non-custodial signing via TEE-attested Passkey / OIDC ceremonies.",
+  "version": "3.0.0",
+  "description": "Wallet module for Rift Finance SDK — v3 adds non-custodial signing via TEE-attested Passkey / OIDC ceremonies + the SANDBOX environment.",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
   "scripts": {
