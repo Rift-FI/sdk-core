@@ -1851,6 +1851,11 @@ export interface WalletInstanceResponse {
 
 export interface SignTransactionRequest {
   chain: ChainName;
+  // v2 envelopes require this; v1/v3 ignore it. Omit for v3 wallets.
+  password?: string;
+  // v3 envelopes require this — a fresh device-bound proof bound to the
+  // unsigned-tx digest the backend will compute. v1/v2 ignore it.
+  authProof?: AuthProof;
   transactionData: {
     to?: string;
     value?: string;
@@ -1876,6 +1881,11 @@ export interface SignTransactionResponse {
 
 export interface SendTransactionRequest {
   chain: ChainName;
+  // v2 envelopes require this; v1/v3 ignore it. Omit for v3 wallets.
+  password?: string;
+  // v3 envelopes require this — a fresh device-bound proof bound to the
+  // UserOp hash the smart-wallet service will compute. v1/v2 ignore it.
+  authProof?: AuthProof;
   transactionData: {
     to: string;
     value?: string;
@@ -1909,7 +1919,111 @@ export interface SendTransactionResponse {
 export interface SignMessageRequest {
   chain: ChainName;
   message: string;
+  // v2 envelopes require this; v1/v3 ignore it. Omit for v3 wallets.
+  password?: string;
+  // v3 envelopes require this — fresh device-bound proof bound to the
+  // EIP-191 digest of `message`. v1/v2 ignore it.
+  authProof?: AuthProof;
   [key: string]: any;
+}
+
+// ─── Two-phase v3 signing (preview / submit-prepared) ─────────────────
+//
+// For ERC-4337 UserOperations on v3 (device-bound) wallets, the client
+// can't sign upfront because user_op_hash depends on bundler gas / nonce
+// data the smart-wallet computes server-side. So signing is split:
+//
+//   1. previewUserOp → returns user_op_hash + ticket_id (60s TTL)
+//   2. client signs user_op_hash with passkey / OIDC
+//   3. submitPreparedUserOp(ticket_id, authProof)
+//
+// v1 / v2 wallets stay on one-phase `sendTransaction`.
+
+export interface PreviewUserOpRequest {
+  chain: ChainName;
+  transactionData: {
+    to: string;
+    value?: string;
+    data?: string;
+    [key: string]: any;
+  };
+}
+
+export interface PreviewUserOpResponse {
+  success: boolean;
+  // The hash to use as the WebAuthn challenge / OIDC nonce when
+  // building the AuthProof for the matching submitPreparedUserOp call.
+  userOpHashHex: string;
+  ticketId: string;
+  // Wall-clock expiry of the ticket. Single-use either way.
+  expiresAtMs: number;
+  ttlMs: number;
+  smartAccountAddress: string;
+  chainId: number;
+}
+
+export interface SubmitPreparedUserOpRequest {
+  ticketId: string;
+  authProof: AuthProof;
+}
+
+export interface SubmitPreparedUserOpResponse {
+  success: boolean;
+  // Primary hash to track — transactionHash when available, otherwise
+  // userOperationHash.
+  hash: string;
+  userOperationHash?: string;
+  transactionHash?: string;
+  chainId?: number;
+  raw?: any;
+}
+
+// ─── Flow-specific preview requests ──────────────────────────────────
+//
+// Each lives next to the existing one-phase request type for the same
+// flow so consumers can swap in v3 mode without hunting through types.
+// All preview responses share the generic `PreviewUserOpResponse` shape
+// (except bridge, which adds a quote summary).
+
+export interface PreviewSpendRequest {
+  token: string;
+  chain: ChainName;
+  recipient: string;
+  amount: string | number;
+}
+
+export interface PreviewOfframpRequest {
+  token: string;
+  chain: ChainName;
+  amount: string | number;
+  // The liquidity-provider address that should receive the user's
+  // tokens. In production this comes from the rail / payment-method
+  // configuration; for sandbox you pass it explicitly.
+  lpAddress: string;
+}
+
+export interface PreviewBridgeRequest {
+  sourceChain: ChainName;
+  destChain: ChainName;
+  token: string;
+  amount: string | number;
+  // When unset, recipient defaults to the user's own smart wallet
+  // address on the destination chain (deterministic across chains).
+  recipient?: string;
+}
+
+export interface PreviewBridgeResponse extends PreviewUserOpResponse {
+  // Quote summary the UI can show before the user taps Touch ID.
+  bridge?: {
+    source_chain_id: number;
+    dest_chain_id: number;
+    input_token: string;
+    input_amount_wei: string;
+    output_token: string;
+    output_amount_wei: string;
+    spoke_pool: string;
+    recipient: string;
+  };
 }
 
 export interface SignMessageResponse {

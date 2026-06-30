@@ -15,12 +15,32 @@ import {
   OfframpCurrency,
   PayRequest,
   PayResponse,
-
+  PreviewOfframpRequest,
+  PreviewUserOpResponse,
 } from "../types";
 
 export class OfframpService extends BaseService {
   constructor(httpClient: RiftHttpClient) {
     super(httpClient);
+  }
+
+  /**
+   * Phase 1 of two-phase v3 signing for an off-ramp. Builds the ERC-20
+   * transfer call to the liquidity provider's address and returns
+   * user_op_hash + ticket. Submit via
+   * `signer.submitPreparedUserOp({ ticketId, authProof })`.
+   *
+   * v3 (device-bound) wallets only — v1 / v2 wallets keep using
+   * `createOrder()`.
+   */
+  async previewOrder(
+    request: PreviewOfframpRequest
+  ): Promise<PreviewUserOpResponse> {
+    return this.authenticatedRequest<PreviewUserOpResponse>({
+      method: "POST",
+      url: "/v1/offramps/preview",
+      data: request,
+    });
   }
 
   /**
