@@ -20,7 +20,13 @@
  * the SAME `rpId` to enrol() and sign() — passkeys are bound to one RP.
  */
 
-import type { AuthProof, EnrolledMethod } from "../types";
+import type {
+  AddMethodChallengeResponse,
+  AuthProof,
+  EnrolledMethod,
+  NewWalletMethod,
+} from "../types";
+import { resolveAddMethodConsentChallenge } from "../bound-reseal";
 
 function assertBrowser(): void {
   if (
@@ -256,5 +262,34 @@ export class PasskeyHelper {
       authenticator_data_b64: b64(new Uint8Array(r.authenticatorData)),
       signature_b64: b64(new Uint8Array(r.signature)),
     };
+  }
+
+  /**
+   * Consent proof for ADDING a method to an existing v3 wallet, signed by
+   * a passkey the wallet already has.
+   *
+   * Pass the response of `rift.wallet.requestAddMethodChallenge()` and the
+   * method being added. The WebAuthn challenge is the bound reseal
+   * challenge (32 raw bytes) when the response has `ownerAddress`; with an
+   * older backend that omits it, this falls back to the raw nonce and logs
+   * a warning.
+   */
+  static async signAddMethod(opts: {
+    rpId: string;
+    challenge: AddMethodChallengeResponse;
+    newMethod: NewWalletMethod;
+    allowedCredentialIdB64?: string;
+    requireUserVerification?: boolean;
+  }): Promise<AuthProof> {
+    const consent = await resolveAddMethodConsentChallenge(
+      opts.challenge,
+      opts.newMethod
+    );
+    return PasskeyHelper.sign({
+      rpId: opts.rpId,
+      userOpHashHex: consent.challengeHex,
+      allowedCredentialIdB64: opts.allowedCredentialIdB64,
+      requireUserVerification: opts.requireUserVerification,
+    });
   }
 }

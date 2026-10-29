@@ -41,6 +41,24 @@ import {
 } from "../types";
 
 export class AuthService extends BaseService {
+  /**
+   * Create a user.
+   *
+   * Email / phone sign-up: prove control of the identifier with an OTP.
+   *
+   * ```ts
+   * await rift.auth.sendOtp({ email });                 // 1. user receives a code
+   * await rift.auth.signup({ email, displayName, otpCode }); // 2. sign up with it
+   * await rift.auth.login({ email, otpCode });         // 3. log in with the SAME code
+   * ```
+   *
+   * `otpCode` is required when the server runs with `REQUIRE_SIGNUP_OTP=true`
+   * and verified (but optional) otherwise, so always send it. Signup leaves a
+   * 10-minute one-time proof, so step 3 succeeds with the same code. A code
+   * already checked with `verifyOtp` is accepted too.
+   *
+   * externalId + password sign-ups need no OTP.
+   */
   async signup(request: SignupRequest): Promise<SignupResponse> {
     return this.publicRequest<SignupResponse>({
       method: "POST",
@@ -122,6 +140,16 @@ export class AuthService extends BaseService {
     return response;
   }
 
+  /**
+   * Update the logged-in user's profile.
+   *
+   * Changing `email` or `phoneNumber` needs an OTP sent to the NEW value
+   * (`sendOtp({ email: newEmail })` / `sendOtp({ phone: newPhone })`):
+   *   - one of them: pass `otpCode`;
+   *   - both at once: pass `emailOtpCode` and `phoneOtpCode`.
+   * Other fields (displayName, paymentAccount, notificationEmail, referrer,
+   * auto-swap settings) need no OTP.
+   */
   async updateUser(request: UpdateUserRequest): Promise<UpdateUserResponse> {
     return this.authenticatedRequest<UpdateUserResponse>({
       method: "PUT",

@@ -27,7 +27,7 @@ export class RiftHttpClient implements HttpClient {
   }
 
   async request<T>(requestConfig: RequestConfig): Promise<T> {
-    const { method, url, data, params, headers = {} } = requestConfig;
+    const { method, url, data, params, headers = {}, retries } = requestConfig;
 
     // Build URL with query parameters
     const fullUrl = new URL(url, this.baseUrl);
@@ -72,7 +72,8 @@ export class RiftHttpClient implements HttpClient {
     try {
       const response = await this.executeWithRetry(
         fullUrl.toString(),
-        fetchOptions
+        fetchOptions,
+        retries
       );
       clearTimeout(timeoutId);
 
@@ -85,9 +86,15 @@ export class RiftHttpClient implements HttpClient {
 
   private async executeWithRetry(
     url: string,
-    options: RequestInit
+    options: RequestInit,
+    retriesOverride?: number
   ): Promise<Response> {
-    const maxRetries = this.config.retries || 3;
+    // `??`, not `||`: an explicit `retries: 0` must disable retries. With
+    // `||` it silently became 3, so callers that asked for no retries still
+    // had non-idempotent requests replayed on 5xx / network errors.
+    const configured = retriesOverride ?? this.config.retries ?? 3;
+    const maxRetries =
+      Number.isFinite(configured) && configured > 0 ? Math.floor(configured) : 0;
     let lastError: Error;
 
     for (let attempt = 0; attempt <= maxRetries; attempt++) {
@@ -143,6 +150,13 @@ export class RiftHttpClient implements HttpClient {
         message: errorMessage,
         error: errorDetails.error,
         status: response.status,
+        ...(typeof errorDetails.requestId === "string"
+          ? { requestId: errorDetails.requestId }
+          : {}),
+        ...(typeof errorDetails.code === "string"
+          ? { code: errorDetails.code }
+          : {}),
+        ...(errorDetails.requiresOTP === true ? { requiresOTP: true } : {}),
       };
 
       throw apiError;

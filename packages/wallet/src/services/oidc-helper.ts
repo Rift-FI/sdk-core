@@ -25,7 +25,13 @@
  * later — the spec is identical, only the script URL + payload differ.
  */
 
-import type { AuthProof, EnrolledMethod } from "../types";
+import type {
+  AddMethodChallengeResponse,
+  AuthProof,
+  EnrolledMethod,
+  NewWalletMethod,
+} from "../types";
+import { resolveAddMethodConsentChallenge } from "../bound-reseal";
 
 const GIS_SRC = "https://accounts.google.com/gsi/client";
 
@@ -177,6 +183,35 @@ export class OidcHelper {
       buttonOptions: opts.buttonOptions,
     });
     return { kind: "oidc", id_token: idToken };
+  }
+
+  /**
+   * Consent proof for ADDING a method to an existing v3 wallet, signed by
+   * the Google account the wallet already has.
+   *
+   * Pass the response of `rift.wallet.requestAddMethodChallenge()` and the
+   * method being added. The id_token `nonce` is the lowercase hex of the
+   * bound reseal challenge when the response has `ownerAddress`; with an
+   * older backend that omits it, this falls back to the raw nonce and logs
+   * a warning.
+   */
+  static async signAddMethod(opts: {
+    clientId: string;
+    challenge: AddMethodChallengeResponse;
+    newMethod: NewWalletMethod;
+    buttonContainer: HTMLElement;
+    buttonOptions?: Record<string, unknown>;
+  }): Promise<AuthProof> {
+    const consent = await resolveAddMethodConsentChallenge(
+      opts.challenge,
+      opts.newMethod
+    );
+    return OidcHelper.sign({
+      clientId: opts.clientId,
+      userOpHashHex: consent.challengeHex,
+      buttonContainer: opts.buttonContainer,
+      buttonOptions: opts.buttonOptions,
+    });
   }
 
   /**

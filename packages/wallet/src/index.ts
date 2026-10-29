@@ -17,6 +17,7 @@ import { KYCService } from "./services/kyc";
 import { BridgeService } from "./services/bridge";
 import { WalletConnectService } from "./services/wallet-connect";
 import { UserManagementService } from "./services/user-management";
+import { LoyaltyService } from "./services/loyalty";
 
 export class Rift {
   public readonly config: RiftConfig;
@@ -40,6 +41,7 @@ export class Rift {
   public readonly bridge: BridgeService;
   public readonly walletConnect: WalletConnectService;
   public readonly userManagement: UserManagementService;
+  public readonly loyalty: LoyaltyService;
 
   constructor(config: RiftConfig) {
     this.config = config;
@@ -63,6 +65,7 @@ export class Rift {
     this.bridge = new BridgeService(this.httpClient);
     this.walletConnect = new WalletConnectService(this.httpClient);
     this.userManagement = new UserManagementService(this.httpClient);
+    this.loyalty = new LoyaltyService(this.httpClient);
   }
 
   /**
@@ -92,6 +95,7 @@ export class Rift {
     this.bridge.setBearerToken(token);
     this.walletConnect.setBearerToken(token);
     this.userManagement.setBearerToken(token);
+    this.loyalty.setBearerToken(token);
     // Note: onramp doesn't use bearer tokens
   }
 
@@ -115,6 +119,7 @@ export class Rift {
     this.bridge.clearBearerToken();
     this.walletConnect.clearBearerToken();
     this.userManagement.clearBearerToken();
+    this.loyalty.clearBearerToken();
     // Note: onramp doesn't use bearer tokens
   }
 
@@ -166,6 +171,22 @@ export { KYCService } from "./services/kyc";
 export { BridgeService } from "./services/bridge";
 export { WalletConnectService } from "./services/wallet-connect";
 export { UserManagementService } from "./services/user-management";
+export { LoyaltyService } from "./services/loyalty";
+
+// Bound reseal challenge (add-method consent). Pure, works in browsers and Node.
+export {
+  computeBoundResealChallenge,
+  canonicalMethodBytes,
+  resolveAddMethodConsentChallenge,
+  BoundResealInputError,
+  RESEAL_DOMAIN_TAG,
+} from "./bound-reseal";
+export type {
+  BoundResealMethod,
+  BoundResealChallenge,
+  BoundResealChallengeInput,
+  AddMethodConsentChallenge,
+} from "./bound-reseal";
 
 // v3 (non-custodial) browser-side ceremony helpers. These are tree-shake
 // safe — if you don't import them they don't end up in your bundle. They

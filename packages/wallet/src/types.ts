@@ -73,6 +73,69 @@ export type AuthProof =
       signature_b64: string;
     };
 
+// ─────────────────────────────────────────────────────────────────────
+// Add-method (reseal) flow: POST /wallet/methods/challenge → POST /wallet/methods
+// ─────────────────────────────────────────────────────────────────────
+
+/**
+ * A method being added to an existing v3 wallet. Same as `EnrolledMethod`,
+ * plus an optional `email` claim for OIDC methods (display only; it is not
+ * part of the bound challenge).
+ */
+export type NewWalletMethod =
+  | (Extract<EnrolledMethod, { kind: "oidc" }> & { email?: string })
+  | Extract<EnrolledMethod, { kind: "passkey" }>;
+
+export interface AddMethodChallengeRequest {
+  /**
+   * Optional. When sent, newer backends validate it up front and also
+   * return `boundChallengeHex`. The SDK always computes the bound
+   * challenge locally and does not trust the server's value.
+   */
+  newMethod?: NewWalletMethod;
+}
+
+export interface AddMethodChallengeResponse {
+  /** 32-byte server nonce, hex. Single use, 5-minute TTL. */
+  challengeHex: string;
+  ttlMs: number;
+  expiresAtMs: number;
+  /**
+   * The wallet's EOA owner (0x-hex). Used as `owner_address` in the bound
+   * reseal challenge. Missing on older backends, and `null` for a v3 row
+   * with no stored owner. When absent the SDK falls back to the legacy
+   * proof (signing the raw nonce) and logs a warning.
+   */
+  ownerAddress?: string | null;
+  /** Server-computed bound challenge (only when `newMethod` was sent). */
+  boundChallengeHex?: string;
+}
+
+export interface AddWalletMethodRequest {
+  /** Consent proof from an ALREADY-enrolled method. */
+  authProof: AuthProof;
+  newMethod: NewWalletMethod;
+}
+
+export interface AddWalletMethodResponse {
+  ok: true;
+  ownerAddress: string;
+  addedKind: "passkey" | "oidc";
+}
+
+export interface WalletMethodsResponse {
+  version: "v1" | "v2" | "v3" | null;
+  ownerAddress: string | null;
+  lastUpdatedAt: string | null;
+  enrolled: Array<
+    | { kind: "oidc"; iss: string; sub: string; label?: string }
+    | { kind: "passkey"; label?: string; [key: string]: any }
+  >;
+  passkeyCredIds?: string[];
+  note?: string;
+  [key: string]: any;
+}
+
 // Recovery System Types
 export interface RecoveryData {
   id: string;
@@ -221,6 +284,11 @@ export interface RiftConfig {
   environment: Environment;
   baseUrl?: string;
   timeout?: number;
+  /**
+   * Max automatic retries on 5xx / network errors (default 3). `0` disables
+   * retries. Use 0 for any server that proxies non-idempotent calls:
+   * a retry after a silently successful request can duplicate it.
+   */
   retries?: number;
 }
 
@@ -678,6 +746,19 @@ export type SignupRequest = (
       email?: string;
       displayName: string;
       paymentAccount?: string;
+      /**
+       * One-time code proving the caller controls the `email` (or, if no
+       * email, the `phoneNumber`) being registered. Get it with
+       * `auth.sendOtp({ email })` / `auth.sendOtp({ phone })`.
+       *
+       * Servers running with `REQUIRE_SIGNUP_OTP=true` reject email/phone
+       * sign-ups without it (400, `requiresOTP: true`). Servers with the
+       * flag off still verify it when present, so it is always safe to
+       * send. A successful signup leaves a 10-minute one-time proof, so
+       * the immediate `auth.login({ email, otpCode })` with the SAME code
+       * succeeds.
+       */
+      otpCode?: string;
     }
 ) & EnrolledMethodsMixin;
 
@@ -759,6 +840,21 @@ export interface UpdateUserRequest {
   instantWithdrawals?: boolean;
   autoSwapEnabled?: boolean;
   autoSwapTargetChain?: AutoSwapTargetChain | null;
+  /**
+   * Required when changing exactly ONE of `email` / `phoneNumber`: the
+   * code sent to the NEW value via `auth.sendOtp(...)`.
+   */
+  otpCode?: string;
+  /**
+   * Required (with `phoneOtpCode`) when changing `email` AND `phoneNumber`
+   * in the same call: the code sent to the NEW email.
+   */
+  emailOtpCode?: string;
+  /**
+   * Required (with `emailOtpCode`) when changing `email` AND `phoneNumber`
+   * in the same call: the code sent to the NEW phone number.
+   */
+  phoneOtpCode?: string;
   [key: string]: any;
 }
 
@@ -1564,6 +1660,15 @@ export interface ApiError {
   message: string;
   error?: string;
   status?: number;
+  /**
+   * Server request id. 500 responses are now `{ message, requestId }` with no
+   * internal error text; quote this id when reporting the failure to Rift.
+   */
+  requestId?: string;
+  /** Machine-readable error code when the server sends one (e.g. "RESEAL_FAILED"). */
+  code?: string;
+  /** True when the server says the call needs an OTP (e.g. signup with REQUIRE_SIGNUP_OTP on). */
+  requiresOTP?: boolean;
 }
 
 // Merchant Types
@@ -1630,6 +1735,12 @@ export interface RequestConfig {
   data?: any;
   params?: Record<string, any>;
   headers?: Record<string, string>;
+  /**
+   * Per-request override of `RiftConfig.retries`. Non-idempotent calls
+   * (e.g. loyalty redeem, add-method) pass 0 so a lost response is never
+   * replayed.
+   */
+  retries?: number;
 }
 
 export interface HttpClient {
@@ -2491,6 +2602,43 @@ export interface LoyaltyRedeemResponse {
   data: LoyaltyRedemption;
 }
 
+/**
+ * HTTP 202 from a loyalty redeem: the payout transfer's outcome is
+ * UNKNOWN (e.g. a timeout after broadcast) and the redemption has been
+ * parked for on-chain reconciliation. It is neither a success nor a
+ * failure:
+ *   - show it to the user as "processing / pending";
+ *   - do NOT retry the redeem (a retry could double-pay); points are
+ *     restored automatically if the transfer turns out not to have gone
+ *     through.
+ * Poll the redemption history to see the final status.
+ */
+export interface LoyaltyRedeemPendingResponse {
+  success: false;
+  /** Always true on this shape. Added by the SDK for easy narrowing. */
+  pending: true;
+  error?: string;
+  message: string;
+  data: {
+    redemptionId: string;
+    pointsRedeemed: number;
+    status: "PENDING_RECONCILIATION";
+    pointsRefunded: false;
+  };
+}
+
+/** Result of `loyalty.redeem()`: completed, or pending reconciliation. */
+export type LoyaltyRedeemResult =
+  | (LoyaltyRedeemResponse & { pending?: false })
+  | LoyaltyRedeemPendingResponse;
+
+/** Narrow a `LoyaltyRedeemResult` to the 202 pending-reconciliation shape. */
+export function isLoyaltyRedeemPending(
+  result: LoyaltyRedeemResult | { data?: { status?: string } } | null | undefined
+): result is LoyaltyRedeemPendingResponse {
+  return (result as any)?.data?.status === "PENDING_RECONCILIATION";
+}
+
 export interface LoyaltyRedemptionHistoryItem {
   id: string;
   accountId: string;
@@ -2498,7 +2646,7 @@ export interface LoyaltyRedemptionHistoryItem {
   pointValue: number;
   usdValue: number;
   redemptionType: string;
-  status: "PENDING" | "COMPLETED" | "FAILED";
+  status: "PENDING" | "PENDING_RECONCILIATION" | "COMPLETED" | "FAILED";
   completedAt: string | null;
   metadata: any;
   createdAt: string;
@@ -2804,7 +2952,15 @@ export interface SuspendUserRequest {
   externalId?: string;
   userId?: string;
   reason?: string;
+  /**
+   * @deprecated Ignored. The backend no longer accepts the project owner's
+   * email/phone as proof of ownership. User-management calls are now
+   * authorised by the project owner's bearer token (log in as the owner
+   * first, or call `rift.setBearerToken(ownerToken)`). The SDK strips this
+   * field before sending; it is kept only so existing code still compiles.
+   */
   projectOwnerPhone?: string;
+  /** @deprecated Ignored. See `projectOwnerPhone`. */
   projectOwnerEmail?: string;
 }
 
@@ -2826,7 +2982,15 @@ export interface UnsuspendUserRequest {
   email?: string;
   externalId?: string;
   userId?: string;
+  /**
+   * @deprecated Ignored. The backend no longer accepts the project owner's
+   * email/phone as proof of ownership. User-management calls are now
+   * authorised by the project owner's bearer token (log in as the owner
+   * first, or call `rift.setBearerToken(ownerToken)`). The SDK strips this
+   * field before sending; it is kept only so existing code still compiles.
+   */
   projectOwnerPhone?: string;
+  /** @deprecated Ignored. See `projectOwnerPhone`. */
   projectOwnerEmail?: string;
 }
 
@@ -2843,7 +3007,15 @@ export interface UnsuspendUserResponse {
 }
 
 export interface GetSuspendedUsersRequest {
+  /**
+   * @deprecated Ignored. The backend no longer accepts the project owner's
+   * email/phone as proof of ownership. User-management calls are now
+   * authorised by the project owner's bearer token (log in as the owner
+   * first, or call `rift.setBearerToken(ownerToken)`). The SDK strips this
+   * field before sending; it is kept only so existing code still compiles.
+   */
   projectOwnerPhone?: string;
+  /** @deprecated Ignored. See `projectOwnerPhone`. */
   projectOwnerEmail?: string;
 }
 
