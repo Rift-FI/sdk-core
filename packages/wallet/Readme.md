@@ -13,7 +13,7 @@ npm install @rift-finance/wallet
 ## Quick start
 
 ```ts
-import Rift, { Environment } from "@rift-finance/wallet";
+import Rift, { Environment, isApprovalRequired } from "@rift-finance/wallet";
 
 const rift = new Rift({
   apiKey: process.env.RIFT_API_KEY!,         // sk_… from the dashboard
@@ -37,10 +37,15 @@ const tx = await rift.transactions.send({
   token: "USDC",
   chain: "ARBITRUM",
   type: "gasless",
-  email: "alice@example.com",
-  otpCode: "123456",  // step-up OTP for the tx itself
 });
+// Server-side there is no passkey, so this returns an approval request
+// (HTTP 202) instead of moving funds. Send the user to approvalUrl.
+if (isApprovalRequired(tx)) {
+  console.log(tx.approvalUrl); // https://app.riftfi.com/approve/<id>
+}
 ```
+
+> **SDK v4: passkey-owned wallets.** Every Rift wallet is a Safe smart account owned only by the user's passkeys. Rift's servers hold no key that can move funds. Fund-moving calls either carry a passkey proof (two-phase, in the browser) or return an approval request the user approves with a passkey. See [Passkey wallets](#passkey-wallets-v4) and [Upgrading from v3](#upgrading-from-v3).
 
 ## Authentication
 
@@ -86,6 +91,8 @@ const session = await rift.auth.login({
 - A code the user already checked with `rift.auth.verifyOtp(...)` is accepted by signup and login too.
 - Phone: `sendOtp({ phone })`, then `signup({ phoneNumber, displayName, otpCode })` and `login({ phoneNumber, otpCode })`.
 - External ID + password sign-ups don't need an OTP (see below).
+
+Login responses include `walletStatus` (same object as `rift.wallet.status()`). If `walletStatus.needsPasskeySetup` is true, the user must register a passkey (`rift.passkeys.setup()`) before anything can be signed; signing routes answer `409 PASSKEY_SETUP_REQUIRED` until then.
 
 ### Google sign-in
 
@@ -178,16 +185,20 @@ await rift.wallet.getTokenBalance({ chain: "ARBITRUM", token: "USDC" });
 ### Transactions
 
 ```ts
-// Send tokens. `type: "gasless"` uses sponsored gas.
-await rift.transactions.send({
+// One-phase: returns the receipt, or an approval request (202) when the
+// call carries no passkey proof (always the case server-side).
+const res = await rift.transactions.send({
   to: "0x...",
   value: "10",
   token: "USDC",
   chain: "ARBITRUM",
   type: "gasless",
-  email: "alice@example.com",
-  otpCode: "123456",       // re-auth for the transfer
 });
+
+// Two-phase (browser): preview, sign with the passkey, submit.
+const preview = await rift.transactions.previewSpend({ token: "USDC", chain: "ARBITRUM", recipient: "0x...", amount: "10" });
+const authProof = await createPasskeyAuthProof(getHashToSign(preview), { rpId, allowCredentials: preview.allowCredentials });
+await rift.signer.submitPreparedUserOp({ ticketId: preview.ticketId, authProof });
 
 await rift.transactions.getHistory({ limit: 10, page: 1 });
 await rift.transactions.getFee({ to: "0x...", value: "10", token: "USDC", chain: "ARBITRUM" });
@@ -195,15 +206,7 @@ await rift.transactions.getFee({ to: "0x...", value: "10", token: "USDC", chain:
 
 ### DeFi swaps
 
-```ts
-await rift.defi.swap({
-  chain: "ARBITRUM",
-  flow: "gasless",
-  token_to_sell: "USDC",
-  token_to_buy: "ETH",
-  value: "100",
-});
-```
+`rift.defi.swap()` is **deprecated**: `/v1/defi/swap` is no longer served. Build the swap calls (e.g. from a LiFi quote) and send them through `rift.signer.previewUserOp` + `submitPreparedUserOp`, or `rift.signer.sendTransaction` for an approval request.
 
 ### Off-ramps & on-ramps
 
@@ -257,20 +260,123 @@ await rift.paymentLinks.createOpenSendLink({
 
 ### Signer (advanced)
 
-For direct chain interaction (raw tx signing, contract calls, off-chain message signing):
+Contract calls go through the user's Safe as ERC-4337 UserOperations; messages are signed by the Safe (ERC-1271, ERC-6492 when the Safe is not deployed on that chain yet).
 
 ```ts
-await rift.signer.signMessage({ chain: "ETHEREUM", message: "Hello" });
-
+// UserOperation: one-phase (approval request without a proof) ...
 await rift.signer.sendTransaction({
   chain: "POLYGON",
-  transactionData: { to: "0x...", value: "0", data: "0x...", gasLimit: "65000" },
+  transactionData: { to: "0x...", value: "0", data: "0x..." },
+});
+// ... or two-phase
+const p = await rift.signer.previewUserOp({ chain: "POLYGON", transactionData: { to: "0x...", data: "0x..." } });
+const proof = await createPasskeyAuthProof(getHashToSign(p), { rpId, allowCredentials: p.allowCredentials });
+await rift.signer.submitPreparedUserOp({ ticketId: p.ticketId, authProof: proof });
+
+// Message (ERC-1271): two-phase, or signMessage() for an approval request
+const m = await rift.signer.previewMessage({ chain: "BASE", message: "Hello" });
+const { signature } = await rift.signer.submitMessage({
+  ticketId: m.ticketId,
+  authProof: await createPasskeyAuthProof(m.hashToSign, { rpId, allowCredentials: m.allowCredentials }),
 });
 ```
 
-For most use cases, prefer `rift.transactions.send()` — it's higher-level and gasless.
+`rift.signer.signTransaction()` (raw EOA transaction) was **removed**: there is no EOA key any more. It throws `{ status: 410, code: "EOA_SIGNING_REMOVED" }`.
 
-### Adding an auth method to a v3 wallet (bound reseal)
+For simple transfers, prefer `rift.transactions.send()`.
+
+## Passkey wallets (v4)
+
+### Setting up the first passkey (browser)
+
+```ts
+import { createPasskeyAuthProof } from "@rift-finance/wallet";
+
+const status = await rift.wallet.status();
+// { mode: "none" | "legacy" | "passkey", walletAddress, passkeyCount, chains, needsPasskeySetup }
+
+if (status.needsPasskeySetup) {
+  const res = await rift.passkeys.setup({ label: "iPhone" });
+  // "active"               new user: passkey-native wallet created
+  // "migrated"/"migrating" existing user: SAME address, now owned by the passkey
+  // "new_wallet"           old key unrecoverable: fresh wallet, res.previousAddress is the legacy one
+}
+```
+
+`setup()` runs `getRegistrationOptions()` → `registerPasskey()` (WebAuthn create, **ES256 / alg -7 only**, resident key + user verification required) → `register()`. You can call the steps yourself.
+
+### More passkeys (recovery) and removal
+
+Adding or removing a passkey changes the Safe's owners on-chain, so an EXISTING passkey signs one ticket per deployed chain:
+
+```ts
+const sign = (t) => createPasskeyAuthProof(t.hashToSign, { rpId, allowCredentials: t.allowCredentials });
+
+await rift.passkeys.setup({ label: "YubiKey", signWithExisting: sign }); // add
+const list = await rift.passkeys.list();
+await rift.passkeys.removeWithPasskey(list[1].id, sign);                // remove (never the last one: 409 LAST_PASSKEY)
+```
+
+Keep at least two passkeys (e.g. phone + laptop, or a security key) so losing one device doesn't lock the wallet. A synced passkey (iCloud Keychain, Google Password Manager) is one passkey across that account's devices.
+
+### Signing: `createPasskeyAuthProof(hashToSign, { rpId, allowCredentials })`
+
+Every preview (`previewSpend`, `previewTransfer`, `previewOrder`, `previewUserOp`, `previewMessage`, `walletConnect.previewRequest`, `approvals.preview`) returns `{ ticketId, hashToSign, allowCredentials, expiresAt }`. `createPasskeyAuthProof` runs `navigator.credentials.get` with the 32 hash bytes as challenge and `userVerification: "required"`, and returns the `authProof`:
+
+```ts
+{ kind: "passkey", cred_id_b64, client_data_json_b64, authenticator_data_b64, signature_b64 }
+```
+
+Google / Apple proofs (`kind: "oidc"`) are rejected for signing (`400 PASSKEY_REQUIRED`). They remain login methods. `OidcHelper` was removed.
+
+### Approval requests (server-side, agents, partners)
+
+Every one-phase fund-moving method (`transactions.send`, `signer.sendTransaction`, `signer.signMessage`, `bridge.execute`, `offramp.pay` / `createOrder`, `walletConnect.approveRequest`, `vault.*` writes) called without `ticketId` + `authProof` gets HTTP 202 and **returns** (doesn't throw):
+
+```ts
+{ status: "APPROVAL_REQUIRED", approvalId, approvalUrl, expiresAt, summary }
+```
+
+```ts
+import { isApprovalRequired, assertNoApproval, ApprovalRequiredError } from "@rift-finance/wallet";
+
+const res = await rift.bridge.execute({ sourceChain: "BASE", destinationChain: "POLYGON", token: "USDC", amount: "25" });
+if (isApprovalRequired(res)) notifyUser(res.approvalUrl);
+
+// Prefer exceptions? assertNoApproval(res) throws ApprovalRequiredError.
+
+// Track it (API key alone is enough for the creating project):
+const approval = await rift.approvals.get(res.approvalId);
+// { status: "pending" | "approved" | "rejected" | "expired" | "failed", result?: { transactionHash, userOpHash } }
+```
+
+Your own UI can approve in place instead of sending the user to the Rift app:
+
+```ts
+const pending = await rift.approvals.list({ status: "pending" });
+await rift.approvals.approveWithPasskey(pending[0].id, (p) =>
+  createPasskeyAuthProof(p.hashToSign, { rpId, allowCredentials: p.allowCredentials }));
+// or rift.approvals.reject(id)
+```
+
+Approvals expire after 30 minutes and are single use.
+
+### Upgrading from v3
+
+| v3 | v4 |
+| --- | --- |
+| `auth.migrateToV3`, `wallet.listMethods` / `addMethod*` | Deprecated; backend answers `410 REPLACED_BY_PASSKEY_WALLETS`. Use `rift.passkeys`. |
+| `enrolledMethods` at signup / login | Ignored. Signup / login provision no key; check `walletStatus`. |
+| `OidcHelper` (Google signing) | Removed. Google / Apple are login only. |
+| `PasskeyHelper.sign` | Still works; prefer `createPasskeyAuthProof`. `PasskeyHelper.enrol` is deprecated. |
+| `signer.signTransaction` | Removed server-side; throws `410 EOA_SIGNING_REMOVED`. |
+| One-phase methods returning `T` | Return `MaybeApproval<T>` (`T` or `ApprovalRequiredResponse`). Check `isApprovalRequired`. |
+| `defi.swap` | Deprecated (endpoint gone). |
+| `password` / OTP on signing calls | Ignored for passkey wallets. |
+
+### Adding an auth method to a v3 wallet (bound reseal): deprecated
+
+> Deprecated in v4: the v3 envelope endpoints answer `410 REPLACED_BY_PASSKEY_WALLETS`. Add recovery passkeys with `rift.passkeys.setup({ signWithExisting })` instead. Kept for reference.
 
 To add a passkey / Google / Apple method to a wallet that is already on v3, the user consents with a method the wallet ALREADY has. That consent must be over the **bound reseal challenge**, which ties it to this wallet and this exact new method:
 
@@ -301,7 +407,6 @@ const challenge = await rift.wallet.requestAddMethodChallenge({ newMethod });
 // → { challengeHex, ownerAddress, ttlMs, expiresAtMs }
 
 const authProof = await PasskeyHelper.signAddMethod({ rpId, challenge, newMethod });
-// or: await OidcHelper.signAddMethod({ clientId, challenge, newMethod, buttonContainer });
 
 await rift.wallet.addMethod({ authProof, newMethod });
 ```
@@ -379,8 +484,10 @@ Things to know:
 - **429**: rate limit, or an OTP lockout after too many wrong codes. Wait before sending a new code.
 - **`invalid credentials`**: every signing failure on a v1 (custodial) wallet now returns this one enclave message, whatever the cause. Don't branch on the old, more specific strings.
 - **`requiresOTP: true`**: the call needs an OTP (e.g. email/phone signup on a server enforcing it).
+- **Passkey wallet codes** (the SDK sets `code` and a readable `message`): `409 PASSKEY_SETUP_REQUIRED` (register a passkey first), `400 PASSKEY_REQUIRED` (OIDC proof sent for signing), `400 INVALID_PASSKEY_SIGNATURE` (proof doesn't match the ticket: preview again), `410 EOA_SIGNING_REMOVED`, `410 REPLACED_BY_PASSKEY_WALLETS`, `409 LAST_PASSKEY`.
+- **HTTP 202 `APPROVAL_REQUIRED`** is not an error: it is returned. See [Approval requests](#approval-requests-server-side-agents-partners).
 
-**Retries.** `new Rift({ retries })` sets how many times the SDK retries a 5xx or network error (default 3). `retries: 0` now really disables retries. Earlier versions treated `0` as 3. Set it to `0` on any server that proxies non-idempotent calls (signup, send, pay): if a request succeeded but its response was lost, a retry can duplicate it or fail with 409. Loyalty redeem and the add-method calls are never retried, whatever this is set to.
+**Retries.** `new Rift({ retries })` sets how many times the SDK retries a 5xx or network error (default 3). `retries: 0` now really disables retries. Earlier versions treated `0` as 3. Set it to `0` on any server that proxies non-idempotent calls (signup, send, pay): if a request succeeded but its response was lost, a retry can duplicate it or fail with 409. Fund-moving and signing calls (sends, bridge, off-ramp, user operations, message signing, WalletConnect approve, vault writes, submits, approvals, passkey writes), loyalty redeem and the add-method calls are never retried, whatever this is set to.
 
 ## Full docs
 

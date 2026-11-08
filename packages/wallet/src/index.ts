@@ -18,6 +18,8 @@ import { BridgeService } from "./services/bridge";
 import { WalletConnectService } from "./services/wallet-connect";
 import { UserManagementService } from "./services/user-management";
 import { LoyaltyService } from "./services/loyalty";
+import { PasskeysService } from "./services/passkeys";
+import { ApprovalsService } from "./services/approvals";
 
 export class Rift {
   public readonly config: RiftConfig;
@@ -42,6 +44,8 @@ export class Rift {
   public readonly walletConnect: WalletConnectService;
   public readonly userManagement: UserManagementService;
   public readonly loyalty: LoyaltyService;
+  public readonly passkeys: PasskeysService;
+  public readonly approvals: ApprovalsService;
 
   constructor(config: RiftConfig) {
     this.config = config;
@@ -66,6 +70,8 @@ export class Rift {
     this.walletConnect = new WalletConnectService(this.httpClient);
     this.userManagement = new UserManagementService(this.httpClient);
     this.loyalty = new LoyaltyService(this.httpClient);
+    this.passkeys = new PasskeysService(this.httpClient);
+    this.approvals = new ApprovalsService(this.httpClient);
   }
 
   /**
@@ -96,6 +102,8 @@ export class Rift {
     this.walletConnect.setBearerToken(token);
     this.userManagement.setBearerToken(token);
     this.loyalty.setBearerToken(token);
+    this.passkeys.setBearerToken(token);
+    this.approvals.setBearerToken(token);
     // Note: onramp doesn't use bearer tokens
   }
 
@@ -120,6 +128,8 @@ export class Rift {
     this.walletConnect.clearBearerToken();
     this.userManagement.clearBearerToken();
     this.loyalty.clearBearerToken();
+    this.passkeys.clearBearerToken();
+    this.approvals.clearBearerToken();
     // Note: onramp doesn't use bearer tokens
   }
 
@@ -172,8 +182,27 @@ export { BridgeService } from "./services/bridge";
 export { WalletConnectService } from "./services/wallet-connect";
 export { UserManagementService } from "./services/user-management";
 export { LoyaltyService } from "./services/loyalty";
+export { PasskeysService } from "./services/passkeys";
+export { ApprovalsService } from "./services/approvals";
+export { explainPasskeyError } from "./base-service";
 
-// Bound reseal challenge (add-method consent). Pure, works in browsers and Node.
+// Passkey wallet ceremonies (browser). Produce the authProof for any
+// submit / approve call, and the attestation for passkeys.register().
+export {
+  createPasskeyAuthProof,
+  registerPasskey,
+  bytesToBase64,
+  base64ToBytes,
+  hexToBytes,
+  PASSKEY_ALG_ES256,
+} from "./passkey-wallet";
+export type {
+  CreatePasskeyAuthProofOptions,
+  RegisterPasskeyOptions,
+} from "./passkey-wallet";
+
+// Bound reseal challenge (v3 add-method consent). Deprecated with the v3
+// envelope endpoints; kept for existing callers. Pure, browser + Node.
 export {
   computeBoundResealChallenge,
   canonicalMethodBytes,
@@ -188,17 +217,15 @@ export type {
   AddMethodConsentChallenge,
 } from "./bound-reseal";
 
-// v3 (non-custodial) browser-side ceremony helpers. These are tree-shake
-// safe — if you don't import them they don't end up in your bundle. They
-// throw at construction time on the server.
+// Older passkey helper class. `PasskeyHelper.sign` still produces a valid
+// authProof; prefer `createPasskeyAuthProof`. OidcHelper was removed:
+// Google / Apple are login only and cannot authorise a transaction.
 export {
   PasskeyHelper,
   isPasskeySupported,
   isPlatformPasskeySupported,
 } from "./services/passkey-helper";
 export type { PasskeyEnrolmentResult } from "./services/passkey-helper";
-export { OidcHelper } from "./services/oidc-helper";
-export type { OidcEnrolmentResult } from "./services/oidc-helper";
 
 // Default export
 export default Rift;

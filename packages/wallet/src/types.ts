@@ -16,9 +16,10 @@
 //   for WebAuthn) — so a proof from one transaction can't authorise a
 //   different one.
 //
-// You usually don't construct these by hand. Use `PasskeyHelper` /
-// `OidcHelper` (browser-only) — they handle the WebAuthn ceremony and
-// Google Sign-In flow and return the right shape.
+// SDK v4 (passkey wallets): the enclave envelope is gone. Only the
+// passkey AuthProof shape survives; build it with
+// `createPasskeyAuthProof()`. See "Passkey-owned wallets" at the end of
+// this file.
 
 /**
  * Request to upgrade an existing v1 (KMS-only) or v2 (password-bound)
@@ -58,6 +59,10 @@ export type EnrolledMethod =
 
 export type AuthProof =
   | {
+      /**
+       * @deprecated Google / Apple are login only on passkey wallets. The
+       * backend rejects `kind: "oidc"` for signing with 400 PASSKEY_REQUIRED.
+       */
       kind: "oidc";
       /** Compact JWS id_token. MUST have `nonce` claim = `user_op_hash`. */
       id_token: string;
@@ -263,18 +268,10 @@ export enum Environment {
   DEVELOPMENT = "development",
   PRODUCTION = "production",
   /**
-   * Sandbox — backed by https://sandbox.riftfi.com. This is the live
-   * non-custodial enclave deploy with the v3 PCR0 attested in KMS, the
-   * Google + Apple JWKS pinned, and the localhost / riftfi.xyz /
-   * riftfi.com WebAuthn RPs registered. Use this environment whenever
-   * you want to exercise the device-bound (v3) signing flows
-   * (Passkey or Google) end-to-end against the real attestation chain
-   * without touching production user funds.
-   *
-   * v3 is opt-in on a per-request basis (pass `enrolledMethods` at
-   * signup/migrate, `authProof` at send) so legacy v1/v2 flows keep
-   * working in sandbox too. Existing test users with v1/v2 envelopes
-   * are unaffected.
+   * Sandbox — backed by https://sandbox.riftfi.com, with the localhost /
+   * riftfi.xyz / riftfi.com WebAuthn RPs registered. Use it to exercise
+   * passkey wallets (registration, two-phase signing, approvals)
+   * end-to-end without touching production user funds.
    */
   SANDBOX = "sandbox",
 }
@@ -422,7 +419,7 @@ export interface PreviewExchangeRateResponse {
   feeBreakdown?: FeeBreakdown;
 }
 
-export interface CreateOfframpOrderRequest {
+export interface CreateOfframpOrderRequest extends PasskeySubmitFields {
   token: RampToken;
   amount: number;
   localAmount?: number;
@@ -460,7 +457,7 @@ export interface OfframpOrder {
 
 
 // const { token, amount, currency, chain, recipient} = req.body;
-export interface PayRequest {
+export interface PayRequest extends PasskeySubmitFields {
   token: RampToken;
   amount: number;
   localAmount?: number;
@@ -658,6 +655,12 @@ export interface LoginResponse {
   address: string;
   btcAddress: string;
   accessToken: string;
+  /**
+   * Passkey wallet state (same object as `rift.wallet.status()`). When
+   * `walletStatus.needsPasskeySetup` is true, every signing route returns
+   * 409 PASSKEY_SETUP_REQUIRED until the user registers a passkey.
+   */
+  walletStatus?: WalletStatus;
 }
 
 // Google sign-in. The frontend obtains an ID token from Google (e.g. via
@@ -698,14 +701,13 @@ export type AppleLoginResponse = LoginResponse;
 
 // Authentication Types
 //
-// All variants accept an optional `enrolledMethods` array. When supplied
-// on a user's FIRST login the backend forwards it to the enclave so the
-// new wallet is generated as a v3 (device-bound, non-custodial) envelope
-// instead of v1/v2. Existing users keep whichever format their envelope
-// was generated with — to upgrade later, use `auth.migrateToV3()`.
-//
-// Pass `enrolledMethods: []` (or omit it) to fall back to v1/v2 behaviour.
-type EnrolledMethodsMixin = { enrolledMethods?: EnrolledMethod[] };
+// Signup / login no longer provision any key. Wallets are created (or
+// legacy wallets migrated) when the user registers a passkey
+// (`rift.passkeys.setup()`); check `LoginResponse.walletStatus`.
+type EnrolledMethodsMixin = {
+  /** @deprecated Ignored. Register a passkey with `rift.passkeys` instead. */
+  enrolledMethods?: EnrolledMethod[];
+};
 
 export type LoginRequest = (
   | {
@@ -974,17 +976,14 @@ export type TransactionRequest = {
   intent?: "unlock";
   type?: TransactionType;
   /**
-   * v3 (device-bound) consent proof. Required when the user's wallet is
-   * on a v3 envelope (Passkey / OIDC enrolled). The enclave refuses to
-   * sign a v3 envelope without it. Build it with `PasskeyHelper.sign()`
-   * or `OidcHelper.sign()` — the helper handles the WebAuthn ceremony
-   * or fetches a fresh Google id_token bound to this transaction's hash.
-   *
-   * For v1 (KMS-only) or v2 (password-bound) envelopes this field is
-   * ignored — those wallets continue to use `password` / `otpCode`
-   * exactly as in SDK v1.
+   * Passkey assertion over the `hashToSign` of a `previewSpend` call.
+   * Send it together with `ticketId` to submit. Without both, the call
+   * returns an approval request (HTTP 202) for the user to approve.
+   * Build it with `createPasskeyAuthProof()` in the browser.
    */
-  authProof?: AuthProof;
+  authProof?: PasskeyAuthProof;
+  /** Ticket from `transactions.previewSpend`. */
+  ticketId?: string;
 } & (
   | {
       externalId: string;
@@ -1008,8 +1007,8 @@ export type TransactionRequest = {
       phoneNumber?: never;
     }
   | {
-      // v3 (Passkey / OIDC) authentication. No legacy factor required —
-      // the authProof carries all consent.
+      // Passkey authentication (or an approval request). No legacy factor
+      // required: the authProof / approval carries all consent.
       externalId?: never;
       password?: never;
       phoneNumber?: never;
@@ -1153,7 +1152,7 @@ export interface TransactionFeeResponse {
 // DeFi Types
 export type SwapFlow = "normal" | "gasless";
 
-export interface SwapRequest {
+export interface SwapRequest extends PasskeySubmitFields {
   chain: ChainName;
   flow: SwapFlow;
   token_to_sell_address?: string;
@@ -1960,13 +1959,13 @@ export interface WalletInstanceResponse {
   };
 }
 
+/** @deprecated Raw EOA transaction signing was removed (410 EOA_SIGNING_REMOVED). */
 export interface SignTransactionRequest {
   chain: ChainName;
-  // v2 envelopes require this; v1/v3 ignore it. Omit for v3 wallets.
+  /** @deprecated ignored */
   password?: string;
-  // v3 envelopes require this — a fresh device-bound proof bound to the
-  // unsigned-tx digest the backend will compute. v1/v2 ignore it.
-  authProof?: AuthProof;
+  /** @deprecated ignored */
+  authProof?: PasskeyAuthProof;
   transactionData: {
     to?: string;
     value?: string;
@@ -1992,11 +1991,16 @@ export interface SignTransactionResponse {
 
 export interface SendTransactionRequest {
   chain: ChainName;
-  // v2 envelopes require this; v1/v3 ignore it. Omit for v3 wallets.
+  /** @deprecated ignored by passkey wallets */
   password?: string;
-  // v3 envelopes require this — a fresh device-bound proof bound to the
-  // UserOp hash the smart-wallet service will compute. v1/v2 ignore it.
-  authProof?: AuthProof;
+  /**
+   * Passkey assertion over `hashToSign` from `signer.previewUserOp`.
+   * With `ticketId` this submits; without both, an approval request is
+   * returned (202).
+   */
+  authProof?: PasskeyAuthProof;
+  /** Ticket from `signer.previewUserOp`. */
+  ticketId?: string;
   transactionData: {
     to: string;
     value?: string;
@@ -2029,12 +2033,20 @@ export interface SendTransactionResponse {
 
 export interface SignMessageRequest {
   chain: ChainName;
-  message: string;
-  // v2 envelopes require this; v1/v3 ignore it. Omit for v3 wallets.
+  /** EIP-191 message. Provide this OR `typedData`. */
+  message?: string;
+  /** EIP-712 typed data. */
+  typedData?: Record<string, any>;
+  /** @deprecated ignored by passkey wallets */
   password?: string;
-  // v3 envelopes require this — fresh device-bound proof bound to the
-  // EIP-191 digest of `message`. v1/v2 ignore it.
-  authProof?: AuthProof;
+  /**
+   * Passkey assertion over `hashToSign` from `signer.previewMessage`.
+   * With `ticketId` this returns the ERC-1271 signature; without both, an
+   * approval request is returned (202).
+   */
+  authProof?: PasskeyAuthProof;
+  /** Ticket from `signer.previewMessage`. */
+  ticketId?: string;
   [key: string]: any;
 }
 
@@ -2062,6 +2074,16 @@ export interface PreviewUserOpRequest {
 
 export interface PreviewUserOpResponse {
   success: boolean;
+  /**
+   * Passkey wallets: the hash to sign (0x, 32 bytes). Same value as
+   * `userOpHashHex`; read it with `getHashToSign(preview)`.
+   */
+  hashToSign?: string;
+  /** Credential ids (standard base64) allowed to sign this ticket. */
+  allowCredentials?: string[];
+  summary?: ApprovalSummary;
+  /** ISO expiry (passkey wallets). `expiresAtMs` is the epoch-ms twin. */
+  expiresAt?: string;
   // The hash to use as the WebAuthn challenge / OIDC nonce when
   // building the AuthProof for the matching submitPreparedUserOp call.
   userOpHashHex: string;
@@ -2075,11 +2097,14 @@ export interface PreviewUserOpResponse {
 
 export interface SubmitPreparedUserOpRequest {
   ticketId: string;
-  authProof: AuthProof;
+  /** Passkey assertion over the preview's hashToSign. OIDC is rejected. */
+  authProof: PasskeyAuthProof;
 }
 
 export interface SubmitPreparedUserOpResponse {
   success: boolean;
+  status?: string;
+  userOpHash?: string;
   // Primary hash to track — transactionHash when available, otherwise
   // userOperationHash.
   hash: string;
@@ -2385,7 +2410,7 @@ export interface UserVaultWhitelistResponse {
 }
 
 // User Operations
-export interface VaultDepositRequest {
+export interface VaultDepositRequest extends PasskeySubmitFields {
   amount: string;
 }
 
@@ -2408,7 +2433,7 @@ export interface VaultDepositResponse {
   deposit: VaultDepositInfo;
 }
 
-export interface VaultWithdrawRequest {
+export interface VaultWithdrawRequest extends PasskeySubmitFields {
   amount: string;
 }
 
@@ -2786,7 +2811,7 @@ export interface BridgeQuoteResponse {
   estimatedTime: string;
 }
 
-export interface BridgeExecuteRequest {
+export interface BridgeExecuteRequest extends PasskeySubmitFields {
   sourceChain: string;
   destinationChain: string;
   token: string;
@@ -3092,3 +3117,305 @@ export interface StatsTvlResponse {
     currency: string;
   };
 }
+
+// ============================================
+// Passkey-owned wallets (SDK v4)
+// ============================================
+//
+// Every Rift wallet is a Safe smart account owned ONLY by the user's
+// passkeys (WebAuthn P-256). Rift's servers hold no key that can move user
+// funds, so every fund-moving or signing operation is either:
+//
+//   - two-phase: preview → passkey-sign `hashToSign` on the user's device →
+//     submit `{ ticketId, authProof }`, or
+//   - an approval request: a one-phase call without a passkey proof (API key
+//     + user JWT, server-side SDK, wrapper, MCP) returns HTTP 202
+//     `{ status: "APPROVAL_REQUIRED", approvalId, approvalUrl, ... }`. The
+//     user opens `approvalUrl` and approves with a passkey.
+//
+// Google / Apple are login only; they can no longer authorise a transaction.
+
+/** WebAuthn assertion bound to one `hashToSign`. The only accepted signing proof. */
+export type PasskeyAuthProof = Extract<AuthProof, { kind: "passkey" }>;
+
+/** Human-readable description of what is being approved (server-defined). */
+export interface ApprovalSummary {
+  /** Operation type, e.g. "transfer", "bridge", "offramp", "user_operation", "sign_message". */
+  opType?: string;
+  title?: string;
+  description?: string;
+  chainId?: number;
+  chain?: string;
+  token?: string;
+  amount?: string;
+  to?: string;
+  [key: string]: any;
+}
+
+/**
+ * Returned (not thrown) by every one-phase fund-moving method when the call
+ * carried no passkey proof. Give `approvalUrl` to the user; they approve with
+ * a passkey. Track the outcome with `rift.approvals.get(approvalId)`.
+ */
+export interface ApprovalRequiredResponse {
+  status: "APPROVAL_REQUIRED";
+  approvalId: string;
+  approvalUrl: string;
+  /** ISO timestamp. Default TTL is 30 minutes. */
+  expiresAt: string;
+  summary: ApprovalSummary;
+}
+
+/** `T` on success, or the approval request when the user must approve it. */
+export type MaybeApproval<T> = T | ApprovalRequiredResponse;
+
+/** Narrow any response to the 202 approval-required shape. */
+export function isApprovalRequired(value: unknown): value is ApprovalRequiredResponse {
+  return (
+    !!value &&
+    typeof value === "object" &&
+    (value as any).status === "APPROVAL_REQUIRED" &&
+    typeof (value as any).approvalId === "string"
+  );
+}
+
+/**
+ * Optional throwing style: `assertNoApproval(await rift.transactions.send(...))`
+ * throws this instead of returning the approval object.
+ */
+export class ApprovalRequiredError extends Error {
+  readonly code = "APPROVAL_REQUIRED";
+  readonly status = 202;
+  readonly approvalId: string;
+  readonly approvalUrl: string;
+  readonly expiresAt: string;
+  readonly summary: ApprovalSummary;
+
+  constructor(approval: ApprovalRequiredResponse) {
+    super(`Approval required: open ${approval.approvalUrl} and approve with a passkey`);
+    this.name = "ApprovalRequiredError";
+    this.approvalId = approval.approvalId;
+    this.approvalUrl = approval.approvalUrl;
+    this.expiresAt = approval.expiresAt;
+    this.summary = approval.summary;
+  }
+}
+
+/** Throw `ApprovalRequiredError` if `result` is an approval request, else return it. */
+export function assertNoApproval<T>(result: MaybeApproval<T>): T {
+  if (isApprovalRequired(result)) throw new ApprovalRequiredError(result);
+  return result as T;
+}
+
+/**
+ * Fields every one-phase fund-moving request accepts. Send both to submit a
+ * previously previewed operation; send neither to create an approval request.
+ */
+export interface PasskeySubmitFields {
+  /** Ticket from the matching preview call. */
+  ticketId?: string;
+  /** Passkey assertion over the preview's `hashToSign`. */
+  authProof?: PasskeyAuthProof;
+}
+
+/** Phase 1 result (wire contract 2b). */
+export interface TwoPhasePreview {
+  ticketId: string;
+  /** 0x-prefixed 32-byte hash. The WebAuthn challenge is these raw bytes. */
+  hashToSign: string;
+  chainId: number;
+  summary?: ApprovalSummary;
+  /** Credential ids (standard base64) allowed to sign this ticket. */
+  allowCredentials?: string[];
+  /** ISO timestamp. */
+  expiresAt: string;
+}
+
+/** Phase 2 result (wire contract 2b). */
+export interface TwoPhaseSubmitResult {
+  userOpHash?: string;
+  transactionHash?: string;
+  status: string;
+  [key: string]: any;
+}
+
+/**
+ * The hash a preview response asks the passkey to sign. Accepts the v4
+ * `hashToSign`, the snake_case `hash_to_sign`, and the v3 `userOpHashHex`.
+ */
+export function getHashToSign(preview: {
+  hashToSign?: string;
+  hash_to_sign?: string;
+  userOpHashHex?: string;
+}): string {
+  const h = preview.hashToSign ?? preview.hash_to_sign ?? preview.userOpHashHex;
+  if (typeof h !== "string" || !h) {
+    throw new Error("preview response has no hashToSign");
+  }
+  return h;
+}
+
+// ── Passkeys (POST/GET/DELETE /v1/wallet/passkeys) ───────────────────
+
+/** Server options for `navigator.credentials.create()`. ES256 (-7) only. */
+export interface PasskeyRegistrationOptions {
+  /** base64url, 32 bytes, single use, 5-minute TTL. */
+  challenge: string;
+  rp: { id: string; name: string };
+  /** `id` is base64url. */
+  user: { id: string; name: string; displayName?: string };
+  pubKeyCredParams: Array<{ type: "public-key"; alg: number }>;
+  /** Credentials already registered for this user (ids base64url or base64). */
+  excludeCredentials?: Array<{ type?: "public-key"; id: string; transports?: string[] }>;
+  timeout?: number;
+  [key: string]: any;
+}
+
+/** Output of the WebAuthn registration ceremony (standard base64). */
+export interface PasskeyAttestation {
+  cred_id_b64: string;
+  client_data_json_b64: string;
+  attestation_object_b64: string;
+}
+
+export interface RegisterPasskeyRequest {
+  attestation: PasskeyAttestation;
+  label?: string;
+}
+
+export interface PasskeyChainMigration {
+  chainId: number;
+  status: string;
+  txHash?: string;
+}
+
+/** A ticket an EXISTING passkey must sign (add / remove passkey). */
+export interface PasskeyTicket {
+  chainId: number;
+  ticketId: string;
+  hashToSign: string;
+  allowCredentials?: string[];
+  expiresAt?: string;
+}
+
+export type RegisterPasskeyResponse =
+  /** First passkey, user had no wallet: passkey-native Safe created. */
+  | { status: "active"; walletAddress: string; credentialId?: string }
+  /** Legacy wallet: same address, owner swapped to the passkey. */
+  | {
+      status: "migrated" | "migrating";
+      walletAddress: string;
+      credentialId?: string;
+      chains: PasskeyChainMigration[];
+    }
+  /** Legacy wallet whose old key is unrecoverable: a fresh wallet was created. */
+  | { status: "new_wallet"; walletAddress: string; previousAddress: string; credentialId?: string }
+  /** Additional passkey: sign every ticket with an EXISTING passkey, then `passkeys.confirm`. */
+  | { status: "pending_signature"; credentialId?: string; tickets: PasskeyTicket[] };
+
+export interface PasskeySignature {
+  ticketId: string;
+  authProof: PasskeyAuthProof;
+}
+
+export interface ConfirmPasskeyRequest {
+  credentialId: string;
+  signatures: PasskeySignature[];
+}
+
+export interface ConfirmPasskeyResponse {
+  status: string;
+  [key: string]: any;
+}
+
+export interface PasskeyCredential {
+  id: string;
+  credentialId: string;
+  label: string | null;
+  signerAddress: string;
+  signerKind: "shared" | "proxy";
+  createdAt: string;
+  lastUsedAt: string | null;
+  status: "pending" | "active" | "removed";
+}
+
+export interface RemovePasskeyResponse {
+  tickets: PasskeyTicket[];
+}
+
+export interface ConfirmPasskeyRemovalRequest {
+  signatures: PasskeySignature[];
+}
+
+/** Signs one ticket with an EXISTING passkey (see `createPasskeyAuthProof`). */
+export type PasskeyTicketSigner = (ticket: PasskeyTicket) => Promise<PasskeyAuthProof>;
+
+// ── Wallet status (GET /v1/wallet/status) ────────────────────────────
+
+export interface WalletChainStatus {
+  chainId: number;
+  deployed: boolean;
+  ownerMode: "legacy_eoa" | "passkey" | "undeployed";
+}
+
+export interface WalletStatus {
+  mode: "none" | "legacy" | "passkey";
+  walletAddress: string | null;
+  /** Old address when the legacy key was unrecoverable ("legacy (unrecoverable)"). */
+  previousAddress?: string | null;
+  passkeyCount: number;
+  chains: WalletChainStatus[];
+  /** true → show the mandatory "Secure your wallet with a passkey" screen. */
+  needsPasskeySetup: boolean;
+}
+
+// ── Approvals (/v1/approvals) ────────────────────────────────────────
+
+export type ApprovalStatus = "pending" | "approved" | "rejected" | "expired" | "failed";
+
+export interface Approval {
+  id: string;
+  status: ApprovalStatus;
+  summary: ApprovalSummary;
+  chainId: number | null;
+  createdAt: string;
+  expiresAt: string;
+  result?: { transactionHash?: string; userOpHash?: string; [key: string]: any };
+  [key: string]: any;
+}
+
+export interface ListApprovalsRequest {
+  status?: ApprovalStatus;
+}
+
+export interface ApproveApprovalRequest {
+  ticketId: string;
+  authProof: PasskeyAuthProof;
+}
+
+// ── Message signing (two-phase ERC-1271) ─────────────────────────────
+
+export interface PreviewMessageRequest {
+  chain: ChainName;
+  /** EIP-191 personal_sign message. Provide this OR `typedData`. */
+  message?: string;
+  /** EIP-712 typed data. */
+  typedData?: Record<string, any>;
+  [key: string]: any;
+}
+
+/** ERC-1271 (or ERC-6492 when the Safe is undeployed on that chain) signature. */
+export interface SubmitMessageRequest {
+  ticketId: string;
+  authProof: PasskeyAuthProof;
+}
+
+export interface SubmitMessageResponse {
+  signature: string;
+  [key: string]: any;
+}
+
+/** Error code the backend returns for raw EOA transaction signing (410). */
+export const EOA_SIGNING_REMOVED = "EOA_SIGNING_REMOVED";
+/** Error code the backend returns for the old v3 envelope endpoints (410). */
+export const REPLACED_BY_PASSKEY_WALLETS = "REPLACED_BY_PASSKEY_WALLETS";

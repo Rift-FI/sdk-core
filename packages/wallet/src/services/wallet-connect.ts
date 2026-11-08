@@ -5,6 +5,9 @@ import {
   WalletConnectSession,
   WalletConnectRequest,
   ApiResponse,
+  MaybeApproval,
+  PasskeySubmitFields,
+  PreviewUserOpResponse,
 } from "../types";
 
 export class WalletConnectService extends BaseService {
@@ -23,17 +26,47 @@ export class WalletConnectService extends BaseService {
     });
   }
 
-  async approveRequest(id: string): Promise<ApiResponse> {
-    return this.authenticatedRequest<ApiResponse>({
+  /**
+   * Phase 1 for a pending dApp request (eth_sendTransaction, personal_sign,
+   * typed data). Returns `hashToSign` + ticket for the passkey.
+   */
+  async previewRequest(id: string): Promise<PreviewUserOpResponse> {
+    return this.authenticatedRequest<PreviewUserOpResponse>({
       method: "POST",
-      url: `/v1/wallet-connect/requests/${id}/approve`,
+      url: `/v1/wallet-connect/requests/${encodeURIComponent(id)}/preview`,
+      retries: 0,
+    });
+  }
+
+  /**
+   * Approve a pending dApp request.
+   *
+   * - `approveRequest(id, { ticketId, authProof })` (from `previewRequest`)
+   *   → signs / sends and answers the dApp.
+   * - `approveRequest(id)` → returns an approval request (HTTP 202) for the
+   *   user to approve with a passkey.
+   *
+   * Never retried.
+   */
+  async approveRequest(
+    id: string,
+    proof: PasskeySubmitFields = {}
+  ): Promise<MaybeApproval<ApiResponse>> {
+    const data =
+      proof.ticketId || proof.authProof
+        ? { ticketId: proof.ticketId, authProof: proof.authProof }
+        : undefined;
+    return this.fundMovingRequest<ApiResponse>({
+      method: "POST",
+      url: `/v1/wallet-connect/requests/${encodeURIComponent(id)}/approve`,
+      ...(data ? { data } : {}),
     });
   }
 
   async rejectRequest(id: string): Promise<ApiResponse> {
     return this.authenticatedRequest<ApiResponse>({
       method: "POST",
-      url: `/v1/wallet-connect/requests/${id}/reject`,
+      url: `/v1/wallet-connect/requests/${encodeURIComponent(id)}/reject`,
     });
   }
 

@@ -7,6 +7,7 @@ import {
   BridgeExecuteResponse,
   PreviewBridgeRequest,
   PreviewBridgeResponse,
+  MaybeApproval,
 } from "../types";
 
 export class BridgeService extends BaseService {
@@ -25,8 +26,15 @@ export class BridgeService extends BaseService {
     });
   }
 
-  async execute(request: BridgeExecuteRequest): Promise<BridgeExecuteResponse> {
-    return this.authenticatedRequest<BridgeExecuteResponse>({
+  /**
+   * Bridge tokens cross-chain. Without `ticketId` + `authProof` this
+   * returns an approval request (HTTP 202) for the user to approve with a
+   * passkey. Never retried.
+   */
+  async execute(
+    request: BridgeExecuteRequest
+  ): Promise<MaybeApproval<BridgeExecuteResponse>> {
+    return this.fundMovingRequest<BridgeExecuteResponse>({
       method: "POST",
       url: "/v1/bridge/transfers",
       data: request,
@@ -34,12 +42,11 @@ export class BridgeService extends BaseService {
   }
 
   /**
-   * Phase 1 of two-phase v3 signing for a cross-chain bridge. Pulls a
-   * fresh Across quote, builds the approve + depositV3 calls, runs
-   * prepareUserOperation, returns user_op_hash + ticket.
+   * Phase 1 of a two-phase bridge. Pulls a fresh Across quote, builds the
+   * approve + depositV3 calls and returns `hashToSign` + ticket.
    *
-   * Submit via `signer.submitPreparedUserOp({ ticketId, authProof })`
-   * once you've produced an AuthProof bound to `userOpHashHex`.
+   * Submit via `signer.submitPreparedUserOp({ ticketId, authProof })` with
+   * a passkey proof over `hashToSign`.
    */
   async previewTransfer(
     request: PreviewBridgeRequest
@@ -48,6 +55,7 @@ export class BridgeService extends BaseService {
       method: "POST",
       url: "/v1/bridge/transfers/preview",
       data: request,
+      retries: 0,
     });
   }
 }

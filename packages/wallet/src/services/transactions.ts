@@ -8,11 +8,23 @@ import {
   TransactionFeeResponse,
   PreviewSpendRequest,
   PreviewUserOpResponse,
+  MaybeApproval,
 } from "../types";
 
 export class TransactionService extends BaseService {
-  async send(request: TransactionRequest): Promise<TransactionResponse> {
-    return this.authenticatedRequest<TransactionResponse>({
+  /**
+   * Send tokens from the user's wallet.
+   *
+   * - With `ticketId` + `authProof` (from `previewSpend`) → submits.
+   * - Without → returns `{ status: "APPROVAL_REQUIRED", approvalUrl, ... }`
+   *   (HTTP 202) instead of throwing. Give `approvalUrl` to the user.
+   *
+   * Never retried: a replay could pay twice.
+   */
+  async send(
+    request: TransactionRequest
+  ): Promise<MaybeApproval<TransactionResponse>> {
+    return this.fundMovingRequest<TransactionResponse>({
       method: "POST",
       url: "/v1/transactions",
       data: request,
@@ -40,15 +52,10 @@ export class TransactionService extends BaseService {
   }
 
   /**
-   * Phase 1 of two-phase v3 signing for a token transfer (spend).
-   * Builds the ERC-20 transfer call inside the backend, runs
-   * prepareUserOperation server-side, returns the user_op_hash + ticket.
-   *
-   * Submit via `signer.submitPreparedUserOp({ ticketId, authProof })`
-   * after producing an AuthProof bound to user_op_hash_hex with the
-   * user's passkey or OIDC token.
-   *
-   * v3 (device-bound) wallets only — v1 / v2 wallets keep using `send()`.
+   * Phase 1 of a two-phase token transfer. Returns `hashToSign` + a
+   * single-use ticket. Sign with `createPasskeyAuthProof`, then submit with
+   * `signer.submitPreparedUserOp({ ticketId, authProof })` (or
+   * `send({ ...request, ticketId, authProof })`).
    */
   async previewSpend(
     request: PreviewSpendRequest
@@ -57,6 +64,7 @@ export class TransactionService extends BaseService {
       method: "POST",
       url: "/v1/transactions/preview",
       data: request,
+      retries: 0,
     });
   }
 }

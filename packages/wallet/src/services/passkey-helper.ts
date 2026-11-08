@@ -1,5 +1,10 @@
 /**
- * Passkey helper — browser-only.
+ * Passkey helper — browser-only. Older class API, kept for existing callers.
+ *
+ * SDK v4 (passkey wallets): prefer `createPasskeyAuthProof()` and
+ * `registerPasskey()` from "../passkey-wallet". `PasskeyHelper.sign` still
+ * produces a valid authProof; `enrol` produced v3 enclave enrolment data
+ * and is deprecated (register passkeys with `rift.passkeys.setup()`).
  *
  * Wraps `navigator.credentials.create()` and `navigator.credentials.get()`
  * with all the small encoding ceremonies the enclave expects:
@@ -144,6 +149,9 @@ export interface PasskeyEnrolmentResult {
 
 export class PasskeyHelper {
   /**
+   * @deprecated v3 enclave enrolment. Use `rift.passkeys.setup()` /
+   * `registerPasskey()`.
+   *
    * Run a WebAuthn enrolment ceremony. Prompts the user for biometric /
    * device PIN. Returns an `EnrolledMethod` ready to pass to the SDK.
    *
@@ -265,6 +273,8 @@ export class PasskeyHelper {
   }
 
   /**
+   * @deprecated v3 add-method consent. Use `rift.passkeys.setup({ signWithExisting })`.
+   *
    * Consent proof for ADDING a method to an existing v3 wallet, signed by
    * a passkey the wallet already has.
    *

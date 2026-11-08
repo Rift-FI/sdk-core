@@ -18,6 +18,7 @@ import {
   VaultDepositResponse,
   VaultWithdrawRequest,
   VaultTransactionResponse,
+  MaybeApproval,
 } from "../types";
 
 export class VaultService extends BaseService {
@@ -192,6 +193,11 @@ export class VaultService extends BaseService {
   // ============================================
   // User Write Methods (API Key + JWT required)
   // ============================================
+  //
+  // Each of these moves funds from the user's passkey-owned Safe. Called
+  // without `ticketId` + `authProof` they return an approval request
+  // (HTTP 202, `{ status: "APPROVAL_REQUIRED", approvalUrl, ... }`) instead
+  // of throwing. Never retried.
 
   /**
    * Deposit USDC into the vault
@@ -206,8 +212,10 @@ export class VaultService extends BaseService {
    *
    * @param request - Deposit request with amount (human readable, e.g., '100' for 100 USDC)
    */
-  async deposit(request: VaultDepositRequest): Promise<VaultDepositResponse> {
-    return this.authenticatedRequest<VaultDepositResponse>({
+  async deposit(
+    request: VaultDepositRequest
+  ): Promise<MaybeApproval<VaultDepositResponse>> {
+    return this.fundMovingRequest<VaultDepositResponse>({
       method: "POST",
       url: "/v1/vault/deposits",
       data: request,
@@ -224,8 +232,8 @@ export class VaultService extends BaseService {
    */
   async withdraw(
     request: VaultWithdrawRequest
-  ): Promise<VaultTransactionResponse> {
-    return this.authenticatedRequest<VaultTransactionResponse>({
+  ): Promise<MaybeApproval<VaultTransactionResponse>> {
+    return this.fundMovingRequest<VaultTransactionResponse>({
       method: "POST",
       url: "/v1/vault/withdrawals",
       data: request,
@@ -237,8 +245,8 @@ export class VaultService extends BaseService {
    * Cancels a pending withdrawal request and restores the user's balance.
    * Can only be called if the user has a pending withdrawal that hasn't been processed yet.
    */
-  async cancelWithdrawal(): Promise<VaultTransactionResponse> {
-    return this.authenticatedRequest<VaultTransactionResponse>({
+  async cancelWithdrawal(): Promise<MaybeApproval<VaultTransactionResponse>> {
+    return this.fundMovingRequest<VaultTransactionResponse>({
       method: "POST",
       url: "/v1/vault/withdrawals/pending",
     });
@@ -250,8 +258,8 @@ export class VaultService extends BaseService {
    * by the admin in the next batch (typically daily). Once processed, the rewards will
    * be sent to the user's smart wallet.
    */
-  async claimRewards(): Promise<VaultTransactionResponse> {
-    return this.authenticatedRequest<VaultTransactionResponse>({
+  async claimRewards(): Promise<MaybeApproval<VaultTransactionResponse>> {
+    return this.fundMovingRequest<VaultTransactionResponse>({
       method: "POST",
       url: "/v1/vault/claims",
     });
@@ -262,8 +270,8 @@ export class VaultService extends BaseService {
    * Cancels a pending reward claim request. Can only be called if the user has a
    * pending claim that hasn't been processed yet.
    */
-  async cancelClaim(): Promise<VaultTransactionResponse> {
-    return this.authenticatedRequest<VaultTransactionResponse>({
+  async cancelClaim(): Promise<MaybeApproval<VaultTransactionResponse>> {
+    return this.fundMovingRequest<VaultTransactionResponse>({
       method: "POST",
       url: "/v1/vault/claims/pending",
     });

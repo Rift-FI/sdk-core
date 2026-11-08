@@ -11,6 +11,7 @@ import {
   AuthProof,
   NewWalletMethod,
   WalletMethodsResponse,
+  WalletStatus,
 } from "../types";
 import {
   AddMethodConsentChallenge,
@@ -44,11 +45,28 @@ export class WalletService extends BaseService {
     return this.authenticatedRequest<ApiResponse<Balance[]>>(options);
   }
 
+  /**
+   * Passkey wallet state: `mode` ("none" | "legacy" | "passkey"), address,
+   * passkey count, per-chain owner mode and `needsPasskeySetup`.
+   *
+   * When `needsPasskeySetup` is true, show the mandatory "Secure your wallet
+   * with a passkey" screen and run `rift.passkeys.setup()`; every signing
+   * route answers 409 PASSKEY_SETUP_REQUIRED until then.
+   */
+  async status(): Promise<WalletStatus> {
+    return this.authenticatedRequest<WalletStatus>({
+      method: "GET",
+      url: "/v1/wallet/status",
+    });
+  }
+
   // ───────────────────────────────────────────────────────────────────
-  // v3 auth methods (add a passkey / Google / Apple to an existing wallet)
+  // v3 auth methods — DEPRECATED. Replaced by passkey wallets: the backend
+  // answers 410 REPLACED_BY_PASSKEY_WALLETS. Use `rift.passkeys` instead.
+  // Kept so existing code still compiles; scheduled for removal.
   // ───────────────────────────────────────────────────────────────────
 
-  /** Coarse projection of the auth methods enrolled on the user's wallet. */
+  /** @deprecated Use `rift.passkeys.list()`. Backend answers 410. */
   async listMethods(): Promise<WalletMethodsResponse> {
     return this.authenticatedRequest<WalletMethodsResponse>({
       method: "GET",
@@ -57,6 +75,8 @@ export class WalletService extends BaseService {
   }
 
   /**
+   * @deprecated Use `rift.passkeys.add()`. Backend answers 410.
+   *
    * Step 1 of adding a method: get a fresh single-use 32-byte server nonce
    * (5-minute TTL) plus the wallet's `ownerAddress`.
    *
@@ -77,6 +97,8 @@ export class WalletService extends BaseService {
   }
 
   /**
+   * @deprecated Use `rift.passkeys.add()`.
+   *
    * Step 2: compute what the consent proof from an ALREADY-enrolled method
    * must be over, for adding `newMethod`.
    *
@@ -86,8 +108,7 @@ export class WalletService extends BaseService {
    *     console warning.
    *
    * Feed `challengeHex` to `PasskeyHelper.sign({ userOpHashHex })` (the
-   * WebAuthn challenge becomes the 32 raw bytes) or `OidcHelper.sign(...)`
-   * (the id_token nonce becomes the lowercase hex).
+   * WebAuthn challenge becomes the 32 raw bytes).
    */
   async prepareAddMethodConsent(
     challenge: AddMethodChallengeResponse,
@@ -97,6 +118,8 @@ export class WalletService extends BaseService {
   }
 
   /**
+   * @deprecated Use `rift.passkeys.add()`. Backend answers 410.
+   *
    * Step 3: submit the consent proof and the new method. The enclave
    * verifies the proof against the wallet's existing methods and reseals
    * the envelope with the new one appended.
@@ -115,6 +138,8 @@ export class WalletService extends BaseService {
   }
 
   /**
+   * @deprecated Use `rift.passkeys.add()`. Backend answers 410.
+   *
    * Whole add-method flow in one call: fetch the challenge, compute the
    * consent challenge, ask the user for consent via `sign`, then submit.
    *

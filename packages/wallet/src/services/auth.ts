@@ -1,4 +1,4 @@
-import { BaseService } from "../base-service";
+import { BaseService, explainPasskeyError } from "../base-service";
 import {
   LoginRequest,
   SignupRequest,
@@ -199,6 +199,11 @@ export class AuthService extends BaseService {
   }
 
   /**
+   * @deprecated Replaced by passkey wallets. The backend answers
+   * 410 REPLACED_BY_PASSKEY_WALLETS. Register a passkey with
+   * `rift.passkeys.setup()` instead: legacy wallets keep their address and
+   * are migrated to passkey ownership automatically.
+   *
    * Upgrade the authenticated user's wallet to a v3 (device-bound)
    * envelope. Same EOA private key, new auth methods sealed inside the
    * enclave. The on-chain wallet address is preserved.
@@ -206,7 +211,7 @@ export class AuthService extends BaseService {
    * Typical flow:
    *   1. Show the user a "Make my wallet non-custodial" prompt.
    *   2. Run a Passkey enrolment ceremony (see PasskeyHelper.enrol) OR
-   *      an OIDC sign-in (see OidcHelper.fetchEnrolment).
+   *      an OIDC sign-in (removed in SDK v4).
    *   3. Call this method with the resulting enrolledMethods.
    *   4. From then on, every transaction MUST carry an `authProof` —
    *      the user authorises each one with their device or Google/Apple.
@@ -217,11 +222,16 @@ export class AuthService extends BaseService {
   async migrateToV3(
     request: MigrateToV3Request
   ): Promise<MigrateToV3Response> {
-    return this.authenticatedRequest<MigrateToV3Response>({
-      method: "POST",
-      url: "/wallet/migrate-to-v3",
-      data: request,
-    });
+    try {
+      return await this.authenticatedRequest<MigrateToV3Response>({
+        method: "POST",
+        url: "/wallet/migrate-to-v3",
+        data: request,
+        retries: 0,
+      });
+    } catch (error) {
+      throw explainPasskeyError(error);
+    }
   }
 
   logout(): void {

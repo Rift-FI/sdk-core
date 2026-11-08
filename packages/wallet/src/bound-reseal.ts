@@ -266,7 +266,7 @@ export async function computeBoundResealChallenge(
 /** What the consent proof for an add-method call must be over. */
 export interface AddMethodConsentChallenge {
   /** 32-byte challenge, lowercase hex (no 0x). Pass to
-   *  `PasskeyHelper.sign({ userOpHashHex })` / `OidcHelper.sign(...)`. */
+   *  `PasskeyHelper.sign({ userOpHashHex })`. */
   challengeHex: string;
   /** "bound": the bound reseal challenge (current contract).
    *  "legacy": the raw server nonce, used only when the backend did not

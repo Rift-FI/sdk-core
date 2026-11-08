@@ -17,6 +17,7 @@ import {
   PayResponse,
   PreviewOfframpRequest,
   PreviewUserOpResponse,
+  MaybeApproval,
 } from "../types";
 
 export class OfframpService extends BaseService {
@@ -25,13 +26,9 @@ export class OfframpService extends BaseService {
   }
 
   /**
-   * Phase 1 of two-phase v3 signing for an off-ramp. Builds the ERC-20
-   * transfer call to the liquidity provider's address and returns
-   * user_op_hash + ticket. Submit via
-   * `signer.submitPreparedUserOp({ ticketId, authProof })`.
-   *
-   * v3 (device-bound) wallets only — v1 / v2 wallets keep using
-   * `createOrder()`.
+   * Phase 1 of a two-phase off-ramp. Builds the ERC-20 transfer call to the
+   * liquidity provider's address and returns `hashToSign` + ticket. Submit
+   * via `signer.submitPreparedUserOp({ ticketId, authProof })`.
    */
   async previewOrder(
     request: PreviewOfframpRequest
@@ -40,6 +37,7 @@ export class OfframpService extends BaseService {
       method: "POST",
       url: "/v1/offramps/preview",
       data: request,
+      retries: 0,
     });
   }
 
@@ -75,8 +73,12 @@ export class OfframpService extends BaseService {
     });
   }
 
-  async pay (request: PayRequest): Promise<PayResponse> {
-    return this.authenticatedRequest<PayResponse>({
+  /**
+   * Off-ramp (crypto → fiat). Without `ticketId` + `authProof` this returns
+   * an approval request (HTTP 202) instead of throwing. Never retried.
+   */
+  async pay (request: PayRequest): Promise<MaybeApproval<PayResponse>> {
+    return this.fundMovingRequest<PayResponse>({
       method: "POST",
       url: "/v1/offramps",
       data: request,
@@ -86,12 +88,13 @@ export class OfframpService extends BaseService {
   /**
    * Create a new offramp order
    * @param request - Offramp order creation request
-   * @returns Promise with created order details
+   * @returns Promise with created order details, or an approval request
+   *   (HTTP 202) when called without `ticketId` + `authProof`. Never retried.
    */
   async createOrder(
     request: CreateOfframpOrderRequest
-  ): Promise<CreateOfframpOrderResponse> {
-    return this.authenticatedRequest<CreateOfframpOrderResponse>({
+  ): Promise<MaybeApproval<CreateOfframpOrderResponse>> {
+    return this.fundMovingRequest<CreateOfframpOrderResponse>({
       method: "POST",
       url: "/v1/offramps",
       data: request,
