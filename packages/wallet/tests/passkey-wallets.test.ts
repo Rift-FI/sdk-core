@@ -268,8 +268,9 @@ describe("passkeys service", () => {
     const calls = mockFetch([{ status: 200, body: {} }]);
     const r = newRift();
     const attestation = { cred_id_b64: "AQ==", client_data_json_b64: "e30=", attestation_object_b64: "oA==" };
+    const possession = { cred_id_b64: "AQ==", client_data_json_b64: "e30=", authenticator_data_b64: "AA==", signature_b64: "MA==" };
     await r.passkeys.getRegistrationOptions();
-    await r.passkeys.register({ attestation, label: "Phone" });
+    await r.passkeys.register({ attestation, possession, label: "Phone" });
     await r.passkeys.confirm({ credentialId: "AQ==", signatures: [{ ticketId: "t", authProof: PROOF }] });
     await r.passkeys.list();
     await r.passkeys.remove("pk 1");
@@ -282,13 +283,31 @@ describe("passkeys service", () => {
       "DELETE /v1/wallet/passkeys/pk%201",
       "POST /v1/wallet/passkeys/pk1/confirm-removal",
     ]);
-    expect(bodyOf(calls[1])).toEqual({ attestation, label: "Phone" });
+    expect(bodyOf(calls[1])).toEqual({ attestation, possession, label: "Phone" });
   });
 
   test("writes are never retried", async () => {
     const calls = mockFetch([{ status: 500, body: { message: "x" } }]);
-    await expect(newRift().passkeys.register({ attestation: { cred_id_b64: "", client_data_json_b64: "", attestation_object_b64: "" } })).rejects.toBeDefined();
+    await expect(
+      newRift().passkeys.register({
+        attestation: { cred_id_b64: "", client_data_json_b64: "", attestation_object_b64: "" },
+        possession: { cred_id_b64: "", client_data_json_b64: "", authenticator_data_b64: "", signature_b64: "" },
+      })
+    ).rejects.toBeDefined();
     expect(calls).toHaveLength(1);
+  });
+
+  test.each([
+    ["PASSKEY_POSSESSION_REQUIRED", /possession proof/],
+    ["INVALID_PASSKEY_SIGNATURE", /did not verify/],
+  ])("register 400 %s gets a code and a readable message", async (code, msg) => {
+    mockFetch([{ status: 400, body: { error: code } }]);
+    await expect(
+      newRift().passkeys.register({
+        attestation: { cred_id_b64: "AQ==", client_data_json_b64: "e30=", attestation_object_b64: "oA==" },
+        possession: { cred_id_b64: "AQ==", client_data_json_b64: "e30=", authenticator_data_b64: "AA==", signature_b64: "MA==" },
+      })
+    ).rejects.toMatchObject({ status: 400, code, message: expect.stringMatching(msg) });
   });
 
   test("removeWithPasskey signs every ticket, then confirms", async () => {
@@ -346,14 +365,67 @@ describe("approvals service", () => {
 const sha256 = (b: Uint8Array) => new Uint8Array(nodeCrypto.createHash("sha256").update(b).digest());
 const b64url = (b: Uint8Array) => Buffer.from(b).toString("base64url");
 
+/** COSE_Key (EC2, ES256, P-256) for an uncompressed point's x / y. */
+function coseKey(x: Uint8Array, y: Uint8Array): Uint8Array {
+  return new Uint8Array([0xa5, 0x01, 0x02, 0x03, 0x26, 0x20, 0x01, 0x21, 0x58, 0x20, ...x, 0x22, 0x58, 0x20, ...y]);
+}
+
+/** CBOR byte-string header for length n (n < 65536). */
+function cborBytesHeader(n: number): number[] {
+  if (n < 24) return [0x40 + n];
+  if (n < 256) return [0x58, n];
+  return [0x59, n >> 8, n & 0xff];
+}
+
+/** attestationObject { fmt: "none", attStmt: {}, authData } with attested credential data. */
+function attestationObject(rpId: string, credId: Uint8Array, x: Uint8Array, y: Uint8Array): Uint8Array {
+  const authData = new Uint8Array([
+    ...sha256(new TextEncoder().encode(rpId)),
+    0x45, // UP | UV | AT
+    0, 0, 0, 0,
+    ...new Uint8Array(16), // aaguid
+    credId.length >> 8, credId.length & 0xff,
+    ...credId,
+    ...coseKey(x, y),
+  ]);
+  const text = (t: string) => [0x60 + t.length, ...new TextEncoder().encode(t)];
+  return new Uint8Array([0xa3, ...text("fmt"), ...text("none"), ...text("attStmt"), 0xa0, ...text("authData"), ...cborBytesHeader(authData.length), ...authData]);
+}
+
+/**
+ * Recover the attested P-256 public key from an attestationObject built by
+ * `attestationObject()` (fixed layout: rpIdHash 32 | flags 1 | counter 4 |
+ * aaguid 16 | credIdLen 2 | credId | COSE key with x at +10, y at +45).
+ */
+function attestedKey(attObjB64: string): nodeCrypto.KeyObject {
+  const att = Buffer.from(attObjB64, "base64");
+  const marker = Buffer.from("authData");
+  const start = att.indexOf(marker) + marker.length;
+  const hdr = att[start];
+  const authData = att.subarray(start + (hdr === 0x58 ? 2 : hdr === 0x59 ? 3 : 1));
+  const credLen = (authData[53] << 8) | authData[54];
+  const cose = authData.subarray(55 + credLen);
+  const x = cose.subarray(10, 42);
+  const y = cose.subarray(45, 77);
+  return nodeCrypto.createPublicKey({
+    key: { kty: "EC", crv: "P-256", x: x.toString("base64url"), y: y.toString("base64url") },
+    format: "jwk",
+  });
+}
+
 /** Fake navigator.credentials backed by a node P-256 key. */
 function installVirtualAuthenticator(rpId: string) {
   const { privateKey, publicKey } = nodeCrypto.generateKeyPairSync("ec", { namedCurve: "P-256" });
+  const jwk = publicKey.export({ format: "jwk" }) as any;
+  const pubX = new Uint8Array(Buffer.from(jwk.x, "base64url"));
+  const pubY = new Uint8Array(Buffer.from(jwk.y, "base64url"));
   const credId = new Uint8Array(nodeCrypto.randomBytes(16));
+  const getCalls: any[] = [];
   const seen: { get?: any; create?: any } = {};
   const credentials = {
     async get({ publicKey: opts }: any) {
       seen.get = opts;
+      getCalls.push(opts);
       const clientData = new TextEncoder().encode(
         JSON.stringify({ type: "webauthn.get", challenge: b64url(new Uint8Array(opts.challenge)), origin: `https://${rpId}`, crossOrigin: false })
       );
@@ -374,7 +446,7 @@ function installVirtualAuthenticator(rpId: string) {
         rawId: credId.buffer.slice(0),
         response: {
           clientDataJSON: clientData.buffer,
-          attestationObject: new Uint8Array([0xa3, 0x01, 0x02]).buffer,
+          attestationObject: attestationObject(rpId, credId, pubX, pubY).buffer,
           getPublicKeyAlgorithm: () => -7,
         },
       };
@@ -386,6 +458,7 @@ function installVirtualAuthenticator(rpId: string) {
     publicKey,
     credId,
     seen,
+    getCalls,
     credentials,
     restore: () => {
       if (desc) Object.defineProperty(globalThis, "navigator", desc);
@@ -469,7 +542,7 @@ describe("registerPasskey", () => {
   test("ES256 only, resident key + UV required, attestation in standard base64", async () => {
     const va = installVirtualAuthenticator("riftfi.com");
     try {
-      const att = await registerPasskey(options);
+      const { attestation: att } = await registerPasskey(options);
       const pk = va.seen.create;
       expect(pk.pubKeyCredParams).toEqual([{ type: "public-key", alg: PASSKEY_ALG_ES256 }]);
       expect(pk.authenticatorSelection).toMatchObject({ residentKey: "required", requireResidentKey: true, userVerification: "required" });
@@ -478,8 +551,67 @@ describe("registerPasskey", () => {
       expect(pk.user.displayName).toBe("alice@example.com");
       expect(Array.from(pk.excludeCredentials[0].id)).toEqual([1, 2, 3]);
       expect(att.cred_id_b64).toBe(bytesToBase64(va.credId));
-      expect(Array.from(base64ToBytes(att.attestation_object_b64))).toEqual([0xa3, 0x01, 0x02]);
+      expect(base64ToBytes(att.attestation_object_b64)[0]).toBe(0xa3); // CBOR map(3)
       expect(JSON.parse(Buffer.from(att.client_data_json_b64, "base64").toString()).type).toBe("webauthn.create");
+    } finally {
+      va.restore();
+    }
+  });
+
+  test("possession: get() by the NEW credential only, over the options challenge, UV required; verifies against the attested key", async () => {
+    const va = installVirtualAuthenticator("riftfi.com");
+    try {
+      const { attestation, possession } = await registerPasskey(options);
+
+      // create() then exactly one get()
+      expect(va.getCalls).toHaveLength(1);
+      const get = va.getCalls[0];
+      expect(Array.from(new Uint8Array(get.challenge))).toEqual(Array.from(new Uint8Array(32).fill(7)));
+      expect(get.allowCredentials).toHaveLength(1);
+      expect(Array.from(get.allowCredentials[0].id)).toEqual(Array.from(va.credId));
+      expect(get.userVerification).toBe("required");
+      expect(get.rpId).toBe("riftfi.com");
+
+      // same credential, challenge in clientDataJSON = options challenge
+      expect(possession.cred_id_b64).toBe(attestation.cred_id_b64);
+      const clientData = Buffer.from(possession.client_data_json_b64, "base64");
+      const parsed = JSON.parse(clientData.toString("utf8"));
+      expect(parsed.type).toBe("webauthn.get");
+      expect(parsed.challenge).toBe(options.challenge);
+
+      // DER signature over authData || sha256(clientDataJSON) verifies with
+      // the P-256 key carried in the attestationObject
+      const key = attestedKey(attestation.attestation_object_b64);
+      const authData = Buffer.from(possession.authenticator_data_b64, "base64");
+      const sig = Buffer.from(possession.signature_b64, "base64");
+      expect(nodeCrypto.verify("sha256", Buffer.concat([authData, sha256(clientData)]), key, sig)).toBe(true);
+      // and a different message does not
+      expect(nodeCrypto.verify("sha256", Buffer.concat([authData, sha256(Buffer.from("x"))]), key, sig)).toBe(false);
+    } finally {
+      va.restore();
+    }
+  });
+
+  test("refuses a possession assertion made by a different credential", async () => {
+    const va = installVirtualAuthenticator("riftfi.com");
+    const get = va.credentials.get;
+    va.credentials.get = async (arg: any) => {
+      const a: any = await get(arg);
+      a.rawId = new Uint8Array([9, 9, 9]).buffer;
+      return a;
+    };
+    try {
+      await expect(registerPasskey(options)).rejects.toThrow(/different credential/);
+    } finally {
+      va.restore();
+    }
+  });
+
+  test("refuses when the possession prompt is dismissed", async () => {
+    const va = installVirtualAuthenticator("riftfi.com");
+    va.credentials.get = async () => null as any;
+    try {
+      await expect(registerPasskey(options)).rejects.toThrow(/not registered/);
     } finally {
       va.restore();
     }
@@ -514,6 +646,10 @@ describe("registerPasskey", () => {
       expect(res.status).toBe("active");
       expect(sign).toHaveBeenCalledTimes(1);
       expect(bodyOf(calls[1]).label).toBe("Laptop");
+      const reg = bodyOf(calls[1]);
+      expect(reg.possession.cred_id_b64).toBe(reg.attestation.cred_id_b64);
+      expect(reg.possession.cred_id_b64).toBe(bytesToBase64(va.credId));
+      expect(JSON.parse(Buffer.from(reg.possession.client_data_json_b64, "base64").toString()).challenge).toBe(options.challenge);
       const confirm = bodyOf(calls[2]);
       expect(confirm.credentialId).toBe("NEW");
       expect(confirm.signatures[0].ticketId).toBe("t1");
@@ -531,6 +667,7 @@ describe("registerPasskey", () => {
       const res = await newRift().passkeys.setup();
       expect(res).toEqual(migrated);
       expect(calls).toHaveLength(2);
+      expect(Object.keys(bodyOf(calls[1])).sort()).toEqual(["attestation", "possession"]);
     } finally {
       va.restore();
     }

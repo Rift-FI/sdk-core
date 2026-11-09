@@ -86,7 +86,9 @@ const PASSKEY_ERROR_HINTS: Record<string, string> = {
   PASSKEY_SETUP_REQUIRED:
     "The user has no passkey yet. Register one with rift.passkeys.setup() (browser) before signing.",
   INVALID_PASSKEY_SIGNATURE:
-    "The passkey assertion did not verify against the ticket's hashToSign. Preview again and sign the new hashToSign.",
+    "The passkey assertion did not verify (authProof against the ticket's hashToSign, or the registration possession proof against the options challenge). Preview / request options again and sign the new value.",
+  PASSKEY_POSSESSION_REQUIRED:
+    "Registering a passkey needs a possession proof: a WebAuthn get() by the NEW credential over the options challenge. Use registerPasskey() / rift.passkeys.setup(), which send it.",
   REPLACED_BY_PASSKEY_WALLETS:
     "The v3 envelope endpoints were replaced by passkey wallets. Use rift.passkeys (see /v1/wallet/passkeys).",
 };

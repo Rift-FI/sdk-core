@@ -15,6 +15,8 @@
 import type {
   PasskeyAttestation,
   PasskeyAuthProof,
+  PasskeyPossession,
+  PasskeyRegistration,
   PasskeyRegistrationOptions,
 } from "./types";
 
@@ -137,8 +139,15 @@ export interface RegisterPasskeyOptions {
 
 /**
  * Run the WebAuthn registration ceremony with the options from
- * `rift.passkeys.getRegistrationOptions()` and return the attestation for
- * `rift.passkeys.register()`.
+ * `rift.passkeys.getRegistrationOptions()` and return `{ attestation,
+ * possession }` for `rift.passkeys.register()`.
+ *
+ * Two prompts:
+ *   1. create(): the new credential (attestation).
+ *   2. get(): an assertion by that SAME credential only, over the SAME
+ *      32-byte options challenge, user verification required (possession).
+ *      It proves the caller actually holds the new key, so a forged or
+ *      replayed attestation can't add an owner to the wallet.
  *
  * Always ES256 (-7) only, resident key required, user verification required,
  * whatever the server options say: a non-P-256 passkey could never sign for
@@ -147,8 +156,12 @@ export interface RegisterPasskeyOptions {
 export async function registerPasskey(
   options: PasskeyRegistrationOptions,
   opts: RegisterPasskeyOptions = {}
-): Promise<PasskeyAttestation> {
+): Promise<PasskeyRegistration> {
   const api = credentialsApi();
+  const challenge = base64ToBytes(options.challenge);
+  if (challenge.length !== 32) {
+    throw new Error("registration options challenge must be 32 bytes");
+  }
   const authenticatorSelection: AuthenticatorSelectionCriteria = {
     residentKey: "required",
     requireResidentKey: true,
@@ -158,7 +171,7 @@ export async function registerPasskey(
     authenticatorSelection.authenticatorAttachment = opts.authenticatorAttachment;
   }
   const publicKey: PublicKeyCredentialCreationOptions = {
-    challenge: base64ToBytes(options.challenge) as BufferSource,
+    challenge: challenge as BufferSource,
     rp: { id: options.rp.id, name: options.rp.name },
     user: {
       id: base64ToBytes(options.user.id) as BufferSource,
@@ -185,9 +198,49 @@ export async function registerPasskey(
       throw new Error(`Passkey uses COSE alg ${alg}; only ES256 (-7) can own a Rift wallet`);
     }
   }
-  return {
-    cred_id_b64: bytesToBase64(toBytes(credential.rawId)),
+  const credId = toBytes(credential.rawId).slice();
+  const attestation: PasskeyAttestation = {
+    cred_id_b64: bytesToBase64(credId),
     client_data_json_b64: bytesToBase64(toBytes(response.clientDataJSON)),
     attestation_object_b64: bytesToBase64(toBytes(response.attestationObject)),
+  };
+
+  const possession = await provePasskeyPossession(credId, challenge, options.rp.id, opts.timeout ?? options.timeout);
+  return { attestation, possession };
+}
+
+/**
+ * The possession half of registration: a get() assertion by `credId` only,
+ * over `challenge`, user verification required. Refuses an assertion made
+ * by any other credential.
+ */
+async function provePasskeyPossession(
+  credId: Uint8Array,
+  challenge: Uint8Array,
+  rpId: string,
+  timeout?: number
+): Promise<PasskeyPossession> {
+  const assertion = (await credentialsApi().get({
+    publicKey: {
+      challenge: challenge as BufferSource,
+      rpId,
+      allowCredentials: [{ type: "public-key", id: credId as BufferSource }],
+      userVerification: "required",
+      timeout: timeout ?? 60000,
+    },
+  })) as PublicKeyCredential | null;
+  if (!assertion) {
+    throw new Error("Passkey confirmation was dismissed (no assertion returned); the passkey was not registered");
+  }
+  const assertedId = bytesToBase64(toBytes(assertion.rawId));
+  if (assertedId !== bytesToBase64(credId)) {
+    throw new Error("Passkey confirmation was made by a different credential than the one just created");
+  }
+  const r = assertion.response as AuthenticatorAssertionResponse;
+  return {
+    cred_id_b64: assertedId,
+    client_data_json_b64: bytesToBase64(toBytes(r.clientDataJSON)),
+    authenticator_data_b64: bytesToBase64(toBytes(r.authenticatorData)),
+    signature_b64: bytesToBase64(toBytes(r.signature)),
   };
 }

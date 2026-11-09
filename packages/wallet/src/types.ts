@@ -3278,8 +3278,29 @@ export interface PasskeyAttestation {
   attestation_object_b64: string;
 }
 
+/**
+ * Proof that the caller holds the NEW credential: a WebAuthn get() assertion
+ * made right after create(), by that credential only (allowCredentials =
+ * [new credential]), over the SAME 32-byte challenge as the registration
+ * options, with user verification. Standard base64; signature is DER.
+ */
+export interface PasskeyPossession {
+  cred_id_b64: string;
+  client_data_json_b64: string;
+  authenticator_data_b64: string;
+  signature_b64: string;
+}
+
+/** What `registerPasskey()` produces: send both to `passkeys.register()`. */
+export interface PasskeyRegistration {
+  attestation: PasskeyAttestation;
+  possession: PasskeyPossession;
+}
+
 export interface RegisterPasskeyRequest {
   attestation: PasskeyAttestation;
+  /** Required. Without it the backend answers 400 PASSKEY_POSSESSION_REQUIRED. */
+  possession: PasskeyPossession;
   label?: string;
 }
 
@@ -3414,6 +3435,21 @@ export interface SubmitMessageResponse {
   signature: string;
   [key: string]: any;
 }
+
+/** Machine-readable error codes of the passkey-wallet endpoints (`ApiError.code`). */
+export type PasskeyErrorCode =
+  | "PASSKEY_SETUP_REQUIRED"
+  | "PASSKEY_REQUIRED"
+  | "PASSKEY_POSSESSION_REQUIRED"
+  | "INVALID_PASSKEY_SIGNATURE"
+  | "LAST_PASSKEY"
+  | "EOA_SIGNING_REMOVED"
+  | "REPLACED_BY_PASSKEY_WALLETS";
+
+/** 400: `passkeys.register` was called without a valid `possession` assertion. */
+export const PASSKEY_POSSESSION_REQUIRED = "PASSKEY_POSSESSION_REQUIRED";
+/** 400: a passkey assertion (authProof or possession) did not verify. */
+export const INVALID_PASSKEY_SIGNATURE = "INVALID_PASSKEY_SIGNATURE";
 
 /** Error code the backend returns for raw EOA transaction signing (410). */
 export const EOA_SIGNING_REMOVED = "EOA_SIGNING_REMOVED";

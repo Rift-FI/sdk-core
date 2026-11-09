@@ -303,7 +303,13 @@ if (status.needsPasskeySetup) {
 }
 ```
 
-`setup()` runs `getRegistrationOptions()` → `registerPasskey()` (WebAuthn create, **ES256 / alg -7 only**, resident key + user verification required) → `register()`. You can call the steps yourself.
+`setup()` runs `getRegistrationOptions()` → `registerPasskey()` → `register()`. `registerPasskey()` prompts twice: `navigator.credentials.create()` (**ES256 / alg -7 only**, resident key + user verification required), then `navigator.credentials.get()` by the NEW credential only, over the same options challenge. The second prompt is the **possession proof**; the backend refuses a registration without it (`400 PASSKEY_POSSESSION_REQUIRED`, or `400 INVALID_PASSKEY_SIGNATURE` if it doesn't verify against the attested key). You can call the steps yourself:
+
+```ts
+const options = await rift.passkeys.getRegistrationOptions();
+const { attestation, possession } = await registerPasskey(options);
+await rift.passkeys.register({ attestation, possession, label: "Laptop" });
+```
 
 ### More passkeys (recovery) and removal
 
@@ -484,7 +490,7 @@ Things to know:
 - **429**: rate limit, or an OTP lockout after too many wrong codes. Wait before sending a new code.
 - **`invalid credentials`**: every signing failure on a v1 (custodial) wallet now returns this one enclave message, whatever the cause. Don't branch on the old, more specific strings.
 - **`requiresOTP: true`**: the call needs an OTP (e.g. email/phone signup on a server enforcing it).
-- **Passkey wallet codes** (the SDK sets `code` and a readable `message`): `409 PASSKEY_SETUP_REQUIRED` (register a passkey first), `400 PASSKEY_REQUIRED` (OIDC proof sent for signing), `400 INVALID_PASSKEY_SIGNATURE` (proof doesn't match the ticket: preview again), `410 EOA_SIGNING_REMOVED`, `410 REPLACED_BY_PASSKEY_WALLETS`, `409 LAST_PASSKEY`.
+- **Passkey wallet codes** (the SDK sets `code` and a readable `message`): `409 PASSKEY_SETUP_REQUIRED` (register a passkey first), `400 PASSKEY_REQUIRED` (OIDC proof sent for signing), `400 PASSKEY_POSSESSION_REQUIRED` (passkey registration without the possession assertion: use `registerPasskey()`), `400 INVALID_PASSKEY_SIGNATURE` (an authProof doesn't match the ticket, or the possession proof doesn't verify: preview / request options again), `410 EOA_SIGNING_REMOVED`, `410 REPLACED_BY_PASSKEY_WALLETS`, `409 LAST_PASSKEY`.
 - **HTTP 202 `APPROVAL_REQUIRED`** is not an error: it is returned. See [Approval requests](#approval-requests-server-side-agents-partners).
 
 **Retries.** `new Rift({ retries })` sets how many times the SDK retries a 5xx or network error (default 3). `retries: 0` now really disables retries. Earlier versions treated `0` as 3. Set it to `0` on any server that proxies non-idempotent calls (signup, send, pay): if a request succeeded but its response was lost, a retry can duplicate it or fail with 409. Fund-moving and signing calls (sends, bridge, off-ramp, user operations, message signing, WalletConnect approve, vault writes, submits, approvals, passkey writes), loyalty redeem and the add-method calls are never retried, whatever this is set to.

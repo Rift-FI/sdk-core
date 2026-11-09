@@ -1,4 +1,4 @@
-import { BaseService } from "../base-service";
+import { BaseService, explainPasskeyError } from "../base-service";
 import {
   PasskeyRegistrationOptions,
   RegisterPasskeyRequest,
@@ -43,24 +43,36 @@ export class PasskeysService extends BaseService {
    *   - `new_wallet`        legacy key unrecoverable, fresh wallet
    *   - `pending_signature` wallet already has a passkey: sign `tickets`
    *                         with an EXISTING passkey and call `confirm`
+   *
+   * `possession` (from `registerPasskey()`) is required: without a valid one
+   * the backend answers 400 PASSKEY_POSSESSION_REQUIRED or
+   * INVALID_PASSKEY_SIGNATURE.
    */
   async register(request: RegisterPasskeyRequest): Promise<RegisterPasskeyResponse> {
-    return this.authenticatedRequest<RegisterPasskeyResponse>({
-      method: "POST",
-      url: "/v1/wallet/passkeys",
-      data: request,
-      retries: 0,
-    });
+    try {
+      return await this.authenticatedRequest<RegisterPasskeyResponse>({
+        method: "POST",
+        url: "/v1/wallet/passkeys",
+        data: request,
+        retries: 0,
+      });
+    } catch (error) {
+      throw explainPasskeyError(error);
+    }
   }
 
   /** Finish adding a passkey: one signature per ticket from `register`. */
   async confirm(request: ConfirmPasskeyRequest): Promise<ConfirmPasskeyResponse> {
-    return this.authenticatedRequest<ConfirmPasskeyResponse>({
-      method: "POST",
-      url: "/v1/wallet/passkeys/confirm",
-      data: request,
-      retries: 0,
-    });
+    try {
+      return await this.authenticatedRequest<ConfirmPasskeyResponse>({
+        method: "POST",
+        url: "/v1/wallet/passkeys/confirm",
+        data: request,
+        retries: 0,
+      });
+    } catch (error) {
+      throw explainPasskeyError(error);
+    }
   }
 
   async list(): Promise<PasskeyCredential[]> {
@@ -99,7 +111,8 @@ export class PasskeysService extends BaseService {
 
   /**
    * Whole registration in one call (browser): options → WebAuthn create →
-   * register. For a user who already has a passkey, pass `signWithExisting`
+   * possession get() by the new credential over the same challenge →
+   * register `{ attestation, possession }`. For a user who already has a passkey, pass `signWithExisting`
    * to sign the add-owner tickets; the new passkey becomes active after
    * `confirm`. Without it a `pending_signature` result is returned as-is.
    *
@@ -117,8 +130,8 @@ export class PasskeysService extends BaseService {
     } = {}
   ): Promise<RegisterPasskeyResponse | ConfirmPasskeyResponse> {
     const options = await this.getRegistrationOptions();
-    const attestation = await registerPasskey(options, opts);
-    const res = await this.register({ attestation, label: opts.label });
+    const { attestation, possession } = await registerPasskey(options, opts);
+    const res = await this.register({ attestation, possession, label: opts.label });
     if (res.status !== "pending_signature" || !opts.signWithExisting) return res;
     const signatures = await signTickets(res.tickets, opts.signWithExisting);
     return this.confirm({
